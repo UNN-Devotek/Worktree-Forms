@@ -158,8 +158,8 @@ WHERE resource IN ('forms', 'submissions') AND action IN ('read')
 ON CONFLICT DO NOTHING;
 
 -- Insert demo admin user (password: admin123, hash generated with bcrypt rounds 10)
-INSERT INTO users (email, password_hash, name, role, is_active) VALUES
-  ('admin@worktreeforms.com', '$2b$10$9QZZpZFjL6Jxl8eQeQQ5iuV5aVpZvkzP.Q5e8e8e8e8e8e8e8e8e', 'Admin User', 'admin', true)
+INSERT INTO users (id, email, password_hash, name, role, is_active) VALUES
+  ('550e8400-e29b-41d4-a716-446655440003', 'admin@worktreeforms.com', '$2b$10$9QZZpZFjL6Jxl8eQeQQ5iuV5aVpZvkzP.Q5e8e8e8e8e8e8e8e8e', 'Admin User', 'admin', true)
 ON CONFLICT (email) DO NOTHING;
 
 -- Create demo form

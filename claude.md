@@ -1,6 +1,6 @@
 # 📚 Claude Development Guide - Worktree-Forms
 
-**Last Updated**: December 11, 2025  
+**Last Updated**: December 12, 2025 (Bug Fixes)  
 **For**: Development Team  
 **Quick Access**: Bookmark this file!
 
@@ -9,7 +9,8 @@
 ## ⚡ Daily Commands
 
 ### Start Development Environment
-```bash
+
+````bash
 # Clone repo
 git clone https://github.com/UNN-Devotek/Worktree-Forms
 cd Worktree-Forms
@@ -17,22 +18,35 @@ cd Worktree-Forms
 # Setup environment
 cp .env.example .env
 
-# Start all services (Docker)
+### Option 1: Local Development (Recommended)
+Run apps locally for better DX, with Docker for databases.
+
+```bash
+# 1. Start Support Services (DB + Redis)
+docker-compose up -d db redis
+
+# 2. Install Dependencies
+npm install
+
+# 3. Run Development Server
+npm run dev
+# -> Frontend: http://localhost:3005
+# -> Backend:  http://localhost:5005
+````
+
+### Option 2: Full Docker Environment
+
+Run everything in containers.
+
+```bash
+# Start all services
 docker-compose up -d
 
-# Wait for services to be healthy
-docker-compose ps
-
-# Install dependencies
-docker-compose exec backend npm install
-docker-compose exec frontend npm install
-
-# Run migrations
+# Run migrations (if needed)
 docker-compose exec backend npm run migrate:dev
-
-# Seed demo data (optional)
-docker-compose exec backend npm run seed
 ```
+
+````
 
 ### Access Services
 - **Frontend**: http://localhost:3000
@@ -62,9 +76,10 @@ npm run dev                  # Start both frontend & backend
 
 # Build for production
 npm run build
-```
+````
 
 ### Stop Services
+
 ```bash
 # Stop all services
 docker-compose down
@@ -141,12 +156,14 @@ Worktree-Forms/
 ## 💻 Code Standards
 
 ### TypeScript
+
 - **Strict Mode**: Always enabled (`"strict": true`)
 - **Module Resolution**: ESM-compatible
 - **Type Definitions**: Explicit types for all function params & returns
 - **No `any`**: Use `unknown` if truly dynamic, then narrow
 
 ### File Naming
+
 - **Components**: PascalCase (`LoginForm.tsx`, `UserCard.tsx`)
 - **Utilities**: camelCase (`authUtils.ts`, `formatDate.ts`)
 - **Types/Interfaces**: PascalCase (`User.ts`, `FormSchema.ts`)
@@ -154,18 +171,21 @@ Worktree-Forms/
 - **Folders**: kebab-case (`auth-forms/`, `admin-pages/`)
 
 ### Function Design
+
 - **Single Responsibility**: One job per function
 - **Pure Functions**: Prefer no side effects
 - **Error Handling**: Explicit try-catch, never silent failures
 - **Validation**: Use Zod for schemas, validate at boundaries
 
 ### React/Next.js Patterns
+
 - **Hooks Only**: No class components
 - **Context for State**: Use React Context or TanStack Query for global state
 - **Server Components**: Use in Next.js 14 by default (mark `'use client'` only when needed)
 - **API Routes**: Use route handlers in `app/api/`
 
 ### Backend (Express)
+
 - **Middleware Chain**: Auth → RBAC → Validation → Handler → Error
 - **Status Codes**: 200 (OK), 201 (Created), 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found), 500 (Server Error)
 - **Response Format**: `{ success: boolean, data?, error?, message? }`
@@ -176,6 +196,7 @@ Worktree-Forms/
 ## 🧪 Testing Standards
 
 ### Coverage Requirements
+
 - **Minimum**: ≥90% code coverage
 - **Exceptions**: Generated code, migrations, config files
 - **Measurement**: `npm run test:coverage`
@@ -183,30 +204,32 @@ Worktree-Forms/
 ### Test Types
 
 **Unit Tests** (Vitest)
+
 ```typescript
 // test/utils.test.ts
-import { describe, it, expect } from 'vitest';
-import { formatDate } from '@/lib/utils';
+import { describe, it, expect } from "vitest";
+import { formatDate } from "@/lib/utils";
 
-describe('formatDate', () => {
-  it('formats ISO date to readable format', () => {
-    expect(formatDate('2025-12-11')).toBe('Dec 11, 2025');
+describe("formatDate", () => {
+  it("formats ISO date to readable format", () => {
+    expect(formatDate("2025-12-11")).toBe("Dec 11, 2025");
   });
 });
 ```
 
 **Integration Tests** (Jest)
+
 ```typescript
 // test/api.test.ts
-import request from 'supertest';
-import app from '@/index';
+import request from "supertest";
+import app from "@/index";
 
-describe('POST /api/auth/login', () => {
-  it('returns JWT token on successful login', async () => {
+describe("POST /api/auth/login", () => {
+  it("returns JWT token on successful login", async () => {
     const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'user@example.com', password: 'password123' });
-    
+      .post("/api/auth/login")
+      .send({ email: "user@example.com", password: "password123" });
+
     expect(res.status).toBe(200);
     expect(res.body.data.token).toBeDefined();
   });
@@ -214,16 +237,17 @@ describe('POST /api/auth/login', () => {
 ```
 
 **E2E Tests** (Playwright)
+
 ```typescript
 // tests/e2e/login.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('user can login and see dashboard', async ({ page }) => {
-  await page.goto('http://localhost:3000/login');
-  await page.fill('input[name="email"]', 'user@example.com');
-  await page.fill('input[name="password"]', 'password123');
+test("user can login and see dashboard", async ({ page }) => {
+  await page.goto("http://localhost:3000/login");
+  await page.fill('input[name="email"]', "user@example.com");
+  await page.fill('input[name="password"]', "password123");
   await page.click('button:has-text("Login")');
-  await expect(page).toHaveURL('/dashboard');
+  await expect(page).toHaveURL("/dashboard");
 });
 ```
 
@@ -252,6 +276,7 @@ Before deploying to production:
 ### Docker Issues
 
 **Services won't start**
+
 ```bash
 # Check logs
 docker-compose logs -f
@@ -262,6 +287,7 @@ docker-compose up -d
 ```
 
 **Port already in use**
+
 ```bash
 # Change port in .env
 # Or kill process using port
@@ -272,6 +298,7 @@ kill -9 <PID>  # Kill it
 ### Database Issues
 
 **Migrations failed**
+
 ```bash
 # View migration status
 npm run migrate:status
@@ -282,6 +309,7 @@ npm run migrate:dev
 ```
 
 **Cannot connect to database**
+
 ```bash
 # Verify DATABASE_URL in .env
 # Check if db container is running
@@ -294,12 +322,14 @@ psql -h localhost -U worktree -d worktree_forms
 ### Build Issues
 
 **Node modules corruption**
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
 **TypeScript errors**
+
 ```bash
 # Clear build cache
 rm -rf .next dist
@@ -323,6 +353,7 @@ chore: update dependencies
 ```
 
 **Format**:
+
 ```
 <type>: <short description>
 
@@ -336,6 +367,7 @@ chore: update dependencies
 ## 🚀 Deployment Checklist
 
 ### Before Each Deployment
+
 - [ ] All tests passing (`npm run test`)
 - [ ] No TypeScript errors (`npm run build`)
 - [ ] ESLint clean (`npm run lint`)
@@ -345,6 +377,7 @@ chore: update dependencies
 - [ ] Audit logs exported
 
 ### Deployment Steps
+
 ```bash
 # Build images
 docker-compose build

@@ -1,11 +1,17 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app: Express = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 
 // Middleware
 app.use(cors());
@@ -18,6 +24,90 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// ==========================================
+// PERSISTENCE LAYER
+// ==========================================
+const DATA_DIR = path.join(__dirname, '../data');
+const DB_FILE = path.join(DATA_DIR, 'db.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+interface DB {
+  forms: any[];
+  submissions: any[];
+}
+
+// Initial Data for Seeding
+const INITIAL_DATA: DB = {
+  forms: [
+    {
+        id: 1,
+        group_id: 1,
+        slug: 'contact-form',
+        title: 'Contact Form',
+        description: 'Simple contact form for inquiries',
+        form_type: 'general',
+        form_schema: {
+            version: '2.0',
+            pages: [],
+            settings: { title: 'Contact Form' },
+            theme: { mode: 'auto' }
+        },
+        is_published: true,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }
+  ],
+  submissions: []
+};
+
+// Load data helper
+function loadData(): DB {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const fileData = fs.readFileSync(DB_FILE, 'utf-8');
+      return JSON.parse(fileData);
+    } 
+    // If file doesn't exist, create it with initial data
+    saveData(INITIAL_DATA);
+    return INITIAL_DATA;
+  } catch (error) {
+    console.error('Error loading data:', error);
+    return INITIAL_DATA;
+  }
+}
+
+// Save data helper
+function saveData(data: DB) {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
+}
+
+// Initialize Stores from File
+// We load fresh on every request to ensure consistency in this simple implementation, 
+// or load once here if we want caching. For dev simplicity (and to avoid race conditions with multiple processes/hot reload),
+// loading on request or handling it carefully is better. 
+// For now, let's keep in-memory variables that we sync.
+
+let db = loadData();
+let FORMS_STORE = db.forms;
+let SUBMISSIONS_STORE = db.submissions;
+
+// Helper to sync changes to disk
+function syncToDisk() {
+  saveData({
+    forms: FORMS_STORE,
+    submissions: SUBMISSIONS_STORE
+  });
+}
+
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
@@ -25,6 +115,7 @@ app.get('/api/health', (req: Request, res: Response) => {
     message: 'API is running',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
+    storage_path: DB_FILE
   });
 });
 
@@ -183,35 +274,12 @@ app.get('/api/users/me', (req: Request, res: Response) => {
   });
 });
 
-// Demo Form Endpoints
+// Demo Form Endpoints (Legacy / Global)
 app.get('/api/forms', (req: Request, res: Response) => {
+  // Return all forms from all groups for now, or just legacy ones
   res.json({
     success: true,
-    data: [
-      {
-        id: '1',
-        title: 'Contact Form',
-        description: 'Simple contact form for inquiries',
-        fields: [
-          { id: 'f1', name: 'Full Name', type: 'text', required: true },
-          { id: 'f2', name: 'Email', type: 'email', required: true },
-          { id: 'f3', name: 'Message', type: 'textarea', required: true },
-        ],
-        submissions: 42,
-        createdAt: '2025-01-01T00:00:00Z',
-      },
-      {
-        id: '2',
-        title: 'Feedback Survey',
-        description: 'Customer feedback and satisfaction survey',
-        fields: [
-          { id: 'f1', name: 'Rating', type: 'select', options: ['1', '2', '3', '4', '5'] },
-          { id: 'f2', name: 'Comments', type: 'textarea' },
-        ],
-        submissions: 156,
-        createdAt: '2025-01-05T00:00:00Z',
-      },
-    ],
+    data: FORMS_STORE
   });
 });
 
@@ -221,8 +289,8 @@ app.get('/api/admin/stats', (req: Request, res: Response) => {
     success: true,
     data: {
       totalUsers: 5,
-      activeForms: 12,
-      totalSubmissions: 234,
+      activeForms: FORMS_STORE.length,
+      totalSubmissions: SUBMISSIONS_STORE.length,
       auditLogs: 1245,
       lastSync: new Date().toISOString(),
     },
@@ -261,7 +329,279 @@ app.get('/api/admin/audit-logs', (req: Request, res: Response) => {
   });
 });
 
-// 404 Handler
+// ==========================================
+// GROUP FORM ENDPOINTS
+// ==========================================
+
+// Get all forms for a group
+app.get('/api/groups/:groupId/forms', (req: Request, res: Response) => {
+  // Reload data to ensure freshness
+  db = loadData();
+  FORMS_STORE = db.forms;
+
+  const groupId = parseInt(req.params.groupId);
+  const forms = FORMS_STORE.filter(f => f.group_id === groupId);
+  
+  res.json({
+    success: true,
+    data: {
+      forms: forms
+    }
+  });
+});
+
+// Get specific form
+app.get('/api/groups/:groupId/forms/:formId', (req: Request, res: Response) => {
+  // Reload data
+  db = loadData();
+  FORMS_STORE = db.forms;
+
+  const groupId = parseInt(req.params.groupId);
+  const formId = parseInt(req.params.formId);
+  
+  const form = FORMS_STORE.find(f => f.group_id === groupId && f.id === formId);
+  
+  if (!form) {
+    return res.status(404).json({
+      success: false,
+      error: 'Form not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      form: form
+    }
+  });
+});
+
+// Create new form
+app.post('/api/groups/:groupId/forms', (req: Request, res: Response) => {
+  const groupId = parseInt(req.params.groupId);
+  const { title, description, form_type, form_json, is_published, is_active } = req.body;
+
+  // Generate slug
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now();
+
+  const newForm = {
+    id: Math.floor(Math.random() * 10000) + 100, // Random ID
+    group_id: groupId,
+    slug,
+    title,
+    description,
+    form_type,
+    form_schema: form_json,
+    is_published: is_published || false,
+    is_active: is_active ?? true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  FORMS_STORE.push(newForm);
+  syncToDisk(); // Persist changes
+
+  console.log('Created Form:', newForm.id);
+
+  res.status(201).json({
+    success: true,
+    data: {
+      form: newForm
+    },
+    message: 'Form created successfully'
+  });
+});
+
+// Update form
+app.put('/api/groups/:groupId/forms/:formId', (req: Request, res: Response) => {
+  const groupId = parseInt(req.params.groupId);
+  const formId = parseInt(req.params.formId);
+  const updates = req.body;
+
+  const formIndex = FORMS_STORE.findIndex(f => f.group_id === groupId && f.id === formId);
+
+  if (formIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      error: 'Form not found'
+    });
+  }
+
+  // Update fields
+  const updatedForm = {
+    ...FORMS_STORE[formIndex],
+    ...updates,
+    form_schema: updates.form_json || FORMS_STORE[formIndex].form_schema,
+    updated_at: new Date().toISOString()
+  };
+
+  FORMS_STORE[formIndex] = updatedForm;
+  syncToDisk(); // Persist changes
+  
+  console.log('Updated Form:', updatedForm.id);
+
+  res.json({
+    success: true,
+    data: {
+      form: updatedForm
+    },
+    message: 'Form updated successfully'
+  });
+});
+
+// ==========================================
+// SUBMISSION ENDPOINTS
+// ==========================================
+
+// Upload File (Mock)
+app.post('/api/groups/:groupId/forms/:formId/upload', (req: Request, res: Response) => {
+  const groupId = req.params.groupId;
+  const formId = req.params.formId;
+  
+  const mockFile = {
+    filename: 'uploaded-image.png',
+    object_key: `mock-image-${Date.now()}`,
+    url: `https://picsum.photos/400/300?random=${Date.now()}`, 
+    size: 1024 * 50,
+    content_type: 'image/png'
+  };
+
+  res.json({
+    success: true,
+    data: {
+      files: [mockFile]
+    }
+  });
+});
+
+// Create Submission (Group Scoped)
+app.post('/api/groups/:groupId/forms/:formId/submit', (req: Request, res: Response) => {
+  const groupId = parseInt(req.params.groupId);
+  const formId = parseInt(req.params.formId);
+  const data = req.body;
+
+  // Verify form exists in group
+  const form = FORMS_STORE.find(f => f.group_id === groupId && f.id === formId);
+  if (!form) {
+    return res.status(404).json({
+      success: false,
+      error: 'Form not found in this group'
+    });
+  }
+
+  const newSubmission = {
+    id: Math.floor(Math.random() * 10000) + 100,
+    form_id: formId,
+    data: data,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  SUBMISSIONS_STORE.push(newSubmission);
+  syncToDisk();
+
+  res.status(201).json({
+    success: true,
+    submission_id: newSubmission.id, // Explicitly return submission_id as expected by frontend
+    data: {
+      submission: newSubmission
+    },
+    message: 'Submission received'
+  });
+});
+
+// Get Image (Mock)
+app.get('/api/images/:key', (req: Request, res: Response) => {
+    res.redirect(`https://picsum.photos/400/300?random=${req.params.key}`);
+});
+
+// Create Submission
+app.post('/api/forms/:formId/submissions', (req: Request, res: Response) => {
+  const formId = parseInt(req.params.formId);
+  const data = req.body;
+
+  const newSubmission = {
+    id: Math.floor(Math.random() * 10000) + 100,
+    form_id: formId,
+    data: data,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  SUBMISSIONS_STORE.push(newSubmission);
+  syncToDisk();
+
+  res.status(201).json({
+    success: true,
+    data: {
+      submission: newSubmission
+    },
+    message: 'Submission received'
+  });
+});
+
+// Get Submissions for a Form
+app.get('/api/forms/:formId/submissions', (req: Request, res: Response) => {
+  // Reload data
+  db = loadData();
+  SUBMISSIONS_STORE = db.submissions;
+
+  const formId = parseInt(req.params.formId);
+  const submissions = SUBMISSIONS_STORE.filter(s => s.form_id === formId).sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  res.json({
+    success: true,
+    data: {
+      submissions
+    }
+  });
+});
+
+// Update Submission (Status or Content)
+app.put('/api/submissions/:id', (req: Request, res: Response) => {
+  const submissionId = parseInt(req.params.id);
+  const updates = req.body;
+  
+  const index = SUBMISSIONS_STORE.findIndex(s => s.id === submissionId);
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: 'Submission not found' });
+  }
+
+  const updatedSubmission = {
+    ...SUBMISSIONS_STORE[index],
+    ...updates,
+    updated_at: new Date().toISOString()
+  };
+
+  SUBMISSIONS_STORE[index] = updatedSubmission;
+  syncToDisk();
+
+  res.json({
+    success: true,
+    data: {
+      submission: updatedSubmission
+    }
+  });
+});
+
+// Delete Submission
+app.delete('/api/submissions/:id', (req: Request, res: Response) => {
+  const submissionId = parseInt(req.params.id);
+  const index = SUBMISSIONS_STORE.findIndex(s => s.id === submissionId);
+  
+  if (index !== -1) {
+     SUBMISSIONS_STORE.splice(index, 1);
+     syncToDisk();
+     return res.json({ success: true, message: 'Submission deleted' });
+  }
+
+  res.status(404).json({ success: false, error: 'Submission not found' });
+});
+
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -284,6 +624,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`\n🚀 Worktree-Forms API running on http://localhost:${PORT}`);
+  console.log(`📂 Data directory: ${DATA_DIR}`);
   console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
   console.log(`✅ Health Check: http://localhost:${PORT}/api/health\n`);
 });

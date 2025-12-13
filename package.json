@@ -8,10 +8,11 @@
     "apps/backend"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/frontend & npm run dev -w apps/backend",
+    "dev": "npx kill-port 3005 5005 && npm run dev -w apps/frontend & npm run dev -w apps/backend",
     "build": "npm run build -w apps/frontend && npm run build -w apps/backend",
     "test": "npm run test -w apps/frontend && npm run test -w apps/backend",
     "test:coverage": "npm run test:coverage -w apps/frontend && npm run test:coverage -w apps/backend",
+    "test:e2e": "playwright test",
     "lint": "npm run lint -w apps/frontend && npm run lint -w apps/backend",
     "migrate:dev": "npm run migrate:dev -w apps/backend",
     "migrate:prod": "npm run migrate:prod -w apps/backend",
@@ -19,6 +20,7 @@
     "seed": "npm run seed -w apps/backend"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "typescript": "^5.3.3"
   }
 }

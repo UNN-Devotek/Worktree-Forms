@@ -1,0 +1,165 @@
+{
+  "forms": [
+    {
+      "id": 1,
+      "group_id": 1,
+      "slug": "contact-form",
+      "title": "Contact Form",
+      "description": "Simple contact form for inquiries",
+      "form_type": "general",
+      "form_schema": {
+        "version": "2.0",
+        "pages": [
+          {
+            "id": "ZxEdPzm0czPtEbT_AdUOI",
+            "title": "Page 1",
+            "sections": [
+              {
+                "id": "nmCBkzbIjl6IR62cuiarA",
+                "title": "New Section",
+                "fields": [
+                  {
+                    "id": "91VaMOrihBn0aucf-Y60P",
+                    "type": "text",
+                    "name": "field_Baq5uj",
+                    "label": "Short Text",
+                    "required": false,
+                    "colSpan": 12,
+                    "placeholder": "Enter text..."
+                  },
+                  {
+                    "id": "RvWXnRpjdJSUL7lAMvmvS",
+                    "type": "file",
+                    "name": "field_ET42jC",
+                    "label": "File Upload",
+                    "required": false,
+                    "colSpan": 6,
+                    "accept": "*",
+                    "maxFileSize": 10485760,
+                    "allowMultiple": false,
+                    "columnIndex": 0
+                  },
+                  {
+                    "id": "_3XEZ8Q9k5yAwlm7sOt7R",
+                    "type": "text",
+                    "name": "field_KU3dYA",
+                    "label": "Short Text",
+                    "required": false,
+                    "colSpan": 6,
+                    "placeholder": "Enter text...",
+                    "columnIndex": 1
+                  }
+                ]
+              }
+            ],
+            "order": 0
+          }
+        ],
+        "settings": {
+          "title": "Contact Form"
+        },
+        "theme": {
+          "mode": "auto"
+        }
+      },
+      "is_published": true,
+      "is_active": true,
+      "created_at": "2025-12-12T19:34:58.532Z",
+      "updated_at": "2025-12-12T19:37:00.441Z",
+      "form_json": {
+        "version": "2.0",
+        "pages": [
+          {
+            "id": "ZxEdPzm0czPtEbT_AdUOI",
+            "title": "Page 1",
+            "sections": [
+              {
+                "id": "nmCBkzbIjl6IR62cuiarA",
+                "title": "New Section",
+                "fields": [
+                  {
+                    "id": "91VaMOrihBn0aucf-Y60P",
+                    "type": "text",
+                    "name": "field_Baq5uj",
+                    "label": "Short Text",
+                    "required": false,
+                    "colSpan": 12,
+                    "placeholder": "Enter text..."
+                  },
+                  {
+                    "id": "RvWXnRpjdJSUL7lAMvmvS",
+                    "type": "file",
+                    "name": "field_ET42jC",
+                    "label": "File Upload",
+                    "required": false,
+                    "colSpan": 6,
+                    "accept": "*",
+                    "maxFileSize": 10485760,
+                    "allowMultiple": false,
+                    "columnIndex": 0
+                  },
+                  {
+                    "id": "_3XEZ8Q9k5yAwlm7sOt7R",
+                    "type": "text",
+                    "name": "field_KU3dYA",
+                    "label": "Short Text",
+                    "required": false,
+                    "colSpan": 6,
+                    "placeholder": "Enter text...",
+                    "columnIndex": 1
+                  }
+                ]
+              }
+            ],
+            "order": 0
+          }
+        ],
+        "settings": {
+          "title": "Contact Form"
+        },
+        "theme": {
+          "mode": "auto"
+        }
+      },
+      "allow_multiple_submissions": true,
+      "sig_ids": []
+    }
+  ],
+  "submissions": [
+    {
+      "id": 2006,
+      "form_id": 1,
+      "data": {
+        "test": "data",
+        "timestamp": "2025-12-12T19:40:19.857Z"
+      },
+      "status": "pending",
+      "created_at": "2025-12-12T19:40:19.875Z",
+      "updated_at": "2025-12-12T19:40:19.875Z"
+    },
+    {
+      "id": 3912,
+      "form_id": 1,
+      "data": {
+        "response_data": {
+          "field_Baq5uj": "Test",
+          "field_ET42jC": [
+            {
+              "filename": "uploaded-image.png",
+              "object_key": "mock-image-1765568819925",
+              "url": "https://picsum.photos/400/300?random=1765568819926",
+              "size": 51200,
+              "content_type": "image/png"
+            }
+          ],
+          "field_KU3dYA": "Yres"
+        },
+        "submitted_at": "2025-12-12T19:47:03.287Z",
+        "device_type": "desktop"
+      },
+      "status": "pending",
+      "created_at": "2025-12-12T19:47:03.290Z",
+      "updated_at": "2025-12-12T19:47:03.290Z"
+    }
+  ]
+}
