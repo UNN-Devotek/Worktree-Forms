@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,6 +37,25 @@ const data = [
 ];
 
 export function OverviewChart() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <Card className="bg-zinc-900 border-zinc-800 text-white">
+        <CardHeader>
+           <div className="h-6 w-32 bg-zinc-800 animate-pulse rounded" />
+        </CardHeader>
+        <CardContent className="h-[250px] flex items-center justify-center">
+             <div className="h-full w-full bg-zinc-800/20 animate-pulse rounded" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-zinc-900 border-zinc-800 text-white">
       <CardHeader className="flex flex-row items-center justify-between pb-8">

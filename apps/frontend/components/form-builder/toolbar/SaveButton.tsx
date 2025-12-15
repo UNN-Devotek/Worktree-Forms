@@ -28,7 +28,7 @@ interface SaveButtonProps {
   formType?: FormType
 }
 
-export function SaveButton({ formId, groupId, groupSlug, formType = 'general' }: SaveButtonProps) {
+export function SaveButton({ formId, groupId, formType = 'general' }: SaveButtonProps) {
   const { formSchema, isDirty, setDirty } = useFormBuilderStore()
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)

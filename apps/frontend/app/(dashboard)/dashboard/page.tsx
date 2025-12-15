@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, TrendingUp, Users, FileCheck } from 'lucide-react';
 
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
               <p className="text-muted-foreground">
-                Overview of your forms and activity
+                Welcome back, {user?.name || 'User'}. Here's an overview of your forms and activity.
               </p>
             </div>
           </div>

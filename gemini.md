@@ -383,6 +383,7 @@ chore: update dependencies
 
 ### Before Each Deployment
 
+- [ ] **Always commit changes to deploy** (Dokploy pulls from Git)
 - [ ] All tests passing (`npm run test`)
 - [ ] No TypeScript errors (`npm run build`)
 - [ ] ESLint clean (`npm run lint`)

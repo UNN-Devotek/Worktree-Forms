@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,6 +13,21 @@ const data = [
 ];
 
 export function SessionChart() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+     return (
+        <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
+            <CardHeader><div className="h-6 w-32 bg-zinc-800 animate-pulse rounded" /></CardHeader>
+            <CardContent><div className="h-[250px] bg-zinc-800/20 animate-pulse rounded" /></CardContent>
+        </Card>
+     )
+  }
+
   return (
     <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
       <CardHeader>
