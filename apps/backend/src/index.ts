@@ -178,7 +178,7 @@ app.get('/api/users', async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany();
     // Exclude passwords
-    const safeUsers = users.map(u => ({ ...u, password: undefined }));
+    const safeUsers = users.map((u: any) => ({ ...u, password: undefined }));
     res.json({ success: true, data: safeUsers });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch users' });
