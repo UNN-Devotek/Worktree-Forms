@@ -13,10 +13,9 @@ function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDemoMode = searchParams.get('demo') === 'true';
-  const isDevMode = process.env.NODE_ENV === 'development';
 
-  const [email, setEmail] = useState(isDemoMode || isDevMode ? 'admin@worktree.com' : '');
-  const [password, setPassword] = useState(isDemoMode || isDevMode ? 'admin123' : '');
+  const [email, setEmail] = useState('admin@worktree.pro');
+  const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +27,7 @@ function LoginPage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (email === 'admin@worktree.com' && password === 'admin123') {
+      if (email === 'admin@worktree.pro' && password === 'admin123') {
         localStorage.setItem('token', 'demo-jwt-token-' + Date.now());
         localStorage.setItem('user', JSON.stringify({
           id: '1',
@@ -38,7 +37,7 @@ function LoginPage() {
         }));
         router.push('/dashboard');
       } else {
-        setError('Invalid credentials. Use demo account: admin@worktree.com / admin123');
+        setError('Invalid credentials. Use demo account: admin@worktree.pro / admin123');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
@@ -93,7 +92,7 @@ function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@worktree.com"
+                  placeholder="admin@worktree.pro"
                   required
                 />
               </div>
