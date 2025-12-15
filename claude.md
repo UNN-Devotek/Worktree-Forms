@@ -19,11 +19,12 @@ cd Worktree-Forms
 cp .env.example .env
 
 ### Option 1: Local Development (Recommended)
-Run apps locally for better DX, with Docker for databases.
+Run apps locally for better DX. The database and object store are hosted at `worktree.pro`.
 
 ```bash
-# 1. Start Support Services (DB + Redis)
-docker-compose up -d db redis
+# 1. Setup Environment
+# Ensure your .env file has the correct value for DATABASE_URL and MINIO_* pointing to the hosted services.
+# Ask the team for the latest .env values if needed.
 
 # 2. Install Dependencies
 npm install

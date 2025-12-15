@@ -19,11 +19,11 @@ cd Worktree-Forms
 cp .env.example .env
 
 ### Option 1: Local Development (Recommended)
-This runs the apps locally for fast refresh, while using Docker for the database.
+This runs the apps locally for fast refresh. The database and object store are hosted.
 
 ```bash
-# 1. Start Database & Redis only
-docker-compose up -d db redis
+# 1. Setup Environment
+# Ensure .env is configured for hosted services.
 
 # 2. Install dependencies (Root)
 npm install

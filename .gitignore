@@ -49,3 +49,6 @@ postgres_data/
 # Temp
 .tmp/
 *.temp
+tests
+test_results
+playwright-report

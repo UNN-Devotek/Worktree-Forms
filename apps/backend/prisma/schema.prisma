@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("viewer") // "admin", "editor", "viewer"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  auditLogs AuditLog[]
+}
+
+model Form {
+  id          Int      @id @default(autoincrement())
+  group_id    Int      @default(1) // Keeping group_id for compatibility, though we might not have a Group table yet
+  slug        String   @unique
+  title       String
+  description String?
+  form_type   String   @default("general")
+  form_schema Json
+  is_published Boolean  @default(false)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  submissions Submission[]
+}
+
+model Submission {
+  id         Int      @id @default(autoincrement())
+  form_id    Int
+  form       Form     @relation(fields: [form_id], references: [id], onDelete: Cascade)
+  data       Json
+  status     String   @default("pending")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  resource  String
+  details   String?
+  timestamp DateTime @default(now())
+}
