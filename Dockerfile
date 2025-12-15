@@ -46,13 +46,11 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
 # Copy necessary files for Frontend (Next.js Standalone mode is preferred but simplified here)
 COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
 COPY --from=builder /app/apps/frontend/.next ./apps/frontend/.next
 COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
-COPY --from=builder /app/apps/frontend/node_modules ./apps/frontend/node_modules
 
 # Copy PM2 config
 COPY ecosystem.config.js .
