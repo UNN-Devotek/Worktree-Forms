@@ -31,10 +31,10 @@ export const useFileSystemStore = create<FileSystemStore>()(
       initialize: async () => {
         // Initial load from local storage (handled by persist), but let's sync with API
         try {
-            // Assume group 1 for now or pass it in. Since store is global, we might need a better way to handle groups.
-            // For this quick fix, we'll fetch group 1 forms.
-            const response = await fetch('http://localhost:5005/api/groups/1/forms');
-            const data = await response.json();
+            // Assume group 1 for now
+            // Use apiClient to respect base URL and auth headers
+            const { apiClient } = await import('@/lib/api');
+            const data = await apiClient<any>('/api/groups/1/forms');
             
             if (data.success && data.data.forms) {
                 const apiForms = data.data.forms;
@@ -44,12 +44,6 @@ export const useFileSystemStore = create<FileSystemStore>()(
                     const newItems = [...existingItems];
                     
                     apiForms.forEach((form: any) => {
-                        // Check if form already exists in items to avoid duplicates
-                        // We use the slug as a unique identifier check or trying to match names
-                        // ideally we'd use IDs but local IDs and backend IDs might conflict in this hybrid setup.
-                        // Let's rely on a custom property 'backendId' or similar, or just match by ID if we can ensure uniqueness.
-                        // For this demo/fix, let's map backend forms to FileItems.
-                        
                         const exists = existingItems.some(item => item.id === `form-${form.id}`);
                         
                         if (!exists) {
@@ -60,7 +54,6 @@ export const useFileSystemStore = create<FileSystemStore>()(
                                 parentId: null, // Root folder
                                 createdAt: form.created_at,
                                 updatedAt: form.updated_at,
-                                // Add extra metadata if needed
                                 formSlug: form.slug
                             } as any);
                         }

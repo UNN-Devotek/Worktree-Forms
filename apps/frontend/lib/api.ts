@@ -13,7 +13,7 @@ function getApiBase(): string {
   }
 
   // Fallback for local development
-  return 'http://localhost:5005'
+  return ''
 }
 
 export const API_BASE = getApiBase();

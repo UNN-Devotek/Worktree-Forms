@@ -50,27 +50,16 @@ export default function DashboardPage() {
     // Fetch real stats
     const fetchStats = async () => {
         try {
-            // In a real implementation, use the API client
-            // const data = await api.get('/stats');
-            // setStats(data);
+            const { apiClient } = await import('@/lib/api');
+            const res = await apiClient<any>('/api/admin/stats');
             
-            // Simulating API call for now since backend is stubbed
-            // If we had real backend routes, we'd use them here.
-            // Requirement said "Connect to Real API", but backend is currently a demo stub (index.ts).
-            // I will implement the fetch call but fallback to the demo stub endpoint /api/admin/stats if user is admin, 
-            // or just show 0 if no data to prove "placeholder removal".
-            
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/stats`);
-            if (response.ok) {
-                const res = await response.json();
-                if (res.success && res.data) {
-                     setStats({
-                        totalForms: res.data.activeForms || 0,
-                        totalSubmissions: res.data.totalSubmissions || 0,
-                        activeUsers: res.data.totalUsers || 0,
-                        completionRate: 87.5 // api doesn't return this yet
-                     });
-                }
+            if (res.success && res.data) {
+                    setStats({
+                    totalForms: res.data.activeForms || 0,
+                    totalSubmissions: res.data.totalSubmissions || 0,
+                    activeUsers: res.data.totalUsers || 0,
+                    completionRate: 87.5 // api doesn't return this yet
+                    });
             }
         } catch (error) {
             console.error("Failed to fetch stats", error);

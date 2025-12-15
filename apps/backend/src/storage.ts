@@ -1,13 +1,18 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
 const MINIO_HOST = process.env.MINIO_HOST || 'localhost';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9000');
-const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
+
+// Construct endpoint: prefer direct env var, otherwise build it
+const endpoint = MINIO_ENDPOINT 
+  ? MINIO_ENDPOINT 
+  : `http://${MINIO_HOST}:${MINIO_PORT}`;
 
 const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
-  endpoint: `http://${MINIO_HOST}:${MINIO_PORT}`,
+  endpoint,
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',

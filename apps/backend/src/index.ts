@@ -70,7 +70,7 @@ app.get('/api/docs', (req: Request, res: Response) => {
     title: 'Worktree-Forms API Documentation',
     version: '1.0.0',
     description: 'Complete form management system with RBAC and audit logging',
-    baseUrl: `http://localhost:${PORT}/api`,
+    baseUrl: `/api`,
     endpoints: {
       // ... same as before
     },
@@ -535,9 +535,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`\n🚀 Worktree-Forms API running on http://localhost:${PORT}`);
-  console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
-  console.log(`✅ Health Check: http://localhost:${PORT}/api/health\n`);
+  console.log(`\n🚀 Worktree-Forms API running on port ${PORT}`);
+  console.log(`📚 API Docs: /api/docs`);
+  console.log(`✅ Health Check: /api/health\n`);
   if (!process.env.DATABASE_URL) {
       console.warn("⚠️  DATABASE_URL is missing. Prisma will likely fail.");
   }
