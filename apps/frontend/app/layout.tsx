@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'Worktree | Form Management System',
+  title: 'Worktree',
   description: 'Professional form builder with admin panel and audit logging',
   icons: {
     icon: '/favicon.svg',
