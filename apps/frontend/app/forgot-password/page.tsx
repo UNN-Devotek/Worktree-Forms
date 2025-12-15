@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@worktreeforms.com"
+                    placeholder="admin@worktree.pro"
                     required
                   />
                 </div>

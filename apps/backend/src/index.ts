@@ -108,14 +108,14 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 
     // Fallback for the hardcoded admin if not in DB yet (or just rely on seed)
-    if (email === 'admin@worktreeforms.com' && password === 'admin123') {
+    if (email === 'admin@worktree.pro' && password === 'admin123') {
        return res.json({
         success: true,
         data: {
           token: `demo-token`,
           user: {
             id: '1',
-            email: 'admin@worktreeforms.com',
+            email: 'admin@worktree.pro',
             name: 'Admin User',
             role: 'admin',
           },
@@ -201,7 +201,7 @@ app.get('/api/users/me', async (req: Request, res: Response) => {
             success: true,
             data: {
               id: '1',
-              email: 'admin@worktreeforms.com',
+              email: 'admin@worktree.pro',
               name: 'Admin User',
               role: 'admin',
             },

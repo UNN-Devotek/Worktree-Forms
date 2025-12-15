@@ -76,7 +76,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const handleReLogin = (e: React.FormEvent) => {
       e.preventDefault();
       // Mock Auth Check (Reuse from Login Page logic)
-      if (email === 'admin@worktreeforms.com' && password === 'admin123') {
+      if (email === 'admin@worktree.pro' && password === 'admin123') {
           // Success
           resetTimer();
           // Ideally refresh token here if using real backend

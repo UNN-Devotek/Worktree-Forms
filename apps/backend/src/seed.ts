@@ -6,7 +6,7 @@ async function main() {
   console.log('Seeding database...');
 
   // 1. Create default admin user
-  const adminEmail = 'admin@worktreeforms.com';
+  const adminEmail = 'admin@worktree.pro';
   const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
 
   if (!existingAdmin) {

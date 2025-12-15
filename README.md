@@ -82,7 +82,7 @@ npm run dev
 
 ### 🔑 Default Credentials
 
-- **Admin**: `admin@worktreeforms.com` / `admin123`
+- **Admin**: `admin@worktree.pro` / `admin123`
 - **User**: Register a new account locally
 
 ### Development URLs

@@ -7,6 +7,9 @@ import '@/styles/globals.css';
 export const metadata: Metadata = {
   title: 'Worktree | Form Management System',
   description: 'Professional form builder with admin panel and audit logging',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
