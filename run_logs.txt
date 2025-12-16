@@ -1,0 +1,566 @@
+prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+Starting deployment script...
+Please manually install OpenSSL and try installing Prisma again.
+prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+Please manually install OpenSSL and try installing Prisma again.
+Error: Could not parse schema engine response: SyntaxError: Unexpected token 'E', "Error load"... is not valid JSON
+Running backend migrations...
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+Prisma schema loaded from prisma/schema.prisma
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Datasource "db": PostgreSQL database "worktree_forms", schema "public" at "db:5432"
+
+WARNING: Prisma migration failed. Check logs.
+Starting application with PM2...
+2025-12-16T20:01:16: PM2 log: Launching in no daemon mode
+2025-12-16T20:01:16: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:16: PM2 log: App [frontend:1] starting in -fork mode-
+2025-12-16T20:01:17: PM2 log: App [backend:0] online
+2025-12-16T20:01:17: PM2 log: App [frontend:1] online
+> worktree-forms-frontend@1.0.0 start
+> next start
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+  Γû▓ Next.js 14.2.33
+Emitted 'error' event on Server instance at:
+  - Local:        http://localhost:5005
+ Γ£ô Starting...
+2025-12-16T20:01:17: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:17: PM2 log: App [backend:0] starting in -fork mode-
+    at emitErrorNT (node:net:1944:8)
+2025-12-16T20:01:17: PM2 log: App [backend:0] online
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+ Γ£ô Ready in 399ms
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:18: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:18: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:18: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+2025-12-16T20:01:18: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:18: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:18: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+2025-12-16T20:01:19: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:19: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:19: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:19: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+node:events:502
+2025-12-16T20:01:19: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:19: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:20: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:20: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:20: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+2025-12-16T20:01:20: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:20: PM2 log: App [backend:0] starting in -fork mode-
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:20: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:21: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+2025-12-16T20:01:21: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:21: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+2025-12-16T20:01:21: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:21: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:21: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:21: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+node:events:502
+2025-12-16T20:01:21: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:21: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:22: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:22: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:22: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:22: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:22: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:22: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+2025-12-16T20:01:23: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:23: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:23: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:23: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+2025-12-16T20:01:23: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:23: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+node:events:502
+2025-12-16T20:01:24: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:24: PM2 log: App [backend:0] starting in -fork mode-
+2025-12-16T20:01:24: PM2 log: App [backend:0] online
+> worktree-forms-backend@1.0.0 start
+> node dist/index.js
+      throw er; // Unhandled 'error' event
+      ^
+Error: listen EADDRINUSE: address already in use :::5005
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (/app/node_modules/express/lib/application.js:635:24)
+    at file:///app/apps/backend/dist/index.js:581:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5005
+}
+Node.js v20.19.6
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /app/apps/backend
+npm error workspace worktree-forms-backend@1.0.0
+npm error location /app/apps/backend
+npm error command failed
+npm error command sh -c node dist/index.js
+2025-12-16T20:01:24: PM2 log: App [backend:0] exited with code [1] via signal [SIGINT]
+2025-12-16T20:01:24: PM2 log: Script /usr/local/bin/npm had too many unstable restarts (16). Stopped. "errored"

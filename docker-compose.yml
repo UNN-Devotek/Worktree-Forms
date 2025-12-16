@@ -12,6 +12,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
       JWT_EXPIRE: ${JWT_EXPIRE:-15m}
       JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-7d}
+      PRISMA_QUERY_ENGINE_LIBRARY: /app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
       
       # Object Storage Configuration
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
@@ -26,7 +27,7 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5005}
       
     ports:
-      - "${FRONTEND_PORT:-3001}:3000"
+      - "${FRONTEND_PORT:-3010}:3000"
       - "${BACKEND_PORT:-5005}:5005"
     volumes:
       - ./.env:/app/.env
