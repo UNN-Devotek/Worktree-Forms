@@ -223,12 +223,7 @@ export async function apiRequest<T = any>(
       });
       
       // Provide more helpful error message
-      const isLocalhost = API_BASE.includes('localhost');
-      if (isLocalhost) {
-        throw new Error('Cannot connect to backend server. Make sure the backend is running on http://localhost:5005');
-      } else {
-        throw new Error(`Cannot connect to API server at ${API_BASE}. Please check your connection or contact support.`);
-      }
+      throw new Error(`Cannot connect to API server at ${API_BASE}. Please check your connection or contact support.`);
     }
 
     // Log other unexpected errors with full details

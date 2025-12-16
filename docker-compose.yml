@@ -25,7 +25,7 @@ services:
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
 
       # Frontend Config
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5005}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       
     ports:
       - "${FRONTEND_PORT:-3010}:3000"

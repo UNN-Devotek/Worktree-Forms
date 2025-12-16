@@ -41,12 +41,6 @@ function getDisplayUrl(currentObjectKey?: string, currentUrl?: string): string |
 
   // Fallback to stored URL, but fix localhost URLs in production
   if (currentUrl) {
-    if (currentUrl.includes('localhost:5001') && !API_BASE.includes('localhost')) {
-      const match = currentUrl.match(/\/api\/images\/(.+)$/)
-      if (match) {
-        return `${API_BASE}/api/images/${match[1]}`
-      }
-    }
     return currentUrl
   }
 

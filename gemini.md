@@ -8,6 +8,8 @@
 
 ## ⚡ Daily Commands
 
+## ⚡ Daily Commands
+
 ### Start Development Environment
 
 ````bash
@@ -19,11 +21,12 @@ cd Worktree-Forms
 cp .env.example .env
 
 ### Option 1: Local Development (Recommended)
-This runs the apps locally for fast refresh. The database and object store are hosted.
+This runs the apps locally. The database and object store are hosted on Dokploy/External.
 
 ```bash
 # 1. Setup Environment
-# Ensure .env is configured for hosted services.
+# Ensure .env is configured for the hosted Dokploy services.
+# Ask the team for the latest .env values.
 
 # 2. Install dependencies (Root)
 npm install
@@ -34,12 +37,12 @@ npm run dev
 # -> Backend:  http://localhost:5005
 ````
 
-### Option 2: Full Docker (Simulation)
+### Option 2: Full Docker (Production/Dokploy Test)
 
-Runs everything in containers. Good for final testing.
+Runs everything in the production container logic.
 
 ```bash
-# Start all services
+# Start service
 docker-compose up -d
 ```
 
@@ -47,11 +50,11 @@ docker-compose up -d
 
 ### Access Services
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **API Docs**: http://localhost:5000/api/docs
-- **Database**: localhost:5432 (user: worktree)
-- **Redis**: localhost:6379
+- **Frontend**: `http://<your-domain>:3000`
+- **Backend API**: `http://<your-domain>:5005`
+- **API Docs**: `http://<your-domain>:5005/api/docs`
+- **Database**: External (Hosted)
+- **Object Storage**: External (Hosted)
 
 ### Common Development Tasks
 
@@ -63,10 +66,10 @@ npm run test:coverage
 # Linting
 npm run lint
 
-# Database commands
+# Database commands (Connects to Hosted DB)
 npm run migrate:dev          # Run dev migrations
 npm run migrate:prod         # Run prod migrations
-npm run migrate:reset        # Reset database
+npm run migrate:reset        # CAUTION: Resets Hosted DB
 npm run seed                 # Seed demo data
 
 # Development
@@ -81,9 +84,6 @@ npm run build
 ```bash
 # Stop all services
 docker-compose down
-
-# Stop and remove volumes (CAUTION: deletes data)
-docker-compose down -v
 ```
 
 ---
@@ -247,7 +247,7 @@ describe("POST /api/auth/login", () => {
 import { test, expect } from "@playwright/test";
 
 test("user can login and see dashboard", async ({ page }) => {
-  await page.goto("http://localhost:3000/login");
+  await page.goto("http://<your-domain>/login");
   await page.fill('input[name="email"]', "user@example.com");
   await page.fill('input[name="password"]', "password123");
   await page.click('button:has-text("Login")');

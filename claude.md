@@ -8,6 +8,8 @@
 
 ## ⚡ Daily Commands
 
+## ⚡ Daily Commands
+
 ### Start Development Environment
 
 ````bash
@@ -19,7 +21,7 @@ cd Worktree-Forms
 cp .env.example .env
 
 ### Option 1: Local Development (Recommended)
-Run apps locally for better DX. The database and object store are hosted at `worktree.pro`.
+Run apps locally for better DX. The database and object store are hosted on Dokploy.
 
 ```bash
 # 1. Setup Environment
@@ -35,26 +37,26 @@ npm run dev
 # -> Backend:  http://localhost:5005
 ````
 
-### Option 2: Full Docker Environment
+### Option 2: Full Docker Environment (Production Test)
 
-Run everything in containers.
+Runs everything in containers using the production image.
 
 ```bash
-# Start all services
+# Start service
 docker-compose up -d
 
 # Run migrations (if needed)
-docker-compose exec backend npm run migrate:dev
+docker-compose exec app npm run migrate:dev
 ```
 
 ````
 
 ### Access Services
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **API Docs**: http://localhost:5000/api/docs
-- **Database**: localhost:5432 (user: worktree)
-- **Redis**: localhost:6379
+- **Frontend**: `http://<your-domain>:3000`
+- **Backend API**: `http://<your-domain>:5005`
+- **API Docs**: `http://<your-domain>:5005/api/docs`
+- **Database**: External (Hosted)
+- **Object Storage**: External (Minio/S3)
 
 ### Common Development Tasks
 
@@ -84,9 +86,6 @@ npm run build
 ```bash
 # Stop all services
 docker-compose down
-
-# Stop and remove volumes (CAUTION: deletes data)
-docker-compose down -v
 ```
 
 ---
@@ -244,7 +243,7 @@ describe("POST /api/auth/login", () => {
 import { test, expect } from "@playwright/test";
 
 test("user can login and see dashboard", async ({ page }) => {
-  await page.goto("http://localhost:3000/login");
+  await page.goto("http://<your-domain>/login");
   await page.fill('input[name="email"]', "user@example.com");
   await page.fill('input[name="password"]', "password123");
   await page.click('button:has-text("Login")');

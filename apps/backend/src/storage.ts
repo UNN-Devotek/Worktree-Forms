@@ -2,7 +2,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
-const MINIO_HOST = process.env.MINIO_HOST || 'localhost';
+const MINIO_HOST = process.env.MINIO_HOST || 'minio';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9000');
 
 const endpoint = MINIO_ENDPOINT 

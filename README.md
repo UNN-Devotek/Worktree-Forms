@@ -75,9 +75,10 @@ npm install
 # Run migrations
 npm run migrate:dev
 
-# Start development servers
-# Note: This command will automatically clean up ports 3005/5005 before starting
+# 3. Start Development Server
 npm run dev
+# -> Frontend: http://<your-domain>:<port>
+# -> Backend:  http://<your-domain>:5005/5005 before starting
 ```
 
 ### 🔑 Default Credentials
@@ -87,9 +88,11 @@ npm run dev
 
 ### Development URLs
 
-- Frontend: http://localhost:3005
-- Backend API: http://localhost:5005
-- API Docs: http://localhost:5005/api/docs
+- **Frontend**: `http://<your-domain>:3000` (or configured port)
+- **Backend API**: `http://<your-domain>:5005`
+- **API Docs**: `http://<your-domain>:5005/api/docs`
+- **Database**: External (Hosted)
+- **Redis**: External (Hosted)
 
 ## 📦 Technology Stack
 

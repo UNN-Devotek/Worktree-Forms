@@ -23,16 +23,7 @@ function getImageUrl(field: FormFieldBase): string | null {
     return `${API_BASE}/api/images/${field.imageObjectKey}`
   }
 
-  // Fallback to stored URL, but fix localhost URLs in production
   if (field.imageUrl) {
-    // If URL contains localhost but we're not on localhost, fix it
-    if (field.imageUrl.includes('localhost:5001') && !API_BASE.includes('localhost')) {
-      // Extract the path after /api/images/ and reconstruct with correct base
-      const match = field.imageUrl.match(/\/api\/images\/(.+)$/)
-      if (match) {
-        return `${API_BASE}/api/images/${match[1]}`
-      }
-    }
     return field.imageUrl
   }
 
