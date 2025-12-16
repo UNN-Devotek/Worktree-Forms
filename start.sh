@@ -1,12 +1,13 @@
 #!/bin/sh
-set -e
+# Do not set -e so we can logging errors without crashing immediately
+# set -e
 
 echo "Starting deployment script..."
 
 # Run database migrations for backend
 echo "Running backend migrations..."
 cd apps/backend
-npx prisma migrate deploy
+npx prisma migrate deploy || echo "WARNING: Prisma migration failed. Check logs."
 cd ../..
 
 # Start application with PM2
