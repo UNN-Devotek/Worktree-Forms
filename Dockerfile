@@ -23,6 +23,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate --schema=./apps/backend/prisma/schema.prisma
+
 # Build Backend
 RUN npm run build -w apps/backend
 
@@ -46,6 +49,7 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 
 # Copy necessary files for Frontend (Next.js Standalone mode is preferred but simplified here)
 COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
