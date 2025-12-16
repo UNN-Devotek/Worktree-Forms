@@ -14,7 +14,9 @@ const __dirname = path.dirname(__filename);
 
 const app: Express = express();
 const rawPort = process.env.BACKEND_PORT || process.env.PORT || '5005';
-const PORT = parseInt(String(rawPort).replace(/\D/g, ''), 10) || 5005;
+const match = String(rawPort).match(/^(\d+)/) || String(rawPort).match(/(\d+)/);
+const parsedPort = match ? parseInt(match[0], 10) : 5005;
+const PORT = (parsedPort > 0 && parsedPort < 65536) ? parsedPort : 5005;
 
 // Middleware
 app.use(cors());
