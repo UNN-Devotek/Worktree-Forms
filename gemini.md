@@ -6,84 +6,57 @@
 
 ---
 
-## ⚡ Daily Commands
+## ⚡ Deployment & Workflow
 
-## ⚡ Daily Commands
+### Development Cycle
 
-### Start Development Environment
+1. **Clone & Setup**
 
-````bash
-# Clone repo
-git clone https://github.com/UNN-Devotek/Worktree-Forms
-cd Worktree-Forms
+   ```bash
+   git clone https://github.com/UNN-Devotek/Worktree-Forms
+   cd Worktree-Forms
+   npm install
+   ```
 
-# Setup environment
-cp .env.example .env
+2. **Make Changes**
+   - Edit code in `apps/frontend` or `apps/backend`.
+   - Ensure code standards are met.
 
-### Option 1: Local Development (Recommended)
-This runs the apps locally. The database and object store are hosted on Dokploy/External.
+3. **Verify Changes (Pre-Commit)**
 
-```bash
-# 1. Setup Environment
-# Ensure .env is configured for the hosted Dokploy services.
-# Ask the team for the latest .env values.
+   ```bash
+   # Run type checks
+   npm run build
 
-# 2. Install dependencies (Root)
-npm install
+   # Run tests
+   npm run test
+   ```
 
-# 3. Start Development Server
-npm run dev
-# -> Frontend: http://localhost:3005
-# -> Backend:  http://localhost:5005
-````
+4. **Deploy**
+   - Commit changes to GitHub.
+   - Dokploy will automatically build and deploy.
+   ```bash
+   git add .
+   git commit -m "feat: description of changes"
+   git push
+   ```
 
-### Option 2: Full Docker (Production/Dokploy Test)
+### Testing
 
-Runs everything in the production container logic.
+- **Production Environment**: [https://worktree.pro](https://worktree.pro)
+- **API Docs**: [https://worktree.pro/api/docs](https://worktree.pro/api/docs)
 
-```bash
-# Start service
-docker-compose up -d
-```
-
-````
-
-### Access Services
-
-- **Frontend**: `http://<your-domain>:3000`
-- **Backend API**: `http://<your-domain>:5005`
-- **API Docs**: `http://<your-domain>:5005/api/docs`
-- **Database**: External (Hosted)
-- **Object Storage**: External (Hosted)
-
-### Common Development Tasks
+### Common Tasks
 
 ```bash
 # Run tests
 npm run test
-npm run test:coverage
 
 # Linting
 npm run lint
 
-# Database commands (Connects to Hosted DB)
-npm run migrate:dev          # Run dev migrations
-npm run migrate:prod         # Run prod migrations
-npm run migrate:reset        # CAUTION: Resets Hosted DB
-npm run seed                 # Seed demo data
-
-# Development
-npm run dev                  # Start both frontend & backend
-
-# Build for production
+# Build verification
 npm run build
-````
-
-### Stop Services
-
-```bash
-# Stop all services
-docker-compose down
 ```
 
 ---

@@ -6,86 +6,46 @@
 
 ---
 
-## ⚡ Daily Commands
+## ⚡ Deployment & Workflow
 
-## ⚡ Daily Commands
+### Development Cycle
 
-### Start Development Environment
+1. **Review Codebase**
+   - Read `README.md` and project structure.
 
-````bash
-# Clone repo
-git clone https://github.com/UNN-Devotek/Worktree-Forms
-cd Worktree-Forms
+2. **Make Changes**
+   - Implement features or fixes.
 
-# Setup environment
-cp .env.example .env
+3. **Pre-Deployment Checks**
 
-### Option 1: Local Development (Recommended)
-Run apps locally for better DX. The database and object store are hosted on Dokploy.
+   ```bash
+   # Run tests
+   npm run test
 
-```bash
-# 1. Setup Environment
-# Ensure your .env file has the correct value for DATABASE_URL and MINIO_* pointing to the hosted services.
-# Ask the team for the latest .env values if needed.
+   # Verify build
+   npm run build
+   ```
 
-# 2. Install Dependencies
-npm install
+4. **Deploy**
+   - Commit and push to GitHub.
+   - Dokploy handles the deployment.
+   ```bash
+   git push origin main
+   ```
 
-# 3. Run Development Server
-npm run dev
-# -> Frontend: http://localhost:3005
-# -> Backend:  http://localhost:5005
-````
+### Access & Testing
 
-### Option 2: Full Docker Environment (Production Test)
+- **Live Site**: [https://worktree.pro](https://worktree.pro)
+- **API Documentation**: [https://worktree.pro/api/docs](https://worktree.pro/api/docs)
 
-Runs everything in containers using the production image.
-
-```bash
-# Start service
-docker-compose up -d
-
-# Run migrations (if needed)
-docker-compose exec app npm run migrate:dev
-```
-
-````
-
-### Access Services
-- **Frontend**: `http://<your-domain>:3000`
-- **Backend API**: `http://<your-domain>:5005`
-- **API Docs**: `http://<your-domain>:5005/api/docs`
-- **Database**: External (Hosted)
-- **Object Storage**: External (Minio/S3)
-
-### Common Development Tasks
+### Common Tasks
 
 ```bash
 # Run tests
 npm run test
-npm run test:coverage
 
 # Linting
 npm run lint
-
-# Database commands
-npm run migrate:dev          # Run dev migrations
-npm run migrate:prod         # Run prod migrations
-npm run migrate:reset        # Reset database
-npm run seed                 # Seed demo data
-
-# Development
-npm run dev                  # Start both frontend & backend
-
-# Build for production
-npm run build
-````
-
-### Stop Services
-
-```bash
-# Stop all services
-docker-compose down
 ```
 
 ---
