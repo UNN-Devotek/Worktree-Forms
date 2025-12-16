@@ -62,7 +62,7 @@ COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 COPY ecosystem.config.js .
 
 # Expose ports
-EXPOSE 3000 5005
+EXPOSE 3100 5100
 
 # Start both services
 # Copy startup script

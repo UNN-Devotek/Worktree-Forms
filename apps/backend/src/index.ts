@@ -6,8 +6,12 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { prisma } from './db.js';
 import { StorageService } from './storage.js';
+import { validateEnvironment } from './utils/validate-env.js';
 
 dotenv.config();
+
+// Validate environment before starting server
+validateEnvironment();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

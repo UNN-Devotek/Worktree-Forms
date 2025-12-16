@@ -354,6 +354,51 @@ curl http://localhost:5000/api/health
 
 ---
 
+## 🌐 Docker Networking Configuration
+
+### Environment Variables for Dokploy
+
+**Backend Internal Services** (Docker network):
+```bash
+# Database (use Docker service name)
+DATABASE_URL=postgresql://worktreedatabasedev:wj9njpzberfmlc2u@devo-corner-worktreedatabasedev-cxfozh:5432/worktreedatabasedev
+
+# MinIO Internal (use Docker service name)
+MINIO_HOST=minio
+MINIO_PORT=9004
+MINIO_USE_SSL=false
+MINIO_ENDPOINT=  # Leave empty to use HOST:PORT
+```
+
+**Frontend-Backend Communication**:
+```bash
+# Internal (same container)
+BACKEND_HOST=localhost
+BACKEND_PORT=5100
+
+# External (client-side)
+NEXT_PUBLIC_API_URL=https://worktree.pro/api
+NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
+```
+
+**Port Configuration**:
+```bash
+PORT=3100              # Frontend port
+BACKEND_PORT=5100      # Backend port
+HOSTNAME=0.0.0.0       # Bind to all interfaces
+```
+
+### Important Notes
+
+1. **Never use localhost in production environment variables** except for BACKEND_HOST (internal container communication)
+2. **Use Docker service names** for internal service-to-service communication
+3. **Use public URLs** only for client-side browser requests
+4. **MinIO internal vs external**:
+   - Backend uses: `http://minio:9004` (no SSL, internal)
+   - Browser uses: `https://minio.worktree.pro` (SSL, external)
+
+---
+
 ## 📞 Support & Questions
 
 - 📖 **Full Plan**: See `worktree-forms-plan.md`

@@ -1,13 +1,24 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+// MinIO endpoint configuration for Docker internal networking
 const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
 const MINIO_HOST = process.env.MINIO_HOST || 'minio';
-const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9000');
+const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004'); // Changed from 9000 to 9004
+const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 
-const endpoint = MINIO_ENDPOINT 
-  ? (MINIO_ENDPOINT.startsWith('http') ? MINIO_ENDPOINT : `https://${MINIO_ENDPOINT}`)
-  : `http://${MINIO_HOST}:${MINIO_PORT}`;
+// Construct endpoint URL
+// Priority: MINIO_ENDPOINT > constructed URL from HOST:PORT
+let endpoint: string;
+if (MINIO_ENDPOINT) {
+  // If MINIO_ENDPOINT is provided, use it as-is or add protocol
+  endpoint = MINIO_ENDPOINT.startsWith('http')
+    ? MINIO_ENDPOINT
+    : `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_ENDPOINT}`;
+} else {
+  // Otherwise construct from HOST and PORT (internal Docker networking)
+  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+}
 
 const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',

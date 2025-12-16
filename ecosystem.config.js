@@ -7,7 +7,7 @@ module.exports = {
       args: "run start",
       env: {
         NODE_ENV: "production",
-        PORT: 5005,
+        PORT: process.env.BACKEND_PORT || "5100",
       },
     },
     {
@@ -17,7 +17,7 @@ module.exports = {
       args: "run start",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: process.env.PORT || "3100",
       },
     },
   ],
