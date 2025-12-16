@@ -63,4 +63,9 @@ COPY ecosystem.config.js .
 EXPOSE 3000 5000
 
 # Start both services
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+# Copy startup script
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Start application
+CMD ["./start.sh"]

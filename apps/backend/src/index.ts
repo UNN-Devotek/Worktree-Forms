@@ -13,7 +13,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app: Express = express();
-const PORT = process.env.BACKEND_PORT || process.env.PORT || 5005;
+const rawPort = process.env.BACKEND_PORT || process.env.PORT || '5005';
+const PORT = parseInt(String(rawPort).replace(/\D/g, ''), 10) || 5005;
 
 // Middleware
 app.use(cors());
