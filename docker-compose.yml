@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: worktree-forms
+    restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       # Backend Config
