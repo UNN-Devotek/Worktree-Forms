@@ -4,9 +4,9 @@
   "description": "Frontend for Worktree-Forms using Next.js 14",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3005",
+    "dev": "next dev -p 3005 -H 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",

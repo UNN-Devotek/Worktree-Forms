@@ -18,6 +18,9 @@
    npm install
    ```
 
+   > [!IMPORTANT]
+   > **NO LOCALHOST RULE**: Never use `localhost` or `127.0.0.1` in the codebase for binding or accessing services, as this breaks Docker networking. Always bind to `0.0.0.0` and use service names (e.g., `app`, `db`) or environment variables.
+
 2. **Make Changes**
    - Edit code in `apps/frontend` or `apps/backend`.
    - Ensure code standards are met.

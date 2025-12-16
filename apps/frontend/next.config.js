@@ -4,7 +4,7 @@ const nextConfig = {
   async rewrites() {
     // When running in the unified container, the backend is on local loopback
     const backendPort = process.env.BACKEND_PORT || 5005;
-    const backendHost = process.env.BACKEND_HOST || '127.0.0.1';
+    const backendHost = process.env.BACKEND_HOST || '0.0.0.0';
     const backendUrl = `http://${backendHost}:${backendPort}`;
     
     return [
