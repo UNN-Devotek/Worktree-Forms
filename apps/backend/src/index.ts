@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app: Express = express();
-const PORT = process.env.PORT || 5005;
+const PORT = process.env.BACKEND_PORT || process.env.PORT || 5005;
 
 // Middleware
 app.use(cors());
@@ -213,6 +213,78 @@ app.get('/api/users/me', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// FOLDER ENDPOINTS
+// ==========================================
+
+// Get folders
+app.get('/api/folders', async (req: Request, res: Response) => {
+  try {
+    const folders = await prisma.folder.findMany({
+        orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: { folders } });
+  } catch (error) {
+    console.error('Fetch Folders Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch folders' });
+  }
+});
+
+// Create folder
+app.post('/api/folders', async (req: Request, res: Response) => {
+    const { name, parentId } = req.body;
+    try {
+        const folder = await prisma.folder.create({
+            data: {
+                name,
+                parentId: parentId ? parseInt(parentId) : null
+            }
+        });
+        res.json({ success: true, data: { folder } });
+    } catch (error) {
+        console.error('Create Folder Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to create folder' });
+    }
+});
+
+// Update folder
+app.put('/api/folders/:id', async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const { name, parentId } = req.body;
+    try {
+        const folder = await prisma.folder.update({
+            where: { id },
+            data: {
+                name,
+                parentId: parentId === undefined ? undefined : (parentId ? parseInt(parentId) : null)
+            }
+        });
+        res.json({ success: true, data: { folder } });
+    } catch (error) {
+        console.error('Update Folder Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to update folder' });
+    }
+});
+
+// Delete folder
+app.delete('/api/folders/:id', async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    try {
+        // Move forms to root
+        await prisma.form.updateMany({
+            where: { folderId: id },
+            data: { folderId: null }
+        });
+        
+        // Delete folder
+        await prisma.folder.delete({ where: { id } });
+        res.json({ success: true, message: 'Folder deleted' });
+    } catch (error) {
+        console.error('Delete Folder Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to delete folder' });
+    }
+});
+
+// ==========================================
 // FORM ENDPOINTS
 // ==========================================
 
@@ -266,10 +338,12 @@ app.get('/api/groups/:groupId/forms/:formId', async (req: Request, res: Response
 // Create new form
 app.post('/api/groups/:groupId/forms', async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
-  const { title, description, form_type, form_json, is_published, is_active } = req.body;
+  const { title, description, form_type, form_json, is_published, is_active, folderId } = req.body;
 
   // Generate slug
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now();
+
+  console.log('Creating form:', { title, groupId, slug });
 
   try {
       const newForm = await prisma.form.create({
@@ -279,9 +353,10 @@ app.post('/api/groups/:groupId/forms', async (req: Request, res: Response) => {
               title,
               description,
               form_type,
-              form_schema: form_json || {}, // Ensure it's valid JSON
+              form_schema: form_json || {}, 
               is_published: is_published || false,
               is_active: is_active ?? true,
+              folderId: folderId ? parseInt(folderId) : null
           }
       });
 
@@ -292,9 +367,17 @@ app.post('/api/groups/:groupId/forms', async (req: Request, res: Response) => {
         data: { form: newForm },
         message: 'Form created successfully'
     });
-  } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, error: 'Failed to create form' });
+  } catch (error: any) {
+      console.error('Create Form Error:', error);
+      // Prisma error handling
+      if (error.code === 'P2002') {
+          return res.status(409).json({ success: false, error: 'A form with this name already exists (slug collision)' });
+      }
+      res.status(500).json({ 
+          success: false, 
+          error: 'Failed to create form',
+          details: error.message 
+      });
   }
 });
 
@@ -312,6 +395,7 @@ app.put('/api/groups/:groupId/forms/:formId', async (req: Request, res: Response
        if (updates.form_json) dataToUpdate.form_schema = updates.form_json;
        if (updates.is_published !== undefined) dataToUpdate.is_published = updates.is_published;
        if (updates.is_active !== undefined) dataToUpdate.is_active = updates.is_active;
+       if (updates.folderId !== undefined) dataToUpdate.folderId = updates.folderId ? parseInt(updates.folderId) : null;
 
       const updatedForm = await prisma.form.update({
           where: { id: formId }, // Note: In real app, better ensure group_id matches too

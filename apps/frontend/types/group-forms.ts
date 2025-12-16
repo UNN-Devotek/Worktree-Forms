@@ -402,6 +402,7 @@ export interface CreateFormData {
   visible_to_members?: boolean
   target_sub_group_id?: number
   sig_ids?: number[]  // SIG visibility restriction
+  folderId?: number
 }
 
 export interface UpdateFormData {
@@ -415,6 +416,7 @@ export interface UpdateFormData {
   visible_to_non_members?: boolean
   visible_to_members?: boolean
   sig_ids?: number[]  // SIG visibility restriction
+  folderId?: number
 }
 
 export interface SubmitFormData {

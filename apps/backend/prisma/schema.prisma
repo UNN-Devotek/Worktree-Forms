@@ -22,9 +22,20 @@ model User {
   auditLogs AuditLog[]
 }
 
+model Folder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?     // For nested folders
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderToFolder")
+  forms     Form[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Form {
   id          Int      @id @default(autoincrement())
-  group_id    Int      @default(1) // Keeping group_id for compatibility, though we might not have a Group table yet
+  group_id    Int      @default(1)
   slug        String   @unique
   title       String
   description String?
@@ -34,6 +45,9 @@ model Form {
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+  
+  folderId    Int?
+  folder      Folder?  @relation(fields: [folderId], references: [id])
 
   submissions Submission[]
 }
@@ -57,3 +71,4 @@ model AuditLog {
   details   String?
   timestamp DateTime @default(now())
 }
+

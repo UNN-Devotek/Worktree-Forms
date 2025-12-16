@@ -111,7 +111,7 @@ export function FileBrowser() {
                     </DialogContent>
                 </Dialog>
                 
-                <Link href="/forms/new">
+                <Link href={currentFolderId ? `/forms/new?folderId=${currentFolderId.replace('folder-', '')}` : "/forms/new"}>
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />
                         New Form

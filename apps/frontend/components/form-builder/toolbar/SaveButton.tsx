@@ -106,6 +106,9 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
         const allowMultiple = !oneResponsePerUser
         const sigIds = formSchema.settings?.sig_ids || []
 
+        const folderIdParam = new URLSearchParams(window.location.search).get('folderId')
+        const folderId = folderIdParam ? parseInt(folderIdParam) : undefined
+
         const createData: CreateFormData = {
           title: formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form',
           description: formSchema.pages[0]?.description || '',
@@ -117,7 +120,8 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
           requires_approval: false,
           visible_to_non_members: false,
           visible_to_members: true,
-          sig_ids: sigIds
+          sig_ids: sigIds,
+          folderId: folderId
         }
         
         console.log('Sending POST request to', `/api/groups/${groupId}/forms`, createData)

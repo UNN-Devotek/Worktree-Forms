@@ -5,9 +5,8 @@ const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
 const MINIO_HOST = process.env.MINIO_HOST || 'localhost';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9000');
 
-// Construct endpoint: prefer direct env var, otherwise build it
 const endpoint = MINIO_ENDPOINT 
-  ? MINIO_ENDPOINT 
+  ? (MINIO_ENDPOINT.startsWith('http') ? MINIO_ENDPOINT : `https://${MINIO_ENDPOINT}`)
   : `http://${MINIO_HOST}:${MINIO_PORT}`;
 
 const s3Client = new S3Client({
