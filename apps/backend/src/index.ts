@@ -484,7 +484,7 @@ const upload = multer({
 app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), async (req: Request, res: Response) => {
   const groupId = req.params.groupId;
   const formId = req.params.formId;
-  
+
   if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
   }
@@ -493,6 +493,9 @@ app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), asy
   const key = `uploads/${Date.now()}-${file.originalname}`;
 
   try {
+      // Ensure bucket exists before uploading (creates if needed)
+      await StorageService.ensureBucket();
+
       await StorageService.uploadFile(key, file.buffer, file.mimetype);
       const url = await StorageService.getDownloadUrl(key);
 
@@ -642,27 +645,27 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Initialize storage bucket before starting server
-async function startServer() {
+// Initialize storage bucket (non-blocking)
+async function initializeStorage() {
   try {
-    // Ensure MinIO bucket exists
     await StorageService.ensureBucket();
-
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`\n🚀 Worktree-Forms API running on port ${PORT}`);
-      console.log(`📚 API Docs: /api/docs`);
-      console.log(`✅ Health Check: /api/health\n`);
-      if (!process.env.DATABASE_URL) {
-        console.warn("⚠️  DATABASE_URL is missing. Prisma will likely fail.");
-      }
-    });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    console.warn('⚠️  MinIO bucket initialization failed. Bucket will be created on first upload.');
+    console.warn('   Error:', error instanceof Error ? error.message : String(error));
   }
 }
 
-startServer();
+// Start server
+app.listen(PORT, () => {
+  console.log(`\n🚀 Worktree-Forms API running on port ${PORT}`);
+  console.log(`📚 API Docs: /api/docs`);
+  console.log(`✅ Health Check: /api/health\n`);
+  if (!process.env.DATABASE_URL) {
+    console.warn("⚠️  DATABASE_URL is missing. Prisma will likely fail.");
+  }
+
+  // Initialize storage asynchronously (don't block server startup)
+  initializeStorage();
+});
 
 export default app;
