@@ -533,22 +533,22 @@ DATABASE_URL=postgresql://[user]:[pass]@[dokploy-db-service-name]:5432/[database
 
 **MinIO (External Service)**:
 ```bash
-# Use external IP/domain for API operations
-MINIO_HOST=67.222.144.10      # Direct IP to MinIO API
-MINIO_PORT=9004               # MinIO API port (NOT console port 9002)
-MINIO_USE_SSL=false          # Internal API uses HTTP
+# Use API domain for MinIO operations
+MINIO_HOST=api.worktree.worktree.pro  # MinIO API domain (routes to port 9004)
+MINIO_PORT=443                        # HTTPS port
+MINIO_USE_SSL=true                   # Use HTTPS for domain access
 MINIO_ACCESS_KEY=[your-access-key]
 MINIO_SECRET_KEY=[your-secret-key]
 MINIO_BUCKET_NAME=worktree
 MINIO_REGION=us-east-1
 ```
-> **⚠️ IMPORTANT**: MinIO runs as an external service, NOT in the same Docker network as the app. Use the direct IP `67.222.144.10:9004` for API operations (upload/delete/presigned URLs).
+> **⚠️ IMPORTANT**: MinIO runs as an external service, NOT in the same Docker network as the app. Use the API domain `api.worktree.worktree.pro` which routes to MinIO port 9004 (S3 API).
 
 **MinIO Public URL (Browser Access)**:
 ```bash
 MINIO_PUBLIC_URL=https://minio.worktree.pro
 ```
-> **Public Endpoint**: Used for presigned URLs that browsers access. The domain `minio.worktree.pro` currently points to Console UI (port 9002), but presigned URLs will route through the API (port 9004).
+> **Public Endpoint**: Used for presigned URLs that browsers access. The domain `minio.worktree.pro` points to Console UI (port 9002).
 
 **Frontend Configuration**:
 ```bash
@@ -572,8 +572,8 @@ JWT_REFRESH_EXPIRE=7d
 1. **Internal Service Communication** - Use Docker service names:
    - Database: Use full Dokploy service name (e.g., `devo-corner-worktreedatabasedev-cxfozh:5432`)
 
-2. **External Service Communication** - Use direct IP/domain:
-   - MinIO API: `http://67.222.144.10:9004` (external service, NOT in Docker network)
+2. **External Service Communication** - Use API domain:
+   - MinIO API: `https://api.worktree.worktree.pro:443` (external service, NOT in Docker network, routes to port 9004)
 
 3. **External/Browser Access** - Use public URLs:
    - API: `https://worktree.pro/api`
