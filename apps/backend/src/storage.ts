@@ -2,7 +2,6 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, Crea
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // MinIO endpoint configuration for Docker internal networking
-const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
 const MINIO_HOST = process.env.MINIO_HOST || 'minio';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004');
 const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
@@ -11,17 +10,13 @@ const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || process.env.NEXT_PUBLIC_MINIO_URL || '';
 
 // Construct internal endpoint URL (for S3Client operations)
-// Priority: MINIO_ENDPOINT > constructed URL from HOST:PORT
-let internalEndpoint: string;
-if (MINIO_ENDPOINT) {
-  // If MINIO_ENDPOINT is provided, use it as-is or add protocol
-  internalEndpoint = MINIO_ENDPOINT.startsWith('http')
-    ? MINIO_ENDPOINT
-    : `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_ENDPOINT}`;
-} else {
-  // Otherwise construct from HOST and PORT (internal Docker networking)
-  internalEndpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
-}
+// Always use HOST:PORT for internal Docker networking
+// MINIO_ENDPOINT is deprecated - use MINIO_HOST instead
+const internalEndpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+
+console.log(`📦 MinIO Internal Endpoint: ${internalEndpoint}`);
+console.log(`🌐 MinIO Public URL: ${MINIO_PUBLIC_URL || 'Not set (will use internal endpoint)'}`);
+console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`);
 
 // S3Client for internal operations (upload, delete)
 const s3Client = new S3Client({
