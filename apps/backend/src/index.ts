@@ -485,21 +485,30 @@ app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), asy
   const groupId = req.params.groupId;
   const formId = req.params.formId;
 
+  console.log(`📥 Upload request received - Group: ${groupId}, Form: ${formId}`);
+
   if (!req.file) {
+      console.log('❌ No file in request');
       return res.status(400).json({ success: false, error: 'No file uploaded' });
   }
 
   const file = req.file;
   const key = `uploads/${Date.now()}-${file.originalname}`;
+  console.log(`📄 File details: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
 
   try {
       // Ensure bucket exists before uploading (creates if needed)
+      console.log('⏳ Ensuring bucket exists...');
       await StorageService.ensureBucket();
 
+      console.log('⏳ Starting file upload...');
       await StorageService.uploadFile(key, file.buffer, file.mimetype);
+
+      console.log('⏳ Generating download URL...');
       const url = await StorageService.getDownloadUrl(key);
 
       // Return format expected by frontend
+      console.log(`✅ Upload complete: ${key}`);
       res.json({
         success: true,
         data: {
@@ -513,8 +522,9 @@ app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), asy
         }
       });
   } catch (error) {
-      console.error('Upload Error:', error);
-      res.status(500).json({ success: false, error: 'Upload failed' });
+      console.error('❌ Upload Error:', error instanceof Error ? error.message : error);
+      console.error('Error details:', error);
+      res.status(500).json({ success: false, error: 'Upload failed', message: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

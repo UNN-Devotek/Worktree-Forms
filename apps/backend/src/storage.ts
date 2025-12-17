@@ -27,6 +27,9 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
   forcePathStyle: true, // Needed for MinIO
+  requestHandler: {
+    requestTimeout: 10000, // 10 second timeout
+  },
 });
 
 // S3Client for presigned URLs (must use public endpoint for browser access)
@@ -38,6 +41,9 @@ const publicS3Client = MINIO_PUBLIC_URL ? new S3Client({
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
   forcePathStyle: true,
+  requestHandler: {
+    requestTimeout: 10000, // 10 second timeout
+  },
 }) : s3Client; // Fallback to internal client if no public URL provided
 
 const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
@@ -45,26 +51,29 @@ const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
 export class StorageService {
   
   static async ensureBucket() {
+    console.log(`🔍 Checking if bucket '${BUCKET_NAME}' exists...`);
     try {
       // Check if bucket exists
       await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
       console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
     } catch (error: any) {
+      console.log(`📝 Bucket check failed: ${error.name || error.message}`);
       // If bucket doesn't exist, create it
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         try {
+          console.log(`🏗️  Creating bucket '${BUCKET_NAME}'...`);
           await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
           console.log(`✅ MinIO bucket '${BUCKET_NAME}' created successfully`);
         } catch (createError: any) {
           // Ignore if bucket already exists (race condition)
           if (createError.name !== 'BucketAlreadyOwnedByYou' && createError.name !== 'BucketAlreadyExists') {
-            console.error('❌ Failed to create MinIO bucket:', createError);
+            console.error('❌ Failed to create MinIO bucket:', createError.message);
             throw createError;
           }
           console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
         }
       } else {
-        console.error('❌ Error checking MinIO bucket:', error);
+        console.error('❌ Error checking MinIO bucket:', error.name, error.message);
         throw error;
       }
     }
@@ -82,6 +91,7 @@ export class StorageService {
   }
 
   static async uploadFile(key: string, body: Buffer | Uint8Array, contentType: string): Promise<void> {
+      console.log(`📤 Uploading file to MinIO: ${key} (${contentType})`);
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -90,6 +100,7 @@ export class StorageService {
       });
       // Use internal s3Client for direct upload operations
       await s3Client.send(command);
+      console.log(`✅ File uploaded successfully: ${key}`);
   }
 
   static async getDownloadUrl(key: string): Promise<string> {
