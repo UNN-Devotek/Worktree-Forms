@@ -6,7 +6,10 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { prisma } from './db.js';
 import { StorageService } from './storage.js';
+import { UploadService } from './services/upload.service.js';
 import { validateEnvironment } from './utils/validate-env.js';
+import { getSecurityMiddleware } from './middleware/security.js';
+import { rateLimitTiers } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
@@ -24,6 +27,8 @@ const PORT = (parsedPort > 0 && parsedPort < 65536) ? parsedPort : 5005;
 
 // Middleware
 app.use(cors());
+app.use(getSecurityMiddleware()); // Security headers (Helmet)
+app.use('/api', rateLimitTiers.api); // General API rate limiting
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -88,7 +93,7 @@ app.get('/api/docs', (req: Request, res: Response) => {
 // AUTH ENDPOINTS (DB Integration)
 // ==========================================
 
-app.post('/api/auth/login', async (req: Request, res: Response) => {
+app.post('/api/auth/login', rateLimitTiers.auth, async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   // For demo simplicity, we still allow the hardcoded admin, 
@@ -140,7 +145,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/auth/register', async (req: Request, res: Response) => {
+app.post('/api/auth/register', rateLimitTiers.auth, async (req: Request, res: Response) => {
   const { email, password, name } = req.body;
 
   if (!email || !password || !name) {
@@ -480,8 +485,8 @@ const upload = multer({
     limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit
 });
 
-// Upload File (Direct)
-app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), async (req: Request, res: Response) => {
+// Upload File (Direct) - Uses UUID-based serialization
+app.post('/api/groups/:groupId/forms/:formId/upload', rateLimitTiers.upload, upload.single('file'), async (req: Request, res: Response) => {
   const groupId = req.params.groupId;
   const formId = req.params.formId;
 
@@ -493,31 +498,31 @@ app.post('/api/groups/:groupId/forms/:formId/upload', upload.single('file'), asy
   }
 
   const file = req.file;
-  const key = `uploads/${Date.now()}-${file.originalname}`;
   console.log(`📄 File details: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
 
   try {
-      // Ensure bucket exists before uploading (creates if needed)
-      console.log('⏳ Ensuring bucket exists...');
-      await StorageService.ensureBucket();
+      // Upload using UploadService (handles UUID generation, MinIO upload, and database record)
+      const fileRecord = await UploadService.uploadFile(
+        file,
+        'form_uploads',  // Folder for form-related uploads
+        (req as any).user?.id  // User ID if authenticated
+      );
 
-      console.log('⏳ Starting file upload...');
-      await StorageService.uploadFile(key, file.buffer, file.mimetype);
-
-      console.log('⏳ Generating download URL...');
-      const url = await StorageService.getDownloadUrl(key);
+      // Generate display URL
+      const displayUrl = UploadService.getFileUrl(fileRecord.objectKey);
 
       // Return format expected by frontend
-      console.log(`✅ Upload complete: ${key}`);
+      console.log(`✅ Upload complete: ${fileRecord.objectKey}`);
       res.json({
         success: true,
         data: {
           files: [{
-              filename: file.originalname,
-              object_key: key,
-              url: url,
-              size: file.size,
-              content_type: file.mimetype
+              id: fileRecord.id,              // Database record ID
+              filename: fileRecord.filename,  // Original filename
+              objectKey: fileRecord.objectKey, // ← Store this in form submission (UUID-based)
+              url: displayUrl,                // Display URL (for preview only)
+              size: fileRecord.size,
+              contentType: fileRecord.contentType
           }]
         }
       });

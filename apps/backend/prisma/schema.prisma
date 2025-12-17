@@ -61,6 +61,8 @@ model Submission {
   status     String   @default("pending")
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  files      FileUpload[]
 }
 
 model AuditLog {
@@ -71,5 +73,24 @@ model AuditLog {
   resource  String
   details   String?
   timestamp DateTime @default(now())
+}
+
+model FileUpload {
+  id            String    @id @default(uuid())
+  objectKey     String    @unique  // MinIO object key (e.g., "form_uploads/abc123.pdf")
+  filename      String              // Original filename
+  contentType   String              // MIME type
+  size          Int                 // File size in bytes
+  folder        String    @default("uploads")  // Organization folder
+  uploadedBy    String?             // User ID who uploaded
+  uploadedAt    DateTime  @default(now())
+
+  // Relations
+  submissionId  Int?
+  submission    Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  @@index([objectKey])
+  @@index([uploadedBy])
+  @@map("file_uploads")
 }
 
