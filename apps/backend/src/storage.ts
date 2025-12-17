@@ -29,6 +29,7 @@ const s3Client = new S3Client({
   forcePathStyle: true, // Needed for MinIO
   requestHandler: {
     requestTimeout: 10000, // 10 second timeout
+    throwOnRequestTimeout: true, // Throw error instead of warning
   },
 });
 
@@ -43,6 +44,7 @@ const publicS3Client = MINIO_PUBLIC_URL ? new S3Client({
   forcePathStyle: true,
   requestHandler: {
     requestTimeout: 10000, // 10 second timeout
+    throwOnRequestTimeout: true, // Throw error instead of warning
   },
 }) : s3Client; // Fallback to internal client if no public URL provided
 
