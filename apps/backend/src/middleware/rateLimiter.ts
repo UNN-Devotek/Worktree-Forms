@@ -23,10 +23,7 @@ export const publicRateLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,  // Disable X-RateLimit-* headers
-  // Use IP address for rate limiting
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  }
+  // No keyGenerator - library automatically handles IP (IPv4 and IPv6)
 });
 
 /**
@@ -42,10 +39,10 @@ export const authenticatedRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Use user ID if available, fallback to IP
+  // Use user ID if available, otherwise library handles IP (IPv4/IPv6)
   keyGenerator: (req: Request) => {
     const userId = (req as any).user?.id;
-    return userId || req.ip || req.socket.remoteAddress || 'unknown';
+    return userId; // Return undefined if no user, library handles IP automatically
   }
 });
 
@@ -64,9 +61,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Only count failed attempts
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  }
+  // No keyGenerator - library automatically handles IP (IPv4 and IPv6)
 });
 
 /**
@@ -82,9 +77,10 @@ export const uploadRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Use user ID if available, otherwise library handles IP (IPv4/IPv6)
   keyGenerator: (req: Request) => {
     const userId = (req as any).user?.id;
-    return userId || req.ip || req.socket.remoteAddress || 'unknown';
+    return userId; // Return undefined if no user, library handles IP automatically
   }
 });
 
@@ -101,9 +97,10 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Use user ID if available, otherwise library handles IP (IPv4/IPv6)
   keyGenerator: (req: Request) => {
     const userId = (req as any).user?.id;
-    return userId || req.ip || req.socket.remoteAddress || 'unknown';
+    return userId; // Return undefined if no user, library handles IP automatically
   }
 });
 
