@@ -1,40 +1,54 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// MinIO endpoint configuration for Docker internal networking
+// MinIO endpoint configuration
 const MINIO_HOST = process.env.MINIO_HOST || 'minio';
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004');
 const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 
-// Public MinIO endpoint for presigned URLs (browsers need to access this)
+// Public MinIO endpoint for presigned URLs and external access
 const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || process.env.NEXT_PUBLIC_MINIO_URL || '';
 
-// Construct internal endpoint URL (for S3Client operations)
-// Always use HOST:PORT for internal Docker networking
-// MINIO_ENDPOINT is deprecated - use MINIO_HOST instead
-const internalEndpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+// Determine endpoint based on configuration
+// If MINIO_PUBLIC_URL is set, use it for all operations (external access)
+// Otherwise, construct endpoint from HOST:PORT (Docker internal)
+let endpoint: string;
+let useExternalEndpoint = false;
 
-console.log(`📦 MinIO Internal Endpoint: ${internalEndpoint}`);
-console.log(`🌐 MinIO Public URL: ${MINIO_PUBLIC_URL || 'Not set (will use internal endpoint)'}`);
+if (MINIO_PUBLIC_URL) {
+  // Use public URL for external access (domain routing, no port needed)
+  endpoint = MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`;
+  useExternalEndpoint = true;
+  console.log(`🌐 Using External MinIO Endpoint: ${endpoint}`);
+} else {
+  // Use internal Docker networking with explicit HOST:PORT
+  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+  console.log(`📦 Using Internal MinIO Endpoint: ${endpoint}`);
+}
+
 console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`);
 
-// S3Client for internal operations (upload, delete)
+// S3Client configuration
+// Use longer timeout for external endpoints (30s), shorter for internal (10s)
+const requestTimeout = useExternalEndpoint ? 30000 : 10000;
+
 const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
-  endpoint: internalEndpoint,
+  endpoint: endpoint,
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
   forcePathStyle: true, // Needed for MinIO
   requestHandler: {
-    requestTimeout: 10000, // 10 second timeout
-    throwOnRequestTimeout: true, // Throw error instead of warning
+    requestTimeout: requestTimeout,
+    throwOnRequestTimeout: true,
   },
 });
 
-// S3Client for presigned URLs (must use public endpoint for browser access)
-const publicS3Client = MINIO_PUBLIC_URL ? new S3Client({
+// Use same client for presigned URLs when using external endpoint
+// When using internal endpoint, create separate client with public URL for presigned URLs
+const publicS3Client = (!useExternalEndpoint && MINIO_PUBLIC_URL) ? new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
   endpoint: MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`,
   credentials: {
@@ -43,10 +57,10 @@ const publicS3Client = MINIO_PUBLIC_URL ? new S3Client({
   },
   forcePathStyle: true,
   requestHandler: {
-    requestTimeout: 10000, // 10 second timeout
-    throwOnRequestTimeout: true, // Throw error instead of warning
+    requestTimeout: 30000,
+    throwOnRequestTimeout: true,
   },
-}) : s3Client; // Fallback to internal client if no public URL provided
+}) : s3Client; // Use same client for external endpoint or if no public URL
 
 const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
 
