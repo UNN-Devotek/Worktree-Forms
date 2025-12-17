@@ -83,7 +83,7 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
       setUploading(true)
 
       const formData = new FormData()
-      formData.append('files', file)
+      formData.append('file', file)
 
       const response = await apiClient<UploadResponse>(
         `/api/groups/${groupId}/forms/${formId}/upload`,
@@ -142,21 +142,31 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
   }
 
   return (
-    <div
-      className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-      onClick={() => !uploading && fileInputRef.current?.click()}
-    >
-      {uploading ? (
-        <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
-      ) : (
-        <ImageIcon className="mx-auto h-8 w-8 text-muted-foreground" />
-      )}
-      <p className="text-sm text-muted-foreground mt-2">
-        {uploading ? 'Uploading...' : 'Click to upload image'}
-      </p>
-      <p className="text-xs text-muted-foreground mt-1">
-        Max 10MB
-      </p>
+    <div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (!uploading) {
+            fileInputRef.current?.click()
+          }
+        }}
+        disabled={uploading}
+        className="w-full border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {uploading ? (
+          <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
+        ) : (
+          <ImageIcon className="mx-auto h-8 w-8 text-muted-foreground" />
+        )}
+        <p className="text-sm text-muted-foreground mt-2">
+          {uploading ? 'Uploading...' : 'Click to upload image'}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Max 20MB
+        </p>
+      </button>
       <input
         ref={fileInputRef}
         type="file"
@@ -164,6 +174,7 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
         onChange={handleFileSelect}
         disabled={uploading}
         className="hidden"
+        aria-label="Upload image file"
       />
     </div>
   )

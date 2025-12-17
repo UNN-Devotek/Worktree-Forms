@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -25,9 +26,9 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
+  const { setTheme, resolvedTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const { user, handleLogout } = useSession() || { user: null, handleLogout: () => {} };
 
   useEffect(() => {
@@ -36,10 +37,6 @@ export function Sidebar({ className }: SidebarProps) {
     if (saved) {
         setIsCollapsed(saved === "true");
     }
-    
-    // Check initial theme
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    setIsDark(isDarkMode);
   }, []);
 
   const toggleSidebar = () => {
@@ -49,9 +46,7 @@ export function Sidebar({ className }: SidebarProps) {
   };
 
   const toggleTheme = () => {
-      const newTheme = !isDark;
-      setIsDark(newTheme);
-      document.documentElement.classList.toggle('dark');
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   const navItems = [
@@ -270,10 +265,10 @@ export function Sidebar({ className }: SidebarProps) {
                        ? "h-10 w-10 p-0 mx-auto"
                        : "h-auto w-full px-3 py-2.5 justify-start"
                )}
-               title={isCollapsed ? (isDark ? "Light Mode" : "Dark Mode") : undefined}
+               title={isCollapsed ? (resolvedTheme === "dark" ? "Light Mode" : "Dark Mode") : undefined}
            >
                <FontAwesomeIcon
-                   icon={isDark ? faSun : faMoon}
+                   icon={resolvedTheme === "dark" ? faSun : faMoon}
                    fixedWidth
                    className={cn(
                        "transition-transform duration-300 group-hover:scale-110 opacity-70",
@@ -283,14 +278,14 @@ export function Sidebar({ className }: SidebarProps) {
 
                {!isCollapsed && (
                    <span className="whitespace-nowrap">
-                       {isDark ? "Light Mode" : "Dark Mode"}
+                       {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
                    </span>
                )}
 
                {/* Tooltip for collapsed state */}
                {isCollapsed && (
                    <div className="absolute left-full ml-2 w-max rounded-md bg-gray-900 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                       {isDark ? "Light Mode" : "Dark Mode"}
+                       {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
                    </div>
                )}
            </Button>

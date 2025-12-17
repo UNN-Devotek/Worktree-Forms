@@ -36,7 +36,7 @@ export function FormUploadProvider({ children, groupId, formId }: FormUploadProv
   const uploadFile = async (file: File): Promise<UploadedFile | null> => {
     try {
       const formData = new FormData()
-      formData.append('files', file)
+      formData.append('file', file)
 
       const response = await apiClient<ApiResponse<UploadResponse>>(
         `/api/groups/${groupId}/forms/${formId}/upload`,

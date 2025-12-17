@@ -53,46 +53,180 @@ This session focused on significant frontend development and refactoring:
 
 ## 🚀 Getting Started
 
-### Prerequisites
+There are two deployment modes:
 
-- Docker & Docker Compose
-- Node.js 20+
-- PostgreSQL 15+ (in Docker)
+1. **🚀 Dokploy Production** - Live production environment
+2. **💻 Local Development** - For development and testing
 
-### Quick Start
+---
+
+### 🚀 Dokploy Production Deployment
+
+Production runs on Dokploy infrastructure with automatic deployments.
+
+#### Prerequisites
+
+- Access to Dokploy dashboard
+- GitHub repository access
+- Environment variables configured in Dokploy
+
+#### Deployment Process
 
 ```bash
-# Clone the repository
+# 1. Make your changes locally
+git add .
+git commit -m "feat: your changes"
+git push origin main
+
+# 2. Dokploy automatically:
+#    - Pulls from GitHub
+#    - Builds Docker image
+#    - Deploys with configured environment variables
+#    - Restarts the application
+
+# 3. Verify deployment
+curl https://worktree.pro/api/health
+# Should return: {"status":"ok","database":"connected"}
+```
+
+#### Production URLs
+
+- **Live Site**: https://worktree.pro
+- **API**: https://worktree.pro/api
+- **MinIO Console**: https://minio.worktree.pro (Admin access only)
+
+#### Environment Variables (Configured in Dokploy)
+
+All environment variables are configured in Dokploy's UI. Key settings:
+
+```bash
+# Application
+NODE_ENV=production
+PORT=3100
+BACKEND_PORT=5100
+
+# MinIO (Internal Docker Network)
+MINIO_HOST=minio
+MINIO_PORT=9004
+MINIO_USE_SSL=false
+
+# MinIO (Public Access)
+MINIO_PUBLIC_URL=https://minio.worktree.pro
+```
+
+> See [CLAUDE.md](./CLAUDE.md) section "🚀 Dokploy Production Deployment" for complete environment variable list.
+
+---
+
+### 💻 Local Development Setup
+
+Local development connects to **external Dokploy services** (database and MinIO).
+
+#### Prerequisites
+
+- Docker Desktop installed and running
+- `.env` file configured (see `.env.example`)
+- Access to external services (database, MinIO)
+
+#### Quick Start
+
+```bash
+# 1. Clone the repository
 git clone https://github.com/UNN-Devotek/Worktree-Forms
 cd Worktree-Forms
 
-# Start development environment
+# 2. Create .env file from example
+cp .env.example .env
+# Edit .env with your credentials (ask team for values)
+
+# 3. Start Docker container
 docker-compose up -d
 
-# Install dependencies
-npm install
+# 4. Check logs for successful startup
+docker-compose logs -f app
 
-# Run migrations
-npm run migrate:dev
-
-# 3. Start Development Server
-npm run dev
-# -> Frontend: http://<your-domain>:<port>
-# -> Backend:  http://<your-domain>:5005/5005 before starting
+# 5. Look for successful startup message:
+#    "✓ Environment validation passed"
+#    "Frontend ready on http://localhost:3100"
+#    "Backend ready on http://localhost:5100"
 ```
+
+#### Local Development URLs
+
+- **Frontend**: http://localhost:3100
+- **Backend API**: http://localhost:5100/api
+- **Health Check**: http://localhost:5100/api/health
+
+#### Environment Configuration
+
+Your `.env` file must include:
+
+```bash
+# Application
+NODE_ENV=development
+PORT=3100
+BACKEND_PORT=5100
+
+# External Database (from Dokploy)
+DATABASE_URL=postgresql://[get-from-team]
+
+# External MinIO (Direct IP access to API port)
+MINIO_HOST=67.222.144.10
+MINIO_PORT=9004
+MINIO_USE_SSL=false
+MINIO_ENDPOINT=http://67.222.144.10:9004
+
+# Credentials (ask team)
+MINIO_ACCESS_KEY=[ask-team]
+MINIO_SECRET_KEY=[ask-team]
+JWT_SECRET=[ask-team]
+```
+
+> **Important**: Never commit `.env` to git. It contains sensitive credentials and is already in `.gitignore`.
+
+#### Common Commands
+
+```bash
+# Start containers
+docker-compose up -d
+
+# Rebuild after code changes
+docker-compose down
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f app
+
+# Stop containers
+docker-compose down
+
+# View running containers
+docker-compose ps
+```
+
+#### Troubleshooting
+
+**"Cannot connect to database"**
+- Check `DATABASE_URL` in `.env`
+- Ensure database service is running in Dokploy
+- Ask team for latest credentials
+
+**"MinIO connection failed"**
+- Verify `MINIO_HOST=67.222.144.10` and `MINIO_PORT=9004`
+- Check credentials are correct
+- Ensure MinIO port 9004 is accessible externally
+
+**"File upload fails"**
+- Check Docker logs: `docker-compose logs app`
+- Verify MinIO endpoint is using IP (not domain) for local dev
+- Ensure bucket name is `worktree`
+
+---
 
 ### 🔑 Default Credentials
 
 - **Admin**: `admin@worktree.pro` / `admin123`
-- **User**: Register a new account locally
-
-### Development URLs
-
-- **Frontend**: `http://<your-domain>:3000` (or configured port)
-- **Backend API**: `http://<your-domain>:5005`
-- **API Docs**: `http://<your-domain>:5005/api/docs`
-- **Database**: External (Hosted)
-- **Redis**: External (Hosted)
+- **User**: Register a new account
 
 ## 📦 Technology Stack
 

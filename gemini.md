@@ -1,8 +1,11 @@
 # 📚 Gemini Development Guide - Worktree-Forms
 
-**Last Updated**: December 11, 2025
+**Last Updated**: December 16, 2025 (Docker Setup Documentation)
 **For**: AI Assistant (Gemini) & Development Team
 **Quick Access**: Read this file for context!
+
+> [!CRITICAL]
+> **MUST READ**: See "🚨 CRITICAL RULES - READ FIRST" section below before making ANY changes to configuration, environment variables, or Docker-related files.
 
 ---
 
@@ -61,6 +64,347 @@ npm run lint
 # Build verification
 npm run build
 ```
+
+---
+
+## 🐳 Local Development Setup
+
+### Overview
+
+Local development runs in Docker and connects to **external Dokploy services** for database and MinIO storage.
+
+### Prerequisites
+
+- Docker Desktop installed and running
+- `.env` file configured (contains external service credentials)
+
+> [!IMPORTANT]
+> Never commit `.env` to git. It contains sensitive credentials and is already in `.gitignore`.
+
+### Quick Start
+
+```bash
+# 1. Ensure .env file exists with external Dokploy connections
+# (Get credentials from Dokploy environment settings)
+
+# 2. Start all services with Docker Compose
+docker-compose up -d
+
+# 3. Check logs for successful startup
+docker-compose logs -f app
+
+# 4. Verify environment validation passed
+# Look for: "✓ Environment validation passed"
+
+# 5. Access the application
+# Frontend: http://localhost:3100
+# Backend API: http://localhost:5100
+# Health Check: http://localhost:5100/api/health
+```
+
+### Required Environment Variables
+
+Your `.env` file must include (get actual values from Dokploy):
+
+```bash
+# Application Ports
+PORT=3100
+BACKEND_PORT=5100
+NODE_ENV=development
+
+# External Database Connection
+DATABASE_URL=postgresql://[get-from-dokploy]
+
+# External MinIO Connection
+MINIO_PUBLIC_URL=https://minio.worktree.pro
+MINIO_ENDPOINT=https://minio.worktree.pro
+MINIO_USE_SSL=true
+MINIO_ACCESS_KEY=[get-from-dokploy]
+MINIO_SECRET_KEY=[get-from-dokploy]
+MINIO_BUCKET_NAME=worktree
+
+# JWT Configuration
+JWT_SECRET=[32+-character-secret]
+JWT_EXPIRE=15m
+JWT_REFRESH_EXPIRE=7d
+
+# Frontend URLs
+NEXT_PUBLIC_API_URL=http://localhost:5100/api
+NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
+```
+
+### Common Operations
+
+**Stop Services:**
+```bash
+docker-compose down
+```
+
+**Rebuild After Code Changes:**
+```bash
+docker-compose up -d --build
+docker-compose logs -f app
+```
+
+**Run Database Migrations:**
+```bash
+docker-compose exec app sh -c "cd apps/backend && npx prisma migrate deploy"
+```
+
+**Clean Restart:**
+```bash
+docker-compose down -v
+docker-compose up -d --build
+```
+
+### Troubleshooting Local Development
+
+**Container won't start:**
+```bash
+# Check logs
+docker-compose logs app
+
+# Look for "✓ Environment validation passed"
+# If validation fails, check .env file
+```
+
+**Port conflicts:**
+```bash
+# Check if ports 3100 or 5100 are in use
+netstat -ano | findstr :3100
+netstat -ano | findstr :5100
+
+# Kill process if needed (Windows)
+taskkill /PID <process_id> /F
+```
+
+**Database connection failed:**
+- Verify `DATABASE_URL` in `.env` has correct external connection string
+- Check firewall allows outbound connections
+- Ensure external Dokploy database is running and accessible
+
+**MinIO connection failed:**
+- Verify `MINIO_PUBLIC_URL=https://minio.worktree.pro`
+- Check `MINIO_USE_SSL=true`
+- Confirm credentials match Dokploy settings
+- Test access: `curl https://minio.worktree.pro`
+
+---
+
+## 🚀 Dokploy Production Deployment
+
+### Overview
+
+Production runs entirely on Dokploy infrastructure. All environment variables are configured in Dokploy's UI, **not in the codebase**.
+
+### Deployment Process
+
+1. **Commit and Push**
+   ```bash
+   git add .
+   git commit -m "feat: your changes"
+   git push origin main
+   ```
+
+2. **Auto-Deploy**
+   - Dokploy pulls from GitHub automatically
+   - Builds Docker image
+   - Deploys with configured environment variables
+
+3. **Verify**
+   ```bash
+   curl https://worktree.pro/api/health
+   ```
+   - Check Dokploy logs for "✓ Environment validation passed"
+   - Test file upload functionality
+
+### Environment Variables in Dokploy
+
+Configure in Dokploy UI (never in code):
+
+**Application**:
+```bash
+NODE_ENV=production
+PORT=3100
+BACKEND_PORT=5100
+HOSTNAME=0.0.0.0
+```
+
+**Database (Internal Docker Network)**:
+```bash
+DATABASE_URL=postgresql://[credentials]@[dokploy-service-name]:5432/[database]
+```
+> Must use internal Docker service name
+
+**MinIO Internal (Docker Network)**:
+```bash
+MINIO_HOST=minio
+MINIO_PORT=9004
+MINIO_USE_SSL=false
+MINIO_ENDPOINT=
+MINIO_ACCESS_KEY=[your-access-key]
+MINIO_SECRET_KEY=[your-secret-key]
+MINIO_BUCKET_NAME=worktree
+MINIO_REGION=us-east-1
+```
+> **Internal Connection**: Backend connects to `http://minio:9004` for direct file operations (upload, delete) within Docker network. No SSL needed for internal traffic.
+
+**MinIO Public (Browser Access)**:
+```bash
+MINIO_PUBLIC_URL=https://minio.worktree.pro
+```
+> **External Connection**: Used for presigned URLs that browsers access. Points to MinIO Console (port 9002) via Dokploy domain routing.
+
+**MinIO Port Reference**:
+- Port 9004: API endpoint for S3 operations (internal: `minio:9004`)
+- Port 9002: Console UI (external: `https://minio.worktree.pro`)
+
+**Frontend**:
+```bash
+BACKEND_HOST=localhost
+NEXT_PUBLIC_API_URL=https://worktree.pro/api
+NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
+```
+
+**Security**:
+```bash
+JWT_SECRET=[secure-secret]
+JWT_EXPIRE=15m
+JWT_REFRESH_EXPIRE=7d
+```
+
+---
+
+## 🚨 CRITICAL RULES - READ FIRST
+
+### ⛔ NEVER DO THESE
+
+1. **NEVER use `localhost` or `127.0.0.1` in code or environment variables** except for:
+   - `BACKEND_HOST=localhost` (internal container communication only)
+   - This breaks Docker networking and will cause deployment failures
+
+2. **NEVER change these port numbers** without consultation:
+   - Frontend: `3100` (PORT)
+   - Backend: `5100` (BACKEND_PORT)
+   - MinIO internal: `9004` (MINIO_PORT)
+   - Changing ports requires updates in 4+ files and can break deployment
+
+3. **NEVER delete or modify** these critical files:
+   - `apps/backend/src/utils/validate-env.ts` (environment validation)
+   - `ecosystem.config.js` (PM2 process manager)
+   - `Dockerfile` (Docker build configuration)
+   - `docker-compose.yml` (Docker orchestration)
+
+4. **NEVER hardcode credentials or URLs** in source code:
+   - All secrets must be in environment variables
+   - Database URLs must use Docker service names (e.g., `devo-corner-worktreedatabasedev-cxfozh:5432`)
+   - MinIO endpoints must use service name `minio:9004` for internal, `minio.worktree.pro` for public
+
+5. **NEVER create an `apps/backend/.env` file**:
+   - This file was intentionally deleted
+   - It contained hardcoded localhost that breaks Docker
+   - Use root `.env` or Dokploy environment variables only
+
+### ✅ ALWAYS DO THESE
+
+1. **ALWAYS use Docker service names** for internal communication:
+   - Database: Use the full service name from `DATABASE_URL`
+   - MinIO: Use `minio` (not `localhost`, not public URL)
+   - Services discover each other via Docker network
+
+2. **ALWAYS verify environment variables** before deployment:
+   - Check `MINIO_HOST=minio` (not localhost)
+   - Check `MINIO_PORT=9004` (not 9000)
+   - Check `BACKEND_HOST=localhost` (for internal Next.js rewrites)
+   - Check `PORT=3100` and `BACKEND_PORT=5100`
+
+3. **ALWAYS commit before deploying**:
+   - Dokploy deploys from Git, not local files
+   - Run `git push origin main` to trigger deployment
+   - Verify changes in Dokploy logs
+
+4. **ALWAYS test builds locally** before pushing:
+   ```bash
+   npm run build    # Must succeed
+   npm run test     # Must pass
+   npm run lint     # Must be clean
+   ```
+
+5. **ALWAYS check these after deployment**:
+   - Health endpoint: `curl https://worktree.pro/api/health`
+   - Look for "✓ Environment validation passed" in logs
+   - Test file upload (MinIO connection)
+   - Test database queries
+
+### 📍 Docker Networking Rules
+
+**Internal Communication** (backend-to-services):
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@service-name:5432/db
+
+# MinIO (Internal - for direct S3 operations)
+MINIO_HOST=minio
+MINIO_PORT=9004
+MINIO_USE_SSL=false
+
+# MinIO Public URL (for presigned URLs)
+MINIO_PUBLIC_URL=https://minio.worktree.pro
+```
+
+**External/Public URLs** (client-side only):
+```bash
+# API (browser requests)
+NEXT_PUBLIC_API_URL=https://worktree.pro/api
+
+# MinIO (browser requests)
+NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
+```
+
+**Container Communication** (Next.js to Express):
+```bash
+# Same container via PM2
+BACKEND_HOST=localhost
+BACKEND_PORT=5100
+```
+
+### 🔧 Port Configuration Reference
+
+| Service | Internal Port | External Port | Notes |
+|---------|--------------|---------------|-------|
+| Frontend | 3100 | 3100 | Next.js app |
+| Backend | 5100 | 5100 | Express API |
+| MinIO | 9004 | 443 (HTTPS) | Object storage |
+| Database | 5432 | Not exposed | PostgreSQL |
+
+### 🛡️ Environment Validation
+
+The backend automatically validates environment on startup:
+- Required variables: `DATABASE_URL`, `JWT_SECRET`, `MINIO_BUCKET_NAME`
+- Blocks localhost in production `DATABASE_URL`
+- Warns if MinIO uses localhost
+- **Failure = Server won't start** (this is intentional!)
+
+### 💡 Quick Troubleshooting
+
+**"Cannot connect to database"**:
+- ❌ Check if DATABASE_URL contains `localhost`
+- ✅ Must use Docker service name
+
+**"MinIO connection failed"**:
+- ❌ Check MINIO_HOST (should be `minio`, not `localhost`)
+- ❌ Check MINIO_PORT (should be `9004`, not `9000`)
+- ✅ Verify MinIO container is running in Dokploy
+
+**"API requests fail"**:
+- ❌ Check BACKEND_HOST in Next.js (should be `localhost`)
+- ❌ Check ports match (3100, 5100)
+- ✅ Check Next.js rewrites in `next.config.js`
+
+**"Environment validation failed"**:
+- ✅ This is GOOD - it caught a configuration error
+- Read the error message carefully
+- Fix the environment variable it's complaining about
 
 ---
 

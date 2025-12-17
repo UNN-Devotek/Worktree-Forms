@@ -21,18 +21,18 @@ export function SessionChart() {
 
   if (!isMounted) {
      return (
-        <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
-            <CardHeader><div className="h-6 w-32 bg-zinc-800 animate-pulse rounded" /></CardHeader>
-            <CardContent><div className="h-[250px] bg-zinc-800/20 animate-pulse rounded" /></CardContent>
+        <Card className="bg-card border-border text-card-foreground h-full">
+            <CardHeader><div className="h-6 w-32 bg-muted animate-pulse rounded" /></CardHeader>
+            <CardContent><div className="h-[250px] bg-muted/20 animate-pulse rounded" /></CardContent>
         </Card>
      )
   }
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
+    <Card className="bg-card border-border text-card-foreground h-full">
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-zinc-200">Bar Chart - Mixed</CardTitle>
-        <CardDescription className="text-zinc-500">January - June 2024</CardDescription>
+        <CardTitle className="text-sm font-medium text-foreground">Bar Chart - Mixed</CardTitle>
+        <CardDescription className="text-muted-foreground">January - June 2024</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[250px] w-full">
@@ -53,9 +53,9 @@ export function SessionChart() {
                         tick={{ fill: '#a1a1aa', fontSize: 12 }}
                     />
                     <Tooltip 
-                         cursor={{fill: '#27272a'}}
-                         contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }}
-                         itemStyle={{ color: '#fff' }}
+                         cursor={{fill: 'hsl(var(--muted))'}}
+                         contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--popover-foreground))', borderRadius: 'var(--radius)' }}
+                         itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
                     />
                     <Bar dataKey="visitors" radius={[0, 4, 4, 0]} barSize={32}>
                         {data.map((entry, index) => (

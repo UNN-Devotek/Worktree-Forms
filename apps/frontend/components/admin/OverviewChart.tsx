@@ -45,28 +45,28 @@ export function OverviewChart() {
 
   if (!isMounted) {
     return (
-      <Card className="bg-zinc-900 border-zinc-800 text-white">
+      <Card className="bg-card border-border text-card-foreground">
         <CardHeader>
-           <div className="h-6 w-32 bg-zinc-800 animate-pulse rounded" />
+           <div className="h-6 w-32 bg-muted animate-pulse rounded" />
         </CardHeader>
         <CardContent className="h-[250px] flex items-center justify-center">
-             <div className="h-full w-full bg-zinc-800/20 animate-pulse rounded" />
+             <div className="h-full w-full bg-muted/20 animate-pulse rounded" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 text-white">
+    <Card className="bg-card border-border text-card-foreground">
       <CardHeader className="flex flex-row items-center justify-between pb-8">
         <div className="space-y-1">
-            <CardTitle className="text-base font-medium text-zinc-200">Total Visitors</CardTitle>
-            <CardDescription className="text-zinc-500">Total for the last 3 months</CardDescription>
+            <CardTitle className="text-base font-medium">Total Visitors</CardTitle>
+            <CardDescription className="text-muted-foreground">Total for the last 3 months</CardDescription>
         </div>
         <div className="flex items-center gap-2 text-xs">
-            <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">Last 3 months</span>
+            <span className="px-2 py-1 rounded bg-muted text-muted-foreground">Last 3 months</span>
             <span className="px-2 py-1 rounded bg-blue-600/20 text-blue-400 border border-blue-600/30">Last 30 days</span>
-            <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">Last 7 days</span>
+            <span className="px-2 py-1 rounded bg-muted text-muted-foreground">Last 7 days</span>
         </div>
       </CardHeader>
       <CardContent className="pl-2">
@@ -100,8 +100,8 @@ export function OverviewChart() {
                 tickFormatter={(value) => `${value}`}
                 /> */}
                 <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--popover-foreground))', borderRadius: 'var(--radius)' }}
+                    itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
                 />
                 <Area
                 type="monotone"
@@ -126,7 +126,7 @@ export function OverviewChart() {
         </div>
         
         {/* X-Axis labels manually placed or custom to match the very clean look in image */}
-        <div className="flex justify-between mt-4 text-[10px] text-zinc-500 uppercase tracking-wider px-2">
+        <div className="flex justify-between mt-4 text-[10px] text-muted-foreground uppercase tracking-wider px-2">
             {data.filter((_, i) => i % 2 === 0).map((d) => (
                 <div key={d.name}>{d.name}</div>
             ))}

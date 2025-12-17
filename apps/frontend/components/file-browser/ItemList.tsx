@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { useFileSystemStore } from '@/lib/stores/file-system-store'
 import { FileSystemItem } from '@/types/file-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -16,6 +17,7 @@ interface ItemListProps {
 }
 
 export function ItemList({ onNavigate }: ItemListProps) {
+
   const { items, currentFolderId } = useFileSystemStore()
 
   const currentItems = items.filter(item => item.parentId === currentFolderId)
@@ -50,6 +52,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 
 function FileItem({ item, onNavigate }: { item: FileSystemItem, onNavigate: (id: string) => void }) {
+  const router = useRouter()
   const isFolder = item.type === 'folder'
   
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -74,7 +77,7 @@ function FileItem({ item, onNavigate }: { item: FileSystemItem, onNavigate: (id:
             onNavigate(item.id)
         } else if ((item as any).formSlug) {
             // It's a form from the backend -> Go to Landing Page
-            window.location.href = `/forms/${(item as any).formSlug}`
+            router.push(`/forms/${(item as any).formSlug}`)
         }
       }}
     >

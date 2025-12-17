@@ -22,18 +22,18 @@ export function UserDistributionChart() {
 
   if (!isMounted) {
      return (
-        <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
-            <CardHeader><div className="h-6 w-32 bg-zinc-800 animate-pulse rounded" /></CardHeader>
-            <CardContent><div className="h-[250px] bg-zinc-800/20 animate-pulse rounded" /></CardContent>
+        <Card className="bg-card border-border text-card-foreground h-full">
+            <CardHeader><div className="h-6 w-32 bg-muted animate-pulse rounded" /></CardHeader>
+            <CardContent><div className="h-[250px] bg-muted/20 animate-pulse rounded" /></CardContent>
         </Card>
      )
   }
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 text-white h-full">
+    <Card className="bg-card border-border text-card-foreground h-full">
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-zinc-200">Pie Chart - Donut with Text</CardTitle>
-        <CardDescription className="text-zinc-500">January - June 2024</CardDescription>
+        <CardTitle className="text-sm font-medium text-foreground">Pie Chart - Donut with Text</CardTitle>
+        <CardDescription className="text-muted-foreground">January - June 2024</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[250px] w-full relative">
@@ -54,8 +54,8 @@ export function UserDistributionChart() {
                         ))}
                     </Pie>
                     <Tooltip 
-                         contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }}
-                         itemStyle={{ color: '#fff' }}
+                         contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--popover-foreground))', borderRadius: 'var(--radius)' }}
+                         itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
                     />
                     {/* <Legend 
                         layout="horizontal" 
@@ -68,7 +68,7 @@ export function UserDistributionChart() {
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-2xl font-bold">1,125</span>
-                <span className="text-xs text-zinc-500">Visitors</span>
+                <span className="text-xs text-muted-foreground">Visitors</span>
             </div>
         </div>
       </CardContent>

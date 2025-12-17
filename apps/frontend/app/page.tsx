@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ArrowRight } from 'lucide-react';
 
 export default function Home() {
@@ -16,7 +17,7 @@ export default function Home() {
               alt="Worktree" 
               className="object-contain transition-all duration-500 ease-in-out h-14 w-auto"
             />
-            <span className="font-bold text-2xl tracking-tight text-gray-900 dark:text-white leading-none">
+            <span className="font-bold text-2xl tracking-tight text-foreground leading-none">
               Worktree
             </span>
           </div>
@@ -27,6 +28,7 @@ export default function Home() {
             <Link href="/signup">
               <Button className="gap-2">Sign up</Button>
             </Link>
+            <ThemeToggle />
           </div>
         </nav>
       </header>

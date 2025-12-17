@@ -424,6 +424,24 @@ app.put('/api/groups/:groupId/forms/:formId', async (req: Request, res: Response
 // SUBMISSION & STORAGE ENDPOINTS
 // ==========================================
 
+// Serve Image (Redirect to presigned URL)
+app.get('/api/images/:key(*)', async (req: Request, res: Response) => {
+  const key = req.params.key;
+
+  if (!key) {
+    return res.status(400).json({ success: false, error: 'No image key provided' });
+  }
+
+  try {
+    const url = await StorageService.getDownloadUrl(key);
+    // Redirect to the presigned URL
+    res.redirect(url);
+  } catch (error) {
+    console.error('Image Serve Error:', error);
+    res.status(404).json({ success: false, error: 'Image not found' });
+  }
+});
+
 // Generate Presigned Upload URL
 app.post('/api/groups/:groupId/forms/:formId/upload/presign', async (req: Request, res: Response) => {
     const { filename, contentType } = req.body;
@@ -457,9 +475,9 @@ app.post('/api/groups/:groupId/forms/:formId/upload/presign', async (req: Reques
 });
 
 // Configure Multer (Memory Storage)
-const upload = multer({ 
+const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+    limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit
 });
 
 // Upload File (Direct)
@@ -624,14 +642,27 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 Worktree-Forms API running on port ${PORT}`);
-  console.log(`📚 API Docs: /api/docs`);
-  console.log(`✅ Health Check: /api/health\n`);
-  if (!process.env.DATABASE_URL) {
-      console.warn("⚠️  DATABASE_URL is missing. Prisma will likely fail.");
+// Initialize storage bucket before starting server
+async function startServer() {
+  try {
+    // Ensure MinIO bucket exists
+    await StorageService.ensureBucket();
+
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`\n🚀 Worktree-Forms API running on port ${PORT}`);
+      console.log(`📚 API Docs: /api/docs`);
+      console.log(`✅ Health Check: /api/health\n`);
+      if (!process.env.DATABASE_URL) {
+        console.warn("⚠️  DATABASE_URL is missing. Prisma will likely fail.");
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+}
+
+startServer();
 
 export default app;

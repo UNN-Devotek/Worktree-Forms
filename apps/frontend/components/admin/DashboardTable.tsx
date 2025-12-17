@@ -25,51 +25,51 @@ export function DashboardTable() {
     ];
 
     return (
-        <div className="rounded-md border border-zinc-800 bg-zinc-900/50">
+        <div className="rounded-md border border-border bg-card">
             <Table>
                 <TableHeader>
-                    <TableRow className="border-zinc-800 hover:bg-zinc-900/50">
-                        <TableHead className="w-[30%] text-zinc-400">Header</TableHead>
-                        <TableHead className="text-zinc-400">Section Type</TableHead>
-                        <TableHead className="text-center text-zinc-400">Target</TableHead>
-                        <TableHead className="text-center text-zinc-400">Limit</TableHead>
-                        <TableHead className="text-zinc-400">Reviewer</TableHead>
+                    <TableRow className="border-border hover:bg-muted/50">
+                        <TableHead className="w-[30%] text-muted-foreground">Header</TableHead>
+                        <TableHead className="text-muted-foreground">Section Type</TableHead>
+                        <TableHead className="text-center text-muted-foreground">Target</TableHead>
+                        <TableHead className="text-center text-muted-foreground">Limit</TableHead>
+                        <TableHead className="text-muted-foreground">Reviewer</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {rows.map((row, i) => (
-                        <TableRow key={i} className="border-zinc-800 hover:bg-zinc-900/50">
-                            <TableCell className="font-medium text-zinc-200">
+                        <TableRow key={i} className="border-border hover:bg-muted/50">
+                            <TableCell className="font-medium text-foreground">
                                 <div className="flex items-center gap-2">
-                                     <div className="h-2 w-2 rounded-full border border-zinc-600"></div>
+                                     <div className="h-2 w-2 rounded-full border border-zinc-500"></div>
                                      {row.header}
                                 </div>
                             </TableCell>
                             <TableCell>
-                                <Badge variant="outline" className="bg-zinc-950 text-zinc-300 border-zinc-800 hover:bg-zinc-900">
+                                <Badge variant="outline" className="bg-background text-foreground border-border hover:bg-muted">
                                     {row.type}
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-center">
-                                <span className="inline-flex items-center justify-center rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+                                <span className="inline-flex items-center justify-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                                     {row.target}
                                 </span>
                             </TableCell>
                              <TableCell className="text-center">
-                                <span className="inline-flex items-center justify-center rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+                                <span className="inline-flex items-center justify-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                                     {row.limit}
                                 </span>
                             </TableCell>
-                            <TableCell className="text-zinc-400">
+                            <TableCell className="text-muted-foreground">
                                 {row.needsReview ? (
-                                    <Button variant="outline" size="sm" className="h-7 text-xs border-zinc-700 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+                                    <Button variant="outline" size="sm" className="h-7 text-xs border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground">
                                         {row.reviewer}
                                     </Button>
                                 ) : row.reviewer}
                             </TableCell>
                             <TableCell>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-zinc-200">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                     <MoreVertical className="h-4 w-4" />
                                 </Button>
                             </TableCell>
@@ -77,22 +77,22 @@ export function DashboardTable() {
                     ))}
                 </TableBody>
             </Table>
-            <div className="border-t border-zinc-800 p-4 text-xs text-zinc-500 flex justify-between items-center">
+            <div className="border-t border-border p-4 text-xs text-muted-foreground flex justify-between items-center">
                 <span>0 of 68 row(s) selected.</span>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         Rows per page
-                        <select className="bg-zinc-900 border border-zinc-800 rounded px-1 text-zinc-300">
+                        <select className="bg-background border border-border rounded px-1 text-foreground">
                             <option>10</option>
                             <option>20</option>
                         </select>
                     </div>
                     <span>Page 1 of 7</span>
                     <div className="flex gap-1">
-                        <Button variant="outline" size="icon" className="h-6 w-6 border-zinc-800 bg-zinc-900 p-0 text-zinc-400 hover:bg-zinc-800" disabled>&lt;&lt;</Button>
-                        <Button variant="outline" size="icon" className="h-6 w-6 border-zinc-800 bg-zinc-900 p-0 text-zinc-400 hover:bg-zinc-800" disabled>&lt;</Button>
-                        <Button variant="outline" size="icon" className="h-6 w-6 border-zinc-800 bg-zinc-900 p-0 text-zinc-400 hover:bg-zinc-800">&gt;</Button>
-                        <Button variant="outline" size="icon" className="h-6 w-6 border-zinc-800 bg-zinc-900 p-0 text-zinc-400 hover:bg-zinc-800">&gt;&gt;</Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 border-border bg-background p-0 text-muted-foreground hover:bg-muted" disabled>&lt;&lt;</Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 border-border bg-background p-0 text-muted-foreground hover:bg-muted" disabled>&lt;</Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 border-border bg-background p-0 text-muted-foreground hover:bg-muted">&gt;</Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 border-border bg-background p-0 text-muted-foreground hover:bg-muted">&gt;&gt;</Button>
                     </div>
                 </div>
             </div>

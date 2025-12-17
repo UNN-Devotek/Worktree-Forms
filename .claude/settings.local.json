@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__playwright-mcp__browser_navigate",
+      "Bash(docker-compose up:*)",
+      "mcp__playwright-mcp__browser_click",
+      "Bash(docker-compose logs:*)"
+    ]
+  }
+}

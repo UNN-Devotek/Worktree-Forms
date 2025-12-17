@@ -274,7 +274,7 @@ export function PropertiesTab({ field, groupId, formId }: PropertiesTabProps) {
               type="number"
               min="1"
               max="100"
-              value={(field.maxFileSize || 10485760) / 1048576}
+              value={(field.maxFileSize || 20971520) / 1048576}
               onChange={(e) => handleUpdate({
                 maxFileSize: parseInt(e.target.value) * 1048576
               })}

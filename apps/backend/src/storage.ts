@@ -1,44 +1,78 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // MinIO endpoint configuration for Docker internal networking
 const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || '';
 const MINIO_HOST = process.env.MINIO_HOST || 'minio';
-const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004'); // Changed from 9000 to 9004
+const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004');
 const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 
-// Construct endpoint URL
+// Public MinIO endpoint for presigned URLs (browsers need to access this)
+const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || process.env.NEXT_PUBLIC_MINIO_URL || '';
+
+// Construct internal endpoint URL (for S3Client operations)
 // Priority: MINIO_ENDPOINT > constructed URL from HOST:PORT
-let endpoint: string;
+let internalEndpoint: string;
 if (MINIO_ENDPOINT) {
   // If MINIO_ENDPOINT is provided, use it as-is or add protocol
-  endpoint = MINIO_ENDPOINT.startsWith('http')
+  internalEndpoint = MINIO_ENDPOINT.startsWith('http')
     ? MINIO_ENDPOINT
     : `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_ENDPOINT}`;
 } else {
   // Otherwise construct from HOST and PORT (internal Docker networking)
-  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+  internalEndpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
 }
 
+// S3Client for internal operations (upload, delete)
 const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
-  endpoint,
+  endpoint: internalEndpoint,
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
-  forcePathStyle: true, // Needed for Minio
+  forcePathStyle: true, // Needed for MinIO
 });
 
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'squidhub-uploads';
+// S3Client for presigned URLs (must use public endpoint for browser access)
+const publicS3Client = MINIO_PUBLIC_URL ? new S3Client({
+  region: process.env.MINIO_REGION || 'us-east-1',
+  endpoint: MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`,
+  credentials: {
+    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
+  },
+  forcePathStyle: true,
+}) : s3Client; // Fallback to internal client if no public URL provided
+
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
 
 export class StorageService {
   
   static async ensureBucket() {
-    // In production/deployment, bucket creation is usually handled by terraform/setup scripts.
-    // For this transition, we might assume the bucket exists or we could check and create.
-    // We'll skip auto-creation to keep it simple and focused on usage, assuming setup or manual creation.
-    // If needed: await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
+    try {
+      // Check if bucket exists
+      await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
+      console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
+    } catch (error: any) {
+      // If bucket doesn't exist, create it
+      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+        try {
+          await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
+          console.log(`✅ MinIO bucket '${BUCKET_NAME}' created successfully`);
+        } catch (createError: any) {
+          // Ignore if bucket already exists (race condition)
+          if (createError.name !== 'BucketAlreadyOwnedByYou' && createError.name !== 'BucketAlreadyExists') {
+            console.error('❌ Failed to create MinIO bucket:', createError);
+            throw createError;
+          }
+          console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
+        }
+      } else {
+        console.error('❌ Error checking MinIO bucket:', error);
+        throw error;
+      }
+    }
   }
 
   static async getUploadUrl(key: string, contentType: string): Promise<string> {
@@ -47,8 +81,9 @@ export class StorageService {
       Key: key,
       ContentType: contentType,
     });
-    
-    return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+
+    // Use publicS3Client for presigned URLs so browsers can access them
+    return getSignedUrl(publicS3Client, command, { expiresIn: 3600 });
   }
 
   static async uploadFile(key: string, body: Buffer | Uint8Array, contentType: string): Promise<void> {
@@ -58,16 +93,18 @@ export class StorageService {
         Body: body,
         ContentType: contentType,
       });
+      // Use internal s3Client for direct upload operations
       await s3Client.send(command);
   }
-  
+
   static async getDownloadUrl(key: string): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
     });
-    
-    return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+
+    // Use publicS3Client for presigned URLs so browsers can access them
+    return getSignedUrl(publicS3Client, command, { expiresIn: 3600 });
   }
 
   static async deleteFile(key: string): Promise<void> {

@@ -111,7 +111,7 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
     }, [])
 
     const validateFile = (file: File): boolean => {
-      const maxSize = field.maxFileSize || 10 * 1024 * 1024
+      const maxSize = field.maxFileSize || 20 * 1024 * 1024
       const acceptValue = field.accept?.trim()
 
       if (file.size > maxSize) return false
@@ -285,7 +285,7 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
           >
             <Upload className={cn('mx-auto h-8 w-8 mb-2 transition-all duration-200', isDragging ? 'text-primary scale-110' : 'text-muted-foreground')} />
             <p className="text-sm text-foreground font-medium">{isDragging ? 'Drop files here' : 'Click to upload or drag and drop'}</p>
-            <p className="text-xs text-muted-foreground mt-1">Max file size: {formatFileSize(field.maxFileSize || 10485760)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Max file size: {formatFileSize(field.maxFileSize || 20971520)}</p>
             {field.allowMultiple && <p className="text-xs text-muted-foreground">Multiple files allowed</p>}
             {field.accept && <p className="text-xs text-muted-foreground mt-1">Accepted types: {field.accept}</p>}
             <input ref={fileInputRef} type="file" accept={field.accept || '*'} multiple={field.allowMultiple} onChange={handleFileChange} className="sr-only" aria-invalid={!!error} aria-describedby={error ? `${field.id}-error` : field.helpText ? `${field.id}-help` : undefined} />
@@ -438,7 +438,7 @@ export const FileField = forwardRef<HTMLInputElement, { field: FormFieldBase, mo
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-not-allowed opacity-70">
             <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-            <p className="text-xs text-muted-foreground mt-1">Max file size: {formatFileSize(field.maxFileSize || 10485760)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Max file size: {formatFileSize(field.maxFileSize || 20971520)}</p>
             {field.allowMultiple && <p className="text-xs text-muted-foreground">Multiple files allowed</p>}
           </div>
         </FieldWrapper>

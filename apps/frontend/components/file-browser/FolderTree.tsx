@@ -75,8 +75,8 @@ function DroppableAllForms({ isSelected, onClick }: { isSelected: boolean, onCli
         onClick={onClick}
       >
         <div className="w-4" /> {/* Spacer for chevron */}
-        <FontAwesomeIcon icon={faFolderOpen} className="h-4 w-4 text-gray-900 dark:text-white" />
-        <span className="text-gray-900 dark:text-white">All Forms</span>
+        <FontAwesomeIcon icon={faFolderOpen} className="h-4 w-4 text-foreground" />
+        <span className="text-foreground">All Forms</span>
       </div>
   )
 }
@@ -130,11 +130,11 @@ function FolderItem({ folder, depth, isExpanded, isSelected, hasChildren, onNavi
           {/* Folder Icon */}
           <FontAwesomeIcon 
             icon={isExpanded ? faFolderOpen : faFolder} 
-            className="h-4 w-4 text-gray-900 dark:text-white"
+            className="h-4 w-4 text-foreground"
           />
 
           {/* Name */}
-          <span className="truncate text-gray-900 dark:text-white">{folder.name}</span>
+          <span className="truncate text-foreground">{folder.name}</span>
         </div>
 
         {/* Children */}
