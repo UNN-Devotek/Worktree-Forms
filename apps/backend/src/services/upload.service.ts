@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { StorageService } from '../storage';
+import { StorageService } from '../storage.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
