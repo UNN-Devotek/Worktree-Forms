@@ -531,24 +531,24 @@ DATABASE_URL=postgresql://[user]:[pass]@[dokploy-db-service-name]:5432/[database
 ```
 > Use the internal Docker service name, NOT localhost or external IP
 
-**MinIO Internal (Docker Network)**:
+**MinIO (External Service)**:
 ```bash
-MINIO_HOST=minio
-MINIO_PORT=9004
-MINIO_USE_SSL=false
-MINIO_ENDPOINT=
+# Use external IP/domain for API operations
+MINIO_HOST=67.222.144.10      # Direct IP to MinIO API
+MINIO_PORT=9004               # MinIO API port (NOT console port 9002)
+MINIO_USE_SSL=false          # Internal API uses HTTP
 MINIO_ACCESS_KEY=[your-access-key]
 MINIO_SECRET_KEY=[your-secret-key]
 MINIO_BUCKET_NAME=worktree
 MINIO_REGION=us-east-1
 ```
-> **Internal Connection**: Backend uses `http://minio:9004` for direct file operations (upload, delete) within Docker network. No SSL needed for internal traffic.
+> **⚠️ IMPORTANT**: MinIO runs as an external service, NOT in the same Docker network as the app. Use the direct IP `67.222.144.10:9004` for API operations (upload/delete/presigned URLs).
 
-**MinIO Public (Browser Access)**:
+**MinIO Public URL (Browser Access)**:
 ```bash
 MINIO_PUBLIC_URL=https://minio.worktree.pro
 ```
-> **External Connection**: Used for presigned URLs that browsers access. Points to MinIO Console (port 9002) via Dokploy domain routing.
+> **Public Endpoint**: Used for presigned URLs that browsers access. The domain `minio.worktree.pro` currently points to Console UI (port 9002), but presigned URLs will route through the API (port 9004).
 
 **Frontend Configuration**:
 ```bash
@@ -571,23 +571,25 @@ JWT_REFRESH_EXPIRE=7d
 
 1. **Internal Service Communication** - Use Docker service names:
    - Database: Use full Dokploy service name (e.g., `devo-corner-worktreedatabasedev-cxfozh:5432`)
-   - MinIO API: `http://minio:9004` (internal Docker network, port 9004 is API)
 
-2. **External/Browser Access** - Use public URLs:
+2. **External Service Communication** - Use direct IP/domain:
+   - MinIO API: `http://67.222.144.10:9004` (external service, NOT in Docker network)
+
+3. **External/Browser Access** - Use public URLs:
    - API: `https://worktree.pro/api`
-   - MinIO Console: `https://minio.worktree.pro` (port 9002 via domain)
+   - MinIO Public: `https://minio.worktree.pro`
 
-3. **Never use localhost** except for:
+4. **Never use localhost** except for:
    - `BACKEND_HOST=localhost` (Next.js to Express in same container)
 
-4. **MinIO Dual Configuration**:
-   - **Internal operations** (upload, delete): Backend connects to `http://minio:9004` - direct Docker networking, no SSL
-   - **Presigned URLs** (browser downloads): Use `MINIO_PUBLIC_URL=https://minio.worktree.pro` - routes to port 9004 via domain
+5. **MinIO Configuration**:
+   - **Backend API operations** (upload, delete): `MINIO_HOST=67.222.144.10`, `MINIO_PORT=9004` (direct external connection)
+   - **Presigned URLs** (browser downloads): `MINIO_PUBLIC_URL=https://minio.worktree.pro`
    - **Console UI**: `https://minio.worktree.pro` (port 9002) - for admin access only
 
-5. **MinIO Port Reference**:
-   - Port 9004: API endpoint for S3 operations (internal: `minio:9004`, external: needs separate domain)
-   - Port 9002: Console UI (external: `https://minio.worktree.pro`)
+6. **MinIO Port Reference**:
+   - Port 9004: API endpoint for S3 operations (external access via IP)
+   - Port 9002: Console UI (external access via domain)
 
 ### Post-Deployment Checks
 
