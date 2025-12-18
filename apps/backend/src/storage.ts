@@ -9,21 +9,23 @@ const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 // Public MinIO endpoint for presigned URLs and external access
 const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || process.env.NEXT_PUBLIC_MINIO_URL || '';
 
-// Determine endpoint based on configuration
-// If MINIO_PUBLIC_URL is set, use it for all operations (external access)
-// Otherwise, construct endpoint from HOST:PORT (Docker internal)
+// Determine endpoint: prioritize MINIO_HOST for internal networking
 let endpoint: string;
 let useExternalEndpoint = false;
 
-if (MINIO_PUBLIC_URL) {
-  // Use public URL for external access (domain routing, no port needed)
+if (MINIO_HOST && MINIO_HOST !== 'undefined' && MINIO_HOST !== '') {
+  // Use internal Docker networking (MINIO_HOST is set)
+  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+  console.log(`📦 Using Internal MinIO Endpoint: ${endpoint}`);
+} else if (MINIO_PUBLIC_URL) {
+  // Fallback to external endpoint
   endpoint = MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`;
   useExternalEndpoint = true;
   console.log(`🌐 Using External MinIO Endpoint: ${endpoint}`);
 } else {
-  // Use internal Docker networking with explicit HOST:PORT
-  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
-  console.log(`📦 Using Internal MinIO Endpoint: ${endpoint}`);
+  // Default fallback
+  endpoint = 'http://minio:9000';
+  console.log(`📦 Using Default MinIO Endpoint: ${endpoint}`);
 }
 
 console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`);
