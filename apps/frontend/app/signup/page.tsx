@@ -51,7 +51,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md px-4">
         <Card className="shadow-xl">
           <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-3xl font-bold text-primary-700 dark:text-primary-400">📋 Create Account</CardTitle>
+            <CardTitle className="text-3xl font-bold text-primary-700 dark:text-primary-400">Create Account</CardTitle>
             <CardDescription>Sign up for Worktree</CardDescription>
           </CardHeader>
 
