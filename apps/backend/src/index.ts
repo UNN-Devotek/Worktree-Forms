@@ -519,10 +519,10 @@ app.post('/api/groups/:groupId/forms/:formId/upload', rateLimitTiers.upload, upl
           files: [{
               id: fileRecord.id,              // Database record ID
               filename: fileRecord.filename,  // Original filename
-              objectKey: fileRecord.objectKey, // ← Store this in form submission (UUID-based)
+              object_key: fileRecord.objectKey, // ← Store this in form submission (UUID-based)
               url: displayUrl,                // Display URL (for preview only)
               size: fileRecord.size,
-              contentType: fileRecord.contentType
+              content_type: fileRecord.contentType
           }]
         }
       });
