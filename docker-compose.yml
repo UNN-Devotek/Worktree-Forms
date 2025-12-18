@@ -16,11 +16,13 @@ services:
       PRISMA_QUERY_ENGINE_LIBRARY: /app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
       
       # Object Storage Configuration
-      MINIO_HOST: ${MINIO_HOST:-minio}
-      MINIO_PORT: ${MINIO_PORT:-9004}
+      # Note: MINIO_HOST, MINIO_PORT, MINIO_USE_SSL are optional
+      # If not set, will use MINIO_PUBLIC_URL for external access
+      MINIO_HOST: ${MINIO_HOST}
+      MINIO_PORT: ${MINIO_PORT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-worktree}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
