@@ -11,6 +11,7 @@
 - 🏗️ [Architecture](./strategic-overview.md) - System design & decisions
 - 🛠️ [Admin Guide](./ADMIN-PAGES-GUIDE.md) - Admin panel specifications
 - 🎨 [Themes](./COLOR-THEME-UPDATE.md) - Ameritech brand colors
+- 📸 [MinIO Guide](./docs/minio-guide.md) - Image upload & serving
 - ⚡ [Quick Ref](./QUICK-REFERENCE.md) - Common commands & patterns
 
 ## 🎯 What We're Building
@@ -207,16 +208,19 @@ docker-compose ps
 #### Troubleshooting
 
 **"Cannot connect to database"**
+
 - Check `DATABASE_URL` in `.env`
 - Ensure database service is running in Dokploy
 - Ask team for latest credentials
 
 **"MinIO connection failed"**
+
 - Verify `MINIO_HOST=67.222.144.10` and `MINIO_PORT=9004`
 - Check credentials are correct
 - Ensure MinIO port 9004 is accessible externally
 
 **"File upload fails"**
+
 - Check Docker logs: `docker-compose logs app`
 - Verify MinIO endpoint is using IP (not domain) for local dev
 - Ensure bucket name is `worktree`

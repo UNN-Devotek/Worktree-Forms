@@ -40,6 +40,7 @@
 
 - **Live Site**: [https://worktree.pro](https://worktree.pro)
 - **API Documentation**: [https://worktree.pro/api/docs](https://worktree.pro/api/docs)
+- **MinIO Guide**: [`docs/minio-guide.md`](./docs/minio-guide.md)
 
 ### Common Tasks
 
@@ -156,6 +157,7 @@ docker-compose exec app sh -c "cd apps/backend && npx prisma studio"
 ### Troubleshooting Local Development
 
 **Container won't start:**
+
 ```bash
 # Check logs
 docker-compose logs app
@@ -169,16 +171,19 @@ netstat -ano | findstr :5100
 ```
 
 **Database connection failed:**
+
 - Verify `DATABASE_URL` in `.env` points to external Dokploy database
 - Check firewall allows outbound connections to external database
 - Ensure external database is accessible and running
 
 **MinIO connection failed:**
+
 - Verify `MINIO_PUBLIC_URL` in `.env` is set to `https://minio.worktree.pro`
 - Check `MINIO_USE_SSL=true` for external HTTPS connection
 - Test MinIO access: `curl https://minio.worktree.pro`
 
 **Clean restart:**
+
 ```bash
 # Stop everything, remove volumes, rebuild
 docker-compose down -v
@@ -497,6 +502,7 @@ Production deployment uses Dokploy's environment variable configuration. **All c
 ### Deployment Process
 
 1. **Commit and Push Changes**
+
    ```bash
    git add .
    git commit -m "feat: your changes"
@@ -517,6 +523,7 @@ Production deployment uses Dokploy's environment variable configuration. **All c
 Configure these in Dokploy's environment settings:
 
 **Application Core**:
+
 ```bash
 NODE_ENV=production
 PORT=3100
@@ -526,12 +533,15 @@ NEXT_PUBLIC_APP_URL=https://worktree.pro
 ```
 
 **Database (Internal Docker Network)**:
+
 ```bash
 DATABASE_URL=postgresql://[user]:[pass]@[dokploy-db-service-name]:5432/[database]
 ```
+
 > Use the internal Docker service name, NOT localhost or external IP
 
 **MinIO (Docker Internal Networking)**:
+
 ```bash
 # Production uses Docker internal service name
 MINIO_HOST=minio                      # Docker service name (internal network)
@@ -542,16 +552,21 @@ MINIO_SECRET_KEY=[your-secret-key]
 MINIO_BUCKET_NAME=worktree
 MINIO_REGION=us-east-1
 ```
+
 > **✅ PRODUCTION**: MinIO runs in the same Dokploy project, so use Docker internal networking (`minio:9004`) for fast, direct container-to-container communication. No SSL needed for internal traffic.
 
 **MinIO Public URL (Browser Access)**:
+
 ```bash
 MINIO_PUBLIC_URL=https://minio.worktree.pro
 ```
+
 > **Public Endpoint**: Used for presigned URLs that browsers access. This domain routes to MinIO Console UI (port 9002).
 
 **Local Development**:
+
 > For local development, use the external API domain since MinIO is not in your local Docker network:
+>
 > ```bash
 > MINIO_HOST=api.worktree.worktree.pro
 > MINIO_PORT=443
@@ -559,6 +574,7 @@ MINIO_PUBLIC_URL=https://minio.worktree.pro
 > ```
 
 **Frontend Configuration**:
+
 ```bash
 BACKEND_HOST=localhost
 NEXT_PUBLIC_API_URL=https://worktree.pro/api
@@ -566,6 +582,7 @@ NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
 ```
 
 **Security**:
+
 ```bash
 JWT_SECRET=[32+-character-secret]
 JWT_EXPIRE=15m
@@ -611,17 +628,20 @@ curl https://worktree.pro/api/health
 ### Troubleshooting Production
 
 **"Cannot connect to database"**:
+
 - Check `DATABASE_URL` uses Docker service name
 - Verify database service is running in Dokploy
 - Never use `localhost` or external IPs for internal services
 
 **"MinIO connection failed"**:
+
 - Verify `MINIO_HOST=minio` (not localhost)
 - Check `MINIO_PORT=9004`
 - Confirm MinIO container is running
 - Ensure `MINIO_PUBLIC_URL` is set for browser access
 
 **"Environment validation failed"**:
+
 - Review error message in Dokploy logs
 - This is intentional - it caught a configuration error
 - Fix the environment variable mentioned in error
@@ -639,3 +659,20 @@ curl https://worktree.pro/api/health
 ---
 
 **Remember**: The docs are your friend. Check them first!
+
+---
+
+## 📸 MinIO Image Handling
+
+> [!NOTE]
+> Detailed guide available at: [`docs/minio-guide.md`](./docs/minio-guide.md)
+
+**Key Implementation Details**:
+
+1.  **Uploads**: Direct to backend -> Stream to MinIO (using Multer memory storage).
+2.  **Serving**:
+    - **Images are NOT served directly from MinIO public URL.**
+    - Frontend requests: `/api/images/:key`
+    - Backend: Generates **Presigned URL** and redirects (302) to it.
+    - This ensures secure access even for private buckets.
+3.  **Database**: All files are tracked in `FileUpload` table with `objectKey` and `submissionId`.

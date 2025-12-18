@@ -44,14 +44,14 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-50 relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 relative">
       <div className="absolute top-4 right-4">
           <ThemeToggle />
       </div>
       <div className="w-full max-w-md px-4">
         <Card className="shadow-xl">
           <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-3xl font-bold text-primary-700">📋 Create Account</CardTitle>
+            <CardTitle className="text-3xl font-bold text-primary-700 dark:text-primary-400">📋 Create Account</CardTitle>
             <CardDescription>Sign up for Worktree</CardDescription>
           </CardHeader>
 
