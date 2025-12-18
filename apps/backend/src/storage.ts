@@ -45,7 +45,7 @@ const s3Client = new S3Client({
   forcePathStyle: true, // Needed for MinIO
   requestHandler: new NodeHttpHandler({
     requestTimeout: requestTimeout,
-    connectionTimeout: 5000,
+    connectionTimeout: 10000,
   }),
 });
 
@@ -61,7 +61,7 @@ const publicS3Client = (!useExternalEndpoint && MINIO_PUBLIC_URL) ? new S3Client
   forcePathStyle: true,
   requestHandler: new NodeHttpHandler({
     requestTimeout: 30000,
-    connectionTimeout: 5000,
+    connectionTimeout: 10000,
   }),
 }) : s3Client; // Use same client for external endpoint or if no public URL
 
