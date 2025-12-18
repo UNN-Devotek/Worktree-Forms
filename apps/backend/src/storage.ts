@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 
 // MinIO endpoint configuration
 const MINIO_HOST = process.env.MINIO_HOST || 'minio';
@@ -42,10 +43,10 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
   forcePathStyle: true, // Needed for MinIO
-  requestHandler: {
+  requestHandler: new NodeHttpHandler({
     requestTimeout: requestTimeout,
-    throwOnRequestTimeout: true,
-  },
+    connectionTimeout: 5000,
+  }),
 });
 
 // Use same client for presigned URLs when using external endpoint
@@ -58,10 +59,10 @@ const publicS3Client = (!useExternalEndpoint && MINIO_PUBLIC_URL) ? new S3Client
     secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
   },
   forcePathStyle: true,
-  requestHandler: {
+  requestHandler: new NodeHttpHandler({
     requestTimeout: 30000,
-    throwOnRequestTimeout: true,
-  },
+    connectionTimeout: 5000,
+  }),
 }) : s3Client; // Use same client for external endpoint or if no public URL
 
 const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
