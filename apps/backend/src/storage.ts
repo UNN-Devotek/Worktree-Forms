@@ -3,7 +3,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 
 // MinIO endpoint configuration
-const MINIO_HOST = process.env.MINIO_HOST || 'minio';
+const MINIO_HOST = process.env.MINIO_HOST;
 const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004');
 const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
 
