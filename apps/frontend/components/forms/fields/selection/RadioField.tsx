@@ -28,21 +28,26 @@ export const RadioField = forwardRef<HTMLDivElement, RadioFieldProps>(
           colSpan={field.colSpan}
         >
           <RadioGroup disabled>
-            {field.choices?.map((choice, index) => (
-              <div key={index} className="flex items-center space-x-2">
+            {(field.choices || []).map((choice, index) => (
+              <div key={`${choice.value}-${index}`} className="flex items-center space-x-2">
                 <RadioGroupItem
-                  value={choice.value}
-                  id={`${field.id}-${choice.value}`}
+                  value={choice.value || `option-${index}`}
+                  id={`${field.id}-${choice.value || index}`}
                   disabled
                 />
                 <Label
-                  htmlFor={`${field.id}-${choice.value}`}
+                  htmlFor={`${field.id}-${choice.value || index}`}
                   className="cursor-not-allowed opacity-70"
                 >
-                  {choice.text}
+                  {choice.text || `Option ${index + 1}`}
                 </Label>
               </div>
             ))}
+            {(!field.choices || field.choices.length === 0) && (
+              <div className="text-sm text-muted-foreground italic p-2 border border-dashed rounded">
+                No options defined
+              </div>
+            )}
           </RadioGroup>
         </FieldWrapper>
       )

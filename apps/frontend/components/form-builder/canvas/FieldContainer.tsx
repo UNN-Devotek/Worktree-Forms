@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { FormFieldBase } from '@/types/group-forms'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 
 interface FieldContainerProps {
   field: FormFieldBase
@@ -127,7 +128,9 @@ export function FieldContainer({ field, sectionIndex, fieldIndex, columnIndex, p
         {/* Field Content */}
         <div className="p-4 pl-12">
           {FieldComponent && (
-            <FieldComponent field={field} mode="builder" />
+            <ErrorBoundary>
+              <FieldComponent field={field} mode="builder" />
+            </ErrorBoundary>
           )}
         </div>
 

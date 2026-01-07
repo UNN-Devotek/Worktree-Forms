@@ -78,7 +78,7 @@ export class UploadService {
    * @returns Full URL for browser access
    */
   static getFileUrl(objectKey: string): string {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3100';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3005';
     return `${baseUrl}/api/images/${objectKey}`;
   }
 

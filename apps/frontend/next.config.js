@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     // When running in the unified container, the backend is on local loopback
-    const backendPort = process.env.BACKEND_PORT || 5100;
+    const backendPort = process.env.BACKEND_PORT || 5005;
     const backendHost = process.env.BACKEND_HOST || 'localhost';
     const backendUrl = `http://${backendHost}:${backendPort}`;
     
