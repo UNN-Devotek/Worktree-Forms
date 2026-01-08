@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -14,6 +15,7 @@ import { rateLimitTiers } from './middleware/rateLimiter.js';
 dotenv.config();
 
 // Validate environment before starting server
+// (Trigger restart for .env update)
 validateEnvironment();
 
 const __filename = fileURLToPath(import.meta.url);

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { X, ImageIcon, Loader2 } from 'lucide-react'
 import { apiClient, API_BASE } from '@/lib/api'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 
 interface UploadResponse {
   success: boolean
@@ -50,6 +50,7 @@ function getDisplayUrl(currentObjectKey?: string, currentUrl?: string): string |
 export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey, onUpload }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   // Get the correct display URL
   const displayUrl = useMemo(
@@ -63,19 +64,31 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file')
+      toast({
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive"
+      })
       return
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image must be less than 10MB')
+      toast({
+        title: "Error",
+        description: "Image must be less than 10MB",
+        variant: "destructive"
+      })
       return
     }
 
     // Check if we have the required params - formId is required for uploads
     if (!groupId || !formId) {
-      toast.error('Please save the form first before uploading images')
+      toast({
+        title: "Error",
+        description: "Please save the form first before uploading images",
+        variant: "destructive"
+      })
       return
     }
 
@@ -97,13 +110,25 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
       if (response.success && response.data?.files?.[0]) {
         const uploaded = response.data.files[0]
         onUpload(uploaded.object_key, uploaded.url)
-        toast.success('Image uploaded successfully')
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully",
+          variant: "default"
+        })
       } else {
-        toast.error(response.error || 'Failed to upload image')
+        toast({
+          title: "Error",
+          description: response.error || 'Failed to upload image',
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error('Error uploading image:', error)
-      toast.error('Failed to upload image')
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive"
+      })
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''

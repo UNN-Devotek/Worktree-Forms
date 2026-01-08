@@ -31,8 +31,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       
     ports:
-      - "${PORT:-3100}:3100"
-      - "${BACKEND_PORT:-5100}:5100"
+      - "${PORT:-3005}:3005"
+      - "${BACKEND_PORT:-5005}:5005"
     volumes:
       - ./.env:/app/.env
     networks:

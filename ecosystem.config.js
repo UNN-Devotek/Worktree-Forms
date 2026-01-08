@@ -7,8 +7,8 @@ module.exports = {
       args: "run start",
       env: {
         NODE_ENV: "production",
-        BACKEND_PORT: "5100",
-        PORT: "5100",  // Backend uses PORT env var
+        BACKEND_PORT: "5005",
+        PORT: "5005",  // Backend uses PORT env var
       },
     },
     {
@@ -18,7 +18,7 @@ module.exports = {
       args: "run start",
       env: {
         NODE_ENV: "production",
-        PORT: "3100",  // Frontend uses PORT env var
+        PORT: "3005",  // Frontend uses PORT env var
       },
     },
   ],
