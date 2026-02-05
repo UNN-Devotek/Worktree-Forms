@@ -49,7 +49,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
   const { resolvedTheme } = useTheme();
   const gridRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
-  const [gridDimensions, setGridDimensions] = useState({ width: 1200, height: 800 });
+  const [gridDimensions, setGridDimensions] = useState({ width: 0, height: 0 });
 
   // Formula engine (always called)
   const formulaEngine = useFormulaEngine({
@@ -408,28 +408,32 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
     const updateDimensions = () => {
       if (gridRef.current) {
         const rect = gridRef.current.getBoundingClientRect();
-        setGridDimensions({
-          width: rect.width,
-          height: rect.height
+        // Only update if dimensions actually changed (prevents re-render loops)
+        setGridDimensions(prev => {
+          if (prev.width === rect.width && prev.height === rect.height) {
+            return prev; // No change, prevent re-render
+          }
+          return {
+            width: rect.width,
+            height: rect.height
+          };
         });
       }
     };
 
-    // Initial size
-    updateDimensions();
+    // Use RAF to avoid measurement timing issues
+    requestAnimationFrame(updateDimensions);
 
     // Observe size changes
-    const resizeObserver = new ResizeObserver(updateDimensions);
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateDimensions);
+    });
     resizeObserver.observe(gridRef.current);
-
-    // Also listen for window resize as backup
-    window.addEventListener('resize', updateDimensions);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', updateDimensions);
     };
-  }, []);
+  }, []); // Stable - no dependencies
 
   const getActiveCellBounds = useCallback(() => {
     if (!activeCell) return null;
@@ -441,12 +445,14 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
 
   const activeCellBounds = getActiveCellBounds();
 
-  if (!isConnected) {
+  if (!isConnected || gridDimensions.width === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Connecting to sheet...</p>
+          <p className="text-sm text-muted-foreground">
+            {!isConnected ? 'Connecting to sheet...' : 'Loading sheet...'}
+          </p>
         </div>
       </div>
     );
