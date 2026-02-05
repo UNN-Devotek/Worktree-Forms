@@ -46,6 +46,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
   const [selectionStart, setSelectionStart] = useState<CellInterface | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const [isPickingReference, setIsPickingReference] = useState(false);
   const { resolvedTheme } = useTheme();
   const gridRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -196,11 +197,18 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
     const dataRow = rowIndex - 1;
     const dataCol = columnIndex - 1;
 
+    // If picking cell reference in formula, append it instead of committing
+    if (isPickingReference && isEditing) {
+        const cellRef = `${getColumnLabel(dataCol)}${dataRow + 1}`;
+        setEditValue(editValue + cellRef);
+        return; // Keep editor open, don't select new cell
+    }
+
     // Commit current edit if active
     if (isEditing && activeCell) {
         updateCell(activeCell.rowIndex, activeCell.columnIndex, editValue);
     }
-    
+
     setSelectionStart({ rowIndex: dataRow, columnIndex: dataCol });
     setActiveCell({ rowIndex: dataRow, columnIndex: dataCol });
     setSelections([{ bounds: { top: dataRow, left: dataCol, bottom: dataRow, right: dataCol } }]);
@@ -650,6 +658,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
             setIsEditing(false);
             setEditValue('');
           }}
+          onCellReferenceMode={setIsPickingReference}
         />
       )}
     </div>
