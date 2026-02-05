@@ -49,6 +49,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
   const { resolvedTheme } = useTheme();
   const gridRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
+  const [gridDimensions, setGridDimensions] = useState({ width: 1200, height: 800 });
 
   // Formula engine (always called)
   const formulaEngine = useFormulaEngine({
@@ -366,6 +367,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
     return () => { if (isConnected) disconnect(); };
   }, [sheetId, token, user, isConnected, connect, disconnect]);
 
+  // Sync Yjs data to local state (fix: don't depend on formulaEngine to avoid infinite loop)
   useEffect(() => {
     if (!isConnected || !doc) return;
     const cellsMap = doc.getMap('cells');
@@ -374,6 +376,7 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
       for (let r = 0; r < rows; r++) {
         matrix[r] = [];
         for (let c = 0; c < columns; c++) {
+          // Use formulaEngine via closure (it's stable enough for this use)
           matrix[r][c] = formulaEngine.getCellValue(r, c);
         }
       }
@@ -382,13 +385,44 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
     updateData();
     cellsMap.observe(updateData);
     return () => cellsMap.unobserve(updateData);
-  }, [doc, isConnected, rows, columns, formulaEngine]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc, isConnected, rows, columns]); // Removed formulaEngine from deps to prevent infinite loop
 
   useEffect(() => {
     const handleKeyDownWrapper = (e: KeyboardEvent) => handleKeyDown(e);
     window.addEventListener('keydown', handleKeyDownWrapper);
     return () => window.removeEventListener('keydown', handleKeyDownWrapper);
   }, [handleKeyDown]);
+
+  // Dynamic grid sizing - make it fill the container
+  useEffect(() => {
+    if (!gridRef.current) return;
+
+    const updateDimensions = () => {
+      if (gridRef.current) {
+        const rect = gridRef.current.getBoundingClientRect();
+        setGridDimensions({
+          width: rect.width,
+          height: rect.height
+        });
+      }
+    };
+
+    // Initial size
+    updateDimensions();
+
+    // Observe size changes
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(gridRef.current);
+
+    // Also listen for window resize as backup
+    window.addEventListener('resize', updateDimensions);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
 
   const getActiveCellBounds = useCallback(() => {
     if (!activeCell) return null;
@@ -422,8 +456,8 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
         columnCount={columns + 1}
         frozenRows={1}
         frozenColumns={1}
-        width={1200}
-        height={800}
+        width={gridDimensions.width}
+        height={gridDimensions.height}
         rowHeight={(index) => index === 0 ? HEADER_ROW_HEIGHT : ROW_HEIGHT}
         columnWidth={(index) => index === 0 ? HEADER_COLUMN_WIDTH : DEFAULT_COLUMN_WIDTH}
         activeCell={activeCell ? { rowIndex: activeCell.rowIndex + 1, columnIndex: activeCell.columnIndex + 1 } : null}
