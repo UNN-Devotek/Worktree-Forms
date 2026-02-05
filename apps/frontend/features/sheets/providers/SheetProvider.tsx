@@ -40,6 +40,7 @@ interface SheetContextType {
   toggleCellStyle: (styleKey: 'bold' | 'italic' | 'strike') => void;
   activeFilters: FilterRule[];
   setActiveFilters: (filters: FilterRule[]) => void;
+  sortRows: (columnId: string, direction: 'asc' | 'desc') => void;
   isConnected: boolean;
   doc: any; // Yjs document for spreadsheet grid
   token: string; // JWT token for WebSocket auth
@@ -316,6 +317,62 @@ export function SheetProvider({
     });
   }, [doc, focusedCell]);
 
+  const sortRows = useCallback((columnId: string, direction: 'asc' | 'desc') => {
+    if (!doc) return;
+
+    const yRows = doc.getMap('rows');
+    const yOrder = doc.getArray('order');
+    const currentOrder = yOrder.toArray() as string[];
+
+    // Get all rows with their values for the sort column
+    const rowsWithValues = currentOrder.map(rowId => {
+      const row = yRows.get(rowId) as any;
+      return {
+        id: rowId,
+        value: row?.[columnId] || '',
+        row
+      };
+    });
+
+    // Sort based on column value
+    rowsWithValues.sort((a, b) => {
+      const aVal = a.value;
+      const bVal = b.value;
+
+      // Handle null/undefined values
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return direction === 'asc' ? 1 : -1;
+      if (bVal == null) return direction === 'asc' ? -1 : 1;
+
+      // Numeric comparison if both are numbers
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+
+      // String comparison
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+
+      if (direction === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+
+    // Update the order array in Yjs
+    doc.transact(() => {
+      // Clear the current order
+      yOrder.delete(0, yOrder.length);
+
+      // Insert sorted row IDs
+      const sortedIds = rowsWithValues.map(item => item.id);
+      yOrder.push(sortedIds);
+    });
+  }, [doc]);
+
     return (
       <SheetContext.Provider value={{
         data,
@@ -344,6 +401,7 @@ export function SheetProvider({
         toggleCellStyle,
         activeFilters,
         setActiveFilters,
+        sortRows,
         isConnected,
         doc,
         token,
