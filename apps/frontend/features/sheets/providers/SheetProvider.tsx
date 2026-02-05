@@ -37,6 +37,7 @@ interface SheetContextType {
   getCellResult: (rowId: string, columnId: string) => any;
   getCellStyle: (rowId: string, columnId: string) => CellStyleConfig;
   applyCellStyle: (rowId: string, columnId: string, style: Partial<CellStyleConfig>) => void;
+  toggleCellStyle: (styleKey: 'bold' | 'italic' | 'strike') => void;
   activeFilters: FilterRule[];
   setActiveFilters: (filters: FilterRule[]) => void;
   isConnected: boolean;
@@ -281,6 +282,26 @@ export function SheetProvider({
     });
   }, []);
 
+  const toggleCellStyle = useCallback((styleKey: 'bold' | 'italic' | 'strike') => {
+    if (!doc || !focusedCell) return;
+
+    const cellKey = `${focusedCell.rowId}:${focusedCell.columnId}`;
+    const cellsMap = doc.getMap('cells');
+    const current = cellsMap.get(cellKey) as any;
+    const currentStyle = current?.style || {};
+    const nextValue = !currentStyle[styleKey];
+
+    doc.transact(() => {
+      const cell = cellsMap.get(cellKey) as any;
+      const newStyle = { ...(cell?.style || {}), [styleKey]: nextValue };
+      if (cell) {
+        cellsMap.set(cellKey, { ...cell, style: newStyle });
+      } else {
+        cellsMap.set(cellKey, { value: null, type: 'TEXT', style: newStyle });
+      }
+    });
+  }, [doc, focusedCell]);
+
     return (
       <SheetContext.Provider value={{
         data,
@@ -306,6 +327,7 @@ export function SheetProvider({
         getCellResult,
         getCellStyle,
         applyCellStyle,
+        toggleCellStyle,
         activeFilters,
         setActiveFilters,
         isConnected,

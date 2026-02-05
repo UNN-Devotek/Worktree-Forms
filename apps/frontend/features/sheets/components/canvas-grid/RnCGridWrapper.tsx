@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Grid, Cell, SelectionArea } from '@rowsncolumns/grid';
 import { Group, Rect, Text, Path } from 'react-konva';
 import { useYjsStore } from '../../stores/useYjsStore';
-import { SheetToolbar } from './SheetToolbar';
 import { cellKey, getColumnLabel, ROW_HEIGHT, DEFAULT_COLUMN_WIDTH } from './types';
 import { CellEditor } from './CellEditor';
 import { useTheme } from 'next-themes';
@@ -455,9 +454,6 @@ export function RnCGridWrapper({ sheetId, token, user }: RnCGridWrapperProps) {
 
   return (
     <div className="flex flex-col w-full h-full">
-        <div className="flex-none p-2 border-b flex gap-2">
-            <SheetToolbar onToggleStyle={toggleStyle} />
-        </div>
         <div ref={gridRef} className="flex-1 relative bg-background border border-border overflow-hidden" tabIndex={0}>
           <Grid
         rowCount={rows + 1}
