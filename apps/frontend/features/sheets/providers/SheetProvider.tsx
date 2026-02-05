@@ -89,13 +89,27 @@ export function SheetProvider({
     setIsDetailPanelOpen(false);
   };
 
-  // View Persistence
-  const activeView = searchParams.get('view') || 'GRID';
-  const setActiveView = (view: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('view', view);
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  // View Persistence - use local state to prevent remounts
+  const [activeView, setActiveViewState] = useState<string>('GRID');
+
+  // Sync from URL on mount only (not reactive)
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam && ['GRID', 'GANTT', 'CALENDAR', 'CARD'].includes(viewParam)) {
+      setActiveViewState(viewParam);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const setActiveView = useCallback((view: string) => {
+    setActiveViewState(view);
+    // Debounced URL update to prevent rapid history pollution
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('view', view);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [pathname, searchParams, router]);
 
   // Hyperformula Engine
   const hf = useMemo(() => HyperFormula.buildEmpty({
@@ -169,7 +183,7 @@ export function SheetProvider({
       yOrder.unobserve(updateState);
       yColumns.unobserve(updateState);
     };
-  }, [doc, expandedRows, hf]);
+  }, [doc, expandedRows.size, hf]); // Use .size to prevent re-render when Set ref changes
 
   const getCellResult = (rowId: string, columnId: string) => {
     if (!doc) return null;
