@@ -14,22 +14,40 @@ async function main() {
       data: {
         id: '1', // keeping ID 1 for compatibility with frontend mocks if any
         email: adminEmail,
-        password: 'admin123', // In real app, hash this!
+        // password removed
         name: 'Admin User',
-        role: 'admin',
+        systemRole: 'ADMIN', // Changed from role: 'admin'
       }
     });
     console.log('Created admin user');
   }
 
-  // 2. Create default Contact Form
+  // 2. Create default Project
+  const existingProject = await prisma.project.findUnique({ where: { slug: 'demo-project' } });
+  let projectId = existingProject?.id;
+
+  if (!existingProject) {
+      const project = await prisma.project.create({
+          data: {
+              name: 'Demo Project',
+              slug: 'demo-project',
+              createdById: existingAdmin?.id || '1',
+              plan: 'PRO',
+          }
+      });
+      projectId = project.id;
+      console.log('Created Demo Project');
+  }
+
+  // 3. Create default Contact Form
   const existingForm = await prisma.form.findUnique({ where: { slug: 'contact-form' } });
 
   if (!existingForm) {
       await prisma.form.create({
           data: {
-              id: 1, // keeping ID 1
+              id: 1, 
               group_id: 1,
+              projectId: projectId, // Link to project
               slug: 'contact-form',
               title: 'Contact Form',
               description: 'Simple contact form for inquiries',

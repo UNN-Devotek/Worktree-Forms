@@ -29,6 +29,7 @@ export type FormFieldType =
   | 'address'
   | 'rating'
   | 'scale'
+  | 'smart_table'
   // Structural Elements
   | 'section'
   | 'heading'
@@ -210,6 +211,13 @@ export interface FormFieldBase {
   scaleMax?: number             // For scale field
   scaleStep?: number            // For scale field
   formula?: string              // For calculated field
+  
+  // Smart Table Properties
+  columns?: FormFieldBase[]     // Recursive definition for table columns
+  allowAdd?: boolean
+  allowDelete?: boolean
+  prefilledRows?: Record<string, any>[]
+
 
   // Static Display Element Properties
   content?: string              // For text_element (HTML/rich text)
@@ -217,6 +225,15 @@ export interface FormFieldBase {
   imageUrl?: string             // For image_element (MinIO URL)
   imageObjectKey?: string       // For image_element (MinIO object key)
   imageAlt?: string             // For image_element accessibility
+
+  // PDF Overlay Mapping (Epic 8)
+  overlay?: {
+    x: number
+    y: number
+    pageIndex: number
+    width?: number
+    height?: number
+  }
 }
 
 // ============================================
@@ -265,6 +282,7 @@ export interface FormSettings {
   submissionDeadline?: string     // ISO 8601 date
   oneResponsePerUser?: boolean    // Limit to one submission per user (maps to !allow_multiple_submissions)
   sig_ids?: number[]              // SIG visibility restriction
+  backgroundPdfUrl?: string       // For PDF Overlay Mapping
 }
 
 // ============================================

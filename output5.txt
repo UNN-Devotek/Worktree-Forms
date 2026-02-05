@@ -1,0 +1,22 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 
+
+    Error: Upload Failed: Upload failed
+
+      41 |     if (await error.isVisible()) {
+      42 |         const text = await error.textContent();
+    > 43 |         throw new Error(`Upload Failed: ${text}`);
+         |               ^
+      44 |     }
+      45 |
+      46 |     await expect(success).toBeVisible();
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\onboarding.spec.ts:43:15
+
+    Error Context: test-results\e2e-onboarding-Onboarding--8de13-arding-and-submit-insurance-chromium\error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 

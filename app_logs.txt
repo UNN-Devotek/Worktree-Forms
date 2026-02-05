@@ -1,0 +1,102 @@
+
+> worktree@1.0.0 dev
+> npx kill-port 3005 5005 1234 && npm run dev -w apps/frontend & npm run dev -w apps/backend & npm run ws
+
+Process on port 1234 killed
+Process on port 5005 killed
+Process on port 3005 killed
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ✓ Compiled /middleware in 306ms (276 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /project/[slug]/sheets/[sheetId] ...
+ ✓ Compiled /project/[slug]/sheets/[sheetId] in 14.2s (2373 modules)
+ ✓ Compiled in 1329ms (879 modules)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 17732ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 3.5s (1498 modules)
+ GET /api/auth/session 200 in 4087ms
+ GET /api/auth/session 200 in 35ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 19ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 882ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 122ms
+ GET /api/auth/session 200 in 33ms
+ GET /api/auth/session 200 in 20ms
+ GET /api/auth/session 200 in 26ms
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+🌐 Using External MinIO Endpoint: https://api.worktree.worktree.pro
+🪣 MinIO Bucket: worktree
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+node:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5005
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5005
+}
+
+Node.js v24.11.0

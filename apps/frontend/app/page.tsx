@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Layout, WifiOff, Users, Zap, ShieldCheck, BarChart3 } from 'lucide-react';
+import { FeatureCard } from '@/components/landing/FeatureCard';
 
 export default function Home() {
   return (
@@ -15,54 +16,92 @@ export default function Home() {
             <img 
               src="/Worktree Logo.svg" 
               alt="Worktree" 
-              className="object-contain transition-all duration-500 ease-in-out h-14 w-auto"
+              className="object-contain transition-all duration-500 ease-in-out h-10 w-auto"
             />
-            <span className="font-bold text-2xl tracking-tight text-foreground leading-none">
+            <span className="font-bold text-xl tracking-tight text-foreground leading-none">
               Worktree
             </span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login">
-              <Button variant="secondary" className="gap-2">Log in</Button>
+              <Button variant="ghost" className="text-base font-medium">Log in</Button>
             </Link>
-            <Link href="/signup">
-              <Button className="gap-2">Sign up</Button>
-            </Link>
+
             <ThemeToggle />
           </div>
         </nav>
       </header>
 
       {/* Hero Section */}
-      <section className="container flex-1 flex flex-col items-center justify-center py-20 text-center gap-8">
-        {/* Background Gradients */}
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[100px] opacity-40 animate-pulse" />
-             <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-accent/10 blur-[100px] opacity-40" />
-        </div>
+      <section className="relative overflow-hidden pt-20 pb-10 lg:pt-32 lg:pb-12">
+        <div className="container relative z-10 flex flex-col items-center text-center">
+            <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px] opacity-50" />
+            </div>
 
-        <div className="flex flex-col items-center gap-6 max-w-[800px]">
-          <h1 className="text-4xl font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1] animate-[slideUp_0.5s_ease-out_0.2s_both]">
-            Build complex forms <br className="hidden md:block" />
-            <span className="text-primary">without the complexity.</span>
-          </h1>
-          
-          <div className="flex gap-4 animate-[slideUp_0.5s_ease-out_0.4s_both]">
-            <Link href="/signup">
-              <Button size="lg" className="h-12 px-8 text-lg font-medium shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5">
-                Start Building Now <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
+            <h1 className="max-w-4xl text-5xl font-bold tracking-tight md:text-6xl lg:text-7xl animate-[slideUp_0.5s_ease-out_0.2s_both]">
+                The Operating System for <br />
+                <span className="text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
+                    Field Operations
+                </span>
+            </h1>
+            
+            <p className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl animate-[slideUp_0.5s_ease-out_0.3s_both]">
+                Build powerful forms, manage workflows, and sync your field team with the office in real-time. 
+            </p>
+
+
+
+
         </div>
       </section>
 
-      {/* Minimal Footer */}
-      <footer className="w-full border-t border-border/40 py-6">
-        <div className="container flex justify-center text-sm text-muted-foreground">
-            © 2025 Worktree.
+      {/* Features Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container">
+            <div className="mb-12 text-center">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Everything you need to scale</h2>
+                <p className="mt-4 text-muted-foreground font-medium">From simple surveys to complex compliance workflows.</p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <FeatureCard 
+                    icon={Layout} 
+                    title="Visual Form Builder" 
+                    description="Drag and drop inputs, signature fields, and photo uploads. Create complex logic without writing code."
+                />
+                <FeatureCard 
+                    icon={WifiOff} 
+                    title="Offline First" 
+                    description="Collect data anywhere, even without signal. Submissions sync automatically when connection is restored."
+                />
+                <FeatureCard 
+                    icon={Users} 
+                    title="Team Collaboration" 
+                    description="Assign forms to specific teams or users. Control access with granular permissions and roles."
+                />
+                 <FeatureCard 
+                    icon={Zap} 
+                    title="Smart Logic" 
+                    description="Show or hide fields based on answers. Perform calculations and validations in real-time."
+                />
+                 <FeatureCard 
+                    icon={ShieldCheck} 
+                    title="Enterprise Security" 
+                    description="AES-256 encryption, SSO integration, and full audit logs for compliance-heavy industries."
+                />
+                 <FeatureCard 
+                    icon={BarChart3} 
+                    title="Real-time Insights" 
+                    description="Visualize data instantly. Export to PDF, CSV, or integrate with your existing BI tools."
+                />
+            </div>
         </div>
-      </footer>
+      </section>
+
+
+
+
     </div>
   );
 }

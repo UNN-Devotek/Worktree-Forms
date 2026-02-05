@@ -1,0 +1,79 @@
+
+Running 4 tests using 2 workers
+
+[1A[2K[1/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[1A[2K[2/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[TEST] Mocked Auth Session for user-dec3b105-146b-4193-baef-fd9fc9447e3b@test.com
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[TEST] Mocked Auth Session for user-b041943f-18a6-44a2-a15b-ac147c1be867@test.com
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[TEST] Bypassing Auth with Cookie Header, UserID=35b1a9e0-0c57-4cc6-9be3-eb2c398e48f0
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[TEST] Bypassing Auth with Cookie Header, UserID=66d7033d-8afe-4f48-a5df-acc49cd338ca
+
+[1A[2K[3/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components
+[1A[2K[4/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality
+[1A[2K  1) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Preview' }) resolved to 2 elements:
+        1) <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 text-xs">ΓÇª</button> aka getByRole('button', { name: 'Preview', exact: true })
+        2) <div tabindex="0" role="button" aria-disabled="false" data-field-type="file" aria-roledescription="draggable" aria-describedby="DndDescribedBy-0" class="rounded-xl bg-card text-card-foreground shadow p-3 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors border border-border">ΓÇª</div> aka getByRole('button', { name: 'File Upload File upload with' })
+
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Preview' })[22m
+
+
+      79 |
+      80 |      // Click Preview to enable interaction
+    > 81 |      await page.getByRole('button', { name: 'Preview' }).click();
+         |                                                          ^
+      82 |      await expect(page.getByText('Form Preview')).toBeVisible();
+      83 |
+      84 |      // Verify upload request URL checks for DOUBLE API prefix
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:81:58
+
+    Error Context: test-results\legacy-forms-Form-Manageme-d536a-oad-component-functionality-chromium\error-context.md
+
+
+[1A[2K  2) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+
+
+      19 |     await page.fill('#formTitle', testTitle);
+      20 |     await page.fill('#formDescription', testDesc);
+    > 21 |     await page.click('button[type="submit"]');
+         |                ^
+      22 |
+      23 |     // Should redirect to builder
+      24 |     await expect(page).toHaveURL(/\/builder/); 
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:21:16
+
+    Error Context: test-results\legacy-forms-Form-Manageme-6227b--form-and-persistence-works-chromium\error-context.md
+
+
+[1A[2K  2 failed
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+  2 passed (31.9s)
+
+[36m  Serving HTML report at http://localhost:55479. Press Ctrl+C to quit.[39m

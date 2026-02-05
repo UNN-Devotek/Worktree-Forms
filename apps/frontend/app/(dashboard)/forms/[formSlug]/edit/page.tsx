@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FormBuilderLayout } from '@/components/form-builder/FormBuilderLayout'
+import { FormBuilderLayout } from '@/features/forms/components/builder/FormBuilderLayout'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import { GroupForm } from '@/types/group-forms'

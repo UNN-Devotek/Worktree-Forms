@@ -13,6 +13,8 @@ interface SinglePageFormProps {
 }
 
 export function SinglePageForm({ formSchema, isSubmitting }: SinglePageFormProps) {
+  const { completedCount, totalRequired, percentage } = useFieldProgress(formSchema)
+  const showProgress = formSchema.settings?.showProgress ?? true
   const page = formSchema.pages[0]
 
   if (!page) {
@@ -22,8 +24,6 @@ export function SinglePageForm({ formSchema, isSubmitting }: SinglePageFormProps
         </div>
     )
   }
-  const { completedCount, totalRequired, percentage } = useFieldProgress(formSchema)
-  const showProgress = formSchema.settings?.showProgress ?? true
 
   return (
     <div className="space-y-6">

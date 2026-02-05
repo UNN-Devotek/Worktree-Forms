@@ -14,7 +14,14 @@
       "Bash($env:DATABASE_URL=\"postgresql://worktreedatabasedev:wj9njpzberfmlc2u@67.222.144.10:5433/worktreedatabasedev\")",
       "Bash(export DATABASE_URL=\"postgresql://worktreedatabasedev:wj9njpzberfmlc2u@67.222.144.10:5433/worktreedatabasedev\")",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git log:*)",
+      "Bash(docker-compose down:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "agentvibes",
+    "docker"
+  ]
 }

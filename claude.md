@@ -1,4 +1,4 @@
-# 📚 Claude Development Guide - Worktree-Forms
+# 📚 Claude Development Guide - Worktree
 
 **Last Updated**: December 16, 2025 (Docker Setup Documentation)  
 **For**: Development Team  
@@ -114,7 +114,8 @@ JWT_EXPIRE=15m
 JWT_REFRESH_EXPIRE=7d
 
 # Frontend URLs
-NEXT_PUBLIC_API_URL=http://localhost:5100/api
+# NEXT_PUBLIC_API_URL should be empty for local dev to use Next.js proxy rewrite
+# NEXT_PUBLIC_API_URL=http://localhost:5100/api
 NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
 ```
 
@@ -138,7 +139,12 @@ docker-compose down -v
 docker-compose up -d --build
 
 # View logs during rebuild
+docker-compose up -d --build
 docker-compose logs -f app
+
+> [!NOTE]
+> **Hot Reload**:
+> Hot reload is enabled for the frontend via volume binding (`./apps/frontend:/app/apps/frontend`) and forced polling (`WATCHPACK_POLLING=true`) to support Windows environments. Changes to frontend files should reflect immediately without rebuilding.
 ```
 
 ### Database Operations
@@ -428,6 +434,16 @@ psql -h localhost -U worktree -d worktree_forms
 ```bash
 rm -rf node_modules package-lock.json
 npm install
+```
+
+**"Module not found" in Docker (but exists in package.json)**
+
+```bash
+# Stale volume issue - need to recreate node_modules volume
+docker-compose down -v
+docker-compose up -d --build
+# IMPORTANT: Database will be empty after down -v
+docker-compose exec app sh -c "cd apps/backend && npx prisma migrate deploy && npm run seed"
 ```
 
 **TypeScript errors**

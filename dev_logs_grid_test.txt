@@ -1,0 +1,1260 @@
+
+> worktree@1.0.0 dev
+> npx kill-port 3005 5005 1234 && npm run dev -w apps/frontend & npm run dev -w apps/backend & npm run ws
+
+Process on port 3005 killed
+Process on port 5005 killed
+Process on port 1234 killed
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1098ms (276 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /project/[slug]/sheets/[sheetId] ...
+ ✓ Compiled /project/[slug]/sheets/[sheetId] in 11.9s (2233 modules)
+ ✓ Compiled in 1092ms (809 modules)
+ ✓ Compiled in 165ms (795 modules)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET /project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re 404 in 15167ms
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (128kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 3.6s (1428 modules)
+ GET /api/auth/session 200 in 4433ms
+ GET /api/auth/session 200 in 72ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/tre-inSMP/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 45ms
+ ○ Compiling /project/[slug]/sheets ...
+ ✓ Compiled /project/[slug]/sheets in 1455ms (2425 modules)
+ GET /api/auth/session 200 in 1687ms
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ GET /project/tre-inSMP/sheets 404 in 2910ms
+ GET /api/auth/session 200 in 39ms
+ GET /api/auth/session 200 in 21ms
+ GET /api/auth/session 200 in 14ms
+ GET /api/auth/session 200 in 16ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 881ms (2480 modules)
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+[getProjects] Found 0 projects for user 1
+ GET /dashboard 200 in 1217ms
+ GET /api/auth/session 200 in 45ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 20ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 17ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query BEGIN
+prisma:query INSERT INTO "public"."Project" ("id","name","slug","description","plan","storageUsage","submissionCount","createdAt","updatedAt","roles","createdById") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById"
+prisma:error 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+prisma:query ROLLBACK
+Failed to create project: PrismaClientKnownRequestError: 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+    at $n.handleRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async eval (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:114:23)
+    at async Proxy._transactionWithCallback (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at async createProject (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:112:25)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:39:418
+    at async rk (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:38:8146)
+    at async r3 (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:41:1256)
+    at async doRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1427:30)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'P2003',
+  clientVersion: '5.22.0',
+  meta: {
+    modelName: 'Project',
+    field_name: 'Project_createdById_fkey (index)'
+  }
+}
+ POST /dashboard 200 in 287ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query BEGIN
+prisma:query INSERT INTO "public"."Project" ("id","name","slug","description","plan","storageUsage","submissionCount","createdAt","updatedAt","roles","createdById") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById"
+prisma:error 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+prisma:query ROLLBACK
+Failed to create project: PrismaClientKnownRequestError: 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+    at $n.handleRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async eval (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:114:23)
+    at async Proxy._transactionWithCallback (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at async createProject (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:112:25)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:39:418
+    at async rk (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:38:8146)
+    at async r3 (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:41:1256)
+    at async doRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1427:30)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'P2003',
+  clientVersion: '5.22.0',
+  meta: {
+    modelName: 'Project',
+    field_name: 'Project_createdById_fkey (index)'
+  }
+}
+ POST /dashboard 200 in 150ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query BEGIN
+prisma:query INSERT INTO "public"."Project" ("id","name","slug","description","plan","storageUsage","submissionCount","createdAt","updatedAt","roles","createdById") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById"
+prisma:error 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+prisma:query ROLLBACK
+Failed to create project: PrismaClientKnownRequestError: 
+Invalid `prisma.project.create()` invocation:
+
+
+Foreign key constraint violated: `Project_createdById_fkey (index)`
+    at $n.handleRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async eval (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:114:23)
+    at async Proxy._transactionWithCallback (C:\Users\White\Documents\Worktree\Worktree\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at async createProject (webpack-internal:///(rsc)/./features/projects/server/project-actions.ts:112:25)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:39:418
+    at async rk (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:38:8146)
+    at async r3 (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:41:1256)
+    at async doRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1427:30)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (C:\Users\White\Documents\Worktree\Worktree\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'P2003',
+  clientVersion: '5.22.0',
+  meta: {
+    modelName: 'Project',
+    field_name: 'Project_createdById_fkey (index)'
+  }
+}
+ POST /dashboard 200 in 126ms
+ GET /api/auth/session 200 in 50ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1674ms (1995 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /login 200 in 1896ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 82ms
+ GET /api/auth/session 200 in 17ms
+ GET /api/auth/session 200 in 16ms
+ GET /api/auth/session 200 in 16ms
+ GET /api/auth/providers 200 in 57ms
+ GET /api/auth/csrf 200 in 14ms
+[AUTH] Authorizing credentials: { email: 'admin@worktree.pro', flow: 'credentials' }
+prisma:query SELECT 1
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."complianceStatus", "public"."User"."insuranceUrl", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ POST /api/auth/callback/credentials? 200 in 96ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."roles", "public"."ProjectMember"."projectId" FROM "public"."ProjectMember" WHERE ("public"."ProjectMember"."userId" = $1 AND "public"."ProjectMember"."projectId" IN ($2)) OFFSET $3
+[getProjects] Found 1 projects for user 3999fec5-c69d-4abc-9e84-e042f48ee2a7
+ GET /dashboard 200 in 244ms
+ GET /api/auth/session 200 in 37ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 14ms
+ GET /api/auth/session 200 in 16ms
+ GET /api/auth/session 200 in 13ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /project/[slug] ...
+ ✓ Compiled /project/[slug] in 1780ms (2084 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59?_rsc=1vk34 200 in 381ms
+(node:308020) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 179ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 82ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled /project/[slug]/sheets/[sheetId] in 355ms (1665 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=bmcnk 200 in 135ms
+ ✓ Compiled in 2.4s (2586 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=hos01 200 in 492ms
+ ✓ Compiled in 807ms (2586 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=hos01 200 in 362ms
+ ✓ Compiled in 618ms (2586 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=hos01 200 in 246ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 429ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 723ms (1665 modules)
+ GET /api/auth/session 200 in 826ms
+ GET /api/auth/session 200 in 13ms
+ GET /api/auth/session 200 in 13ms
+ GET /api/auth/session 200 in 14ms
+ ✓ Compiled in 778ms (2586 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=1japg 200 in 314ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 479ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 749ms (1665 modules)
+ GET /api/auth/session 200 in 923ms
+ GET /api/auth/session 200 in 17ms
+ GET /api/auth/session 200 in 18ms
+ GET /api/auth/session 200 in 15ms
+ ✓ Compiled in 1374ms (2586 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=1japg 200 in 484ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard/projects/cmkrehcsw00024bvp9nhnrznd/sheets/cmks8zvgg0003l5hfb3l0d67f
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1843ms (2587 modules)
+ GET /dashboard/projects/cmkrehcsw00024bvp9nhnrznd/sheets/cmks8zvgg0003l5hfb3l0d67f 404 in 2313ms
+ ✓ Compiled in 625ms (925 modules)
+ ✓ Compiled /api/auth/[...nextauth] in 451ms (1666 modules)
+ GET /api/auth/session 200 in 601ms
+ GET /api/auth/session 200 in 20ms
+ GET /api/auth/session 200 in 55ms
+ GET /api/auth/session 200 in 32ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard/projects/cmkrehcsw00024bvp9nhnrznd
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /dashboard/projects/cmkrehcsw00024bvp9nhnrznd 404 in 137ms
+ GET /api/auth/session 200 in 43ms
+ GET /api/auth/session 200 in 22ms
+ GET /api/auth/session 200 in 26ms
+ GET /api/auth/session 200 in 19ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."roles", "public"."ProjectMember"."projectId" FROM "public"."ProjectMember" WHERE ("public"."ProjectMember"."userId" = $1 AND "public"."ProjectMember"."projectId" IN ($2)) OFFSET $3
+[getProjects] Found 1 projects for user 3999fec5-c69d-4abc-9e84-e042f48ee2a7
+ GET /dashboard 200 in 376ms
+ GET /api/auth/session 200 in 79ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 25ms
+ GET /api/auth/session 200 in 23ms
+ GET /api/auth/session 200 in 19ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT 1
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59?_rsc=1rxpb 200 in 212ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 229ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 87ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=bmcnk 200 in 99ms
+ GET /api/auth/session 200 in 73ms
+ GET /api/auth/session 200 in 21ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ GET /project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re 404 in 357ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 26ms
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 85ms
+ GET /api/auth/session 200 in 21ms
+ GET /api/auth/session 200 in 18ms
+ GET /api/auth/session 200 in 18ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling / ...
+ ✓ Compiled / in 3.1s (2613 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ GET /project/tre-inSMP/sheets/cmkx8cmiy0001uetwykbpz6re 404 in 429ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 36ms
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 52ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 18ms
+ GET /api/auth/session 200 in 18ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 200 in 49ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 27ms
+ GET /api/auth/session 200 in 47ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 22ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/providers 200 in 41ms
+ GET /api/auth/csrf 200 in 16ms
+[AUTH] Authorizing credentials: { email: 'admin@worktree.pro', flow: 'credentials' }
+prisma:query SELECT 1
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."complianceStatus", "public"."User"."insuranceUrl", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ POST /api/auth/callback/credentials? 200 in 94ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."roles", "public"."ProjectMember"."projectId" FROM "public"."ProjectMember" WHERE ("public"."ProjectMember"."userId" = $1 AND "public"."ProjectMember"."projectId" IN ($2)) OFFSET $3
+[getProjects] Found 1 projects for user 3999fec5-c69d-4abc-9e84-e042f48ee2a7
+ GET /dashboard 200 in 191ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 23ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 56ms
+ GET /api/auth/session 200 in 18ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 18ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59?_rsc=1rxpb 200 in 183ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 266ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 68ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."slug" FROM "public"."Project" WHERE ("public"."Project"."id" = $1 OR "public"."Project"."slug" = $2) LIMIT $3 OFFSET $4
+prisma:query INSERT INTO "public"."Sheet" ("id","projectId","title","content","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt"
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+Warning: Only plain objects can be passed to Client Components from Server Components. Uint8Array objects are not supported.
+  {id: ..., projectId: ..., title: ..., content: Uint8Array, createdAt: ..., updatedAt: ...}
+                                                 ^^^^^^^^^^
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT 1
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ POST /project/test-project-nKB59/sheets 200 in 255ms
+prisma:query SELECT "public"."Project"."id" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE "public"."Sheet"."projectId" = $1 ORDER BY "public"."Sheet"."createdAt" DESC OFFSET $2
+Warning: Only plain objects can be passed to Client Components from Server Components. Uint8Array objects are not supported.
+  {id: ..., projectId: ..., title: ..., content: Uint8Array, createdAt: ..., updatedAt: ...}
+                                                 ^^^^^^^^^^
+ POST /project/test-project-nKB59/sheets 200 in 143ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=63zsb 200 in 191ms
+ ✓ Compiled in 864ms (2596 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=ks1k5 200 in 485ms
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /_error ...
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 500 in 2042ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe 500 in 36ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ⨯ ./features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts:11:1
+Module not found: Can't resolve '../../../../../lib/formula-parser.js'
+[0m [90m  9 |[39m [36mimport[39m { useMemo[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useState } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+[0m [90m 10 |[39m [90m// @ts-ignore[39m[0m
+[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mFormulaParser[39m [36mfrom[39m [32m'../../../../../lib/formula-parser.js'[39m[33m;[39m[0m
+[0m [90m    |[39m [31m[1m^[22m[39m[0m
+[0m [90m 12 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mY[39m [36mfrom[39m [32m'yjs'[39m[33m;[39m[0m
+[0m [90m 13 |[39m [36mimport[39m { cellKey[33m,[39m parseCellKey } [36mfrom[39m [32m'../types'[39m[33m;[39m[0m
+[0m [90m 14 |[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./features/sheets/components/canvas-grid/RnCGridWrapper.tsx
+./features/sheets/components/grid/SheetDetailView.tsx
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 621ms
+ ✓ Compiled /_not-found in 2.2s (2970 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled in 0ms (1773 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe 200 in 761ms
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 760ms
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+ GET /_next/static/webpack/816f92c7ffa9843c.webpack.hot-update.json 404 in 1819ms
+ GET /_next/static/webpack/816f92c7ffa9843c.webpack.hot-update.json 404 in 1824ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+prisma:query SELECT 1
+prisma:query SELECT 1
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe 200 in 525ms
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 526ms
+[MIDDLEWARE] NODE_ENV=development, Path=/.well-known/appspecific/com.chrome.devtools.json
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 31ms
+ ○ Compiling /api/auth/[...nextauth] ...
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled /api/auth/[...nextauth] in 1110ms (1777 modules)
+ GET /api/auth/session 200 in 481ms
+ GET /api/auth/session 200 in 1361ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 89ms
+ GET /api/auth/session 200 in 164ms
+ GET /api/auth/session 200 in 87ms
+ GET /api/auth/session 200 in 26ms
+ GET /api/auth/session 200 in 24ms
+ GET /api/auth/session 200 in 19ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 456ms
+ GET /api/auth/session 200 in 145ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 201ms
+ GET /api/auth/session 200 in 16ms
+ GET /api/auth/session 200 in 12ms
+ ✓ Compiled in 833ms (2975 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 214ms
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=1japg 200 in 291ms
+ GET /api/auth/session 200 in 25ms
+ GET /api/auth/session 200 in 12ms
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7 200 in 310ms
+ GET /api/auth/session 200 in 34ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 23ms
+ GET /api/auth/session 200 in 10ms
+ GET /api/auth/session 200 in 17ms
+ ✓ Compiled in 514ms (2834 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 313ms
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=1japg 200 in 316ms
+ ✓ Compiled in 450ms (2834 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7
+[MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkrehq2b00064bvpz3jwa1f7?_rsc=1japg 200 in 158ms
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 159ms
+ ✓ Compiled in 484ms (1128 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 155ms
+ ✓ Compiled in 246ms (1128 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 115ms
+ ✓ Compiled in 244ms (1128 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 133ms
+ ✓ Compiled in 288ms (1128 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 132ms
+ ✓ Compiled in 227ms (1128 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 109ms
+ ✓ Compiled in 1297ms (2970 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 338ms
+ ✓ Compiled in 601ms (2970 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 199ms
+ ✓ Compiled in 697ms (2970 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe
+[MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+Yjs was already imported. This breaks constructor checks and will lead to issues! - https://github.com/yjs/yjs/issues/438
+[AUTH] auth() called
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById" FROM "public"."Project" WHERE ("public"."Project"."slug" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Sheet"."id", "public"."Sheet"."projectId", "public"."Sheet"."title", "public"."Sheet"."content", "public"."Sheet"."createdAt", "public"."Sheet"."updatedAt" FROM "public"."Sheet" WHERE ("public"."Sheet"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, cw_conversation, cw_user_ke2YjiPnKw9gnz4PCq4RuQqR, refresh_token, sidebar_state, __next_hmr_refresh_hash__, next-auth.callback-url, next-auth.session-token
+prisma:query SELECT "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt" FROM "public"."ProjectMember" WHERE "public"."ProjectMember"."projectId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."User"."id", "public"."User"."name", "public"."User"."email", "public"."User"."image" FROM "public"."User" WHERE "public"."User"."id" IN ($1) OFFSET $2
+ GET /project/test-project-nKB59/sheets/cmkxe9u16000ao4bl45ivm3pe?_rsc=1dscl 200 in 164ms
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+🌐 Using External MinIO Endpoint: https://api.worktree.worktree.pro
+🪣 MinIO Bucket: worktree
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists

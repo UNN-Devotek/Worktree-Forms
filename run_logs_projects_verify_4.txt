@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[1A[2K[chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-2525c47c-1636-4c98-82ef-edac3698526a@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=89aa03c3-2a3d-4490-bd13-1cad26965fa0
+
+[1A[2KDialog still open. Content: Create New ProjectGive your project a name to get started. You can add more details later.Project NameDescription (Optional)Templum cupressus arto delinquo aufero arceo adsum magni.CancelCreate ProjectClose
+
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Project created successfully')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Project created successfully')[22m
+
+
+      20 |         
+      21 |         try {
+    > 22 |             await expect(page.getByText('Project created successfully')).toBeVisible({ timeout: 5000 });
+         |                                                                          ^
+      23 |         } catch (e) {
+      24 |             // ... debug logic kept for safety ...
+      25 |             const errorToast = page.locator('.toast[data-type="error"]');
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\projects.spec.ts:22:74
+
+    Error Context: test-results\e2e-projects-Project-Manag-b4afd--a-user-to-create-a-project-chromium\error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+
+[36m  Serving HTML report at http://localhost:63083. Press Ctrl+C to quit.[39m
+^C

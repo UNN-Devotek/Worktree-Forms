@@ -1,5 +1,5 @@
 {
-  "name": "worktree-forms",
+  "name": "worktree",
   "version": "1.0.0",
   "description": "Production-ready form management system with visual builder and admin panel",
   "private": true,
@@ -8,7 +8,8 @@
     "apps/backend"
   ],
   "scripts": {
-    "dev": "npx kill-port 3005 5005 && npm run dev -w apps/frontend & npm run dev -w apps/backend",
+    "dev": "npx kill-port 3005 5005 1234 && npm run dev -w apps/frontend & npm run dev -w apps/backend & npm run ws",
+    "ws": "tsx apps/backend/src/ws-server.ts",
     "build": "npm run build -w apps/frontend && npm run build -w apps/backend",
     "test": "npm run test -w apps/frontend && npm run test -w apps/backend",
     "test:coverage": "npm run test:coverage -w apps/frontend && npm run test:coverage -w apps/backend",
@@ -20,7 +21,12 @@
     "seed": "npm run seed -w apps/backend"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.2.0",
     "@playwright/test": "^1.57.0",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "lodash.debounce": "^4.0.8",
+    "y-leveldb": "^0.2.0"
   }
 }

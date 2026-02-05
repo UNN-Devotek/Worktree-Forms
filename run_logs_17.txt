@@ -1,0 +1,98 @@
+
+Running 4 tests using 2 workers
+
+[1A[2K[1/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:14:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[1A[2K[2/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[1A[2K  1) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:14:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="title"]')[22m
+
+
+      18 |     const testDesc = 'Description checking persistence';
+      19 |
+    > 20 |     await page.fill('input[name="title"]', testTitle);
+         |                ^
+      21 |     await page.fill('textarea[name="description"]', testDesc);
+      22 |     await page.click('button[type="submit"]');
+      23 |
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:20:16
+
+    Error Context: test-results\legacy-forms-Form-Manageme-6227b--form-and-persistence-works-chromium\error-context.md
+
+
+[1A[2K  2) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form ΓöÇΓöÇΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=Create Form')[22m
+
+
+       8 |     // For this test, we assume we can reach /forms
+       9 |     await page.goto('/forms');
+    > 10 |     await page.click('text=Create Form');
+         |                ^
+      11 |     await expect(page).toHaveURL(/\/forms\/new/);
+      12 |   });
+      13 |
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:10:16
+
+    Error Context: test-results\legacy-forms-Form-Management-can-navigate-to-create-form-chromium\error-context.md
+
+
+[1A[2K[3/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:36:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components
+[1A[2K[4/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality
+[1A[2K  3) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:36:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="title"]')[22m
+
+
+      38 |      // Simplified flow for example
+      39 |      await page.goto('/forms/new');
+    > 40 |      await page.fill('input[name="title"]', 'Builder Test');
+         |                 ^
+      41 |      await page.click('button[type="submit"]');
+      42 |      
+      43 |      // Wait for builder
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:40:17
+
+    Error Context: test-results\legacy-forms-Form-Management-can-drag-and-drop-components-chromium\error-context.md
+
+
+[1A[2K  4) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="title"]')[22m
+
+
+      68 |      // Go to the builder
+      69 |      await page.goto('/forms/new');
+    > 70 |      await page.fill('input[name="title"]', 'Upload Test');
+         |                 ^
+      71 |      await page.click('button[type="submit"]');
+      72 |
+      73 |      // Add upload component (mocking the drag for now, or just finding the setting if it's there)
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:70:17
+
+    Error Context: test-results\legacy-forms-Form-Manageme-d536a-oad-component-functionality-chromium\error-context.md
+
+
+[1A[2K  4 failed
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form ΓöÇΓöÇΓöÇΓöÇ
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:14:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:36:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇΓöÇ
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:67:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+[36m  Serving HTML report at http://localhost:54202. Press Ctrl+C to quit.[39m

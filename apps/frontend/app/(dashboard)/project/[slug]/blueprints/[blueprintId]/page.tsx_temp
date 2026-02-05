@@ -1,0 +1,39 @@
+
+'use client'
+
+import React, { useEffect, useState } from 'react';
+import { notFound, useRouter } from 'next/navigation';
+import { BlueprintViewer } from '@/features/blueprints/components/BlueprintViewer';
+import { apiClient } from '@/lib/api'; // Client-side fetch
+import { Loader2 } from 'lucide-react';
+
+// Use client lookup (or server component passed props)
+export default function BlueprintViewerPage({ params }: { params: { slug: string; blueprintId: string } }) {
+  const [spec, setSpec] = useState<{ title: string; fileUrl: string; } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Quick fetch for MVP. Ideal: Server Component with getProject + getSpec
+    // But since "spec" endpoints are under "projects", we can also fetch directly if we know the ID or have a direct endpoint.
+    // For now, let's assume we can fetch all specs and find it or add a specific endpoint. 
+    // We added DELETE /api/specs/:specId but maybe not GET /api/specs/:specId.
+    // Let's rely on list fetching or add a GET one?
+    // Actually, we can use the list endpoint and filter in memory for MVP or just add GET /api/specs/:id
+    
+    // Better: Add GET /api/specs/:id quickly? Or just fetch list? 
+    // Let's try fetching the list filtering by ID logic isn't there. 
+    // Let's add GET /api/specs/:id to be clean. Or reusing Rfi's pattern.
+    
+    // Waiting on backend... let's implement checking the list.
+     const fetchSpec = async () => {
+         // HACK: Fetching all specs for project and finding one. Ideally fetch specific.
+         // Wait, I need project ID. I only have slug.
+         // Client side fetching project from slug is tricky without a public endpoint or passing from server component.
+         // Let's refactor this to be a Server Component wrapping the Client Viewer?
+         // Yes.
+     };
+  }, []);
+
+  return null; // Refactoring to server component below
+}

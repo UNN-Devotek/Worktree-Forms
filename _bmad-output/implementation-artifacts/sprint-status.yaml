@@ -1,0 +1,139 @@
+# generated: 2026-01-23
+# project: Worktree
+# project_key: Worktree
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: 2026-01-23
+project: Worktree
+project_key: Worktree
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Core Project Foundation & Identity
+  epic-1: in-progress
+  1-0-global-dashboard-project-list: done
+  1-1-create-project-generate-slug: done
+  1-2-user-management-invites: done
+  1-3-enforce-rls-rbac: done
+  1-4-user-profile-theme-preferences: done
+  1-5-system-audit-log: done
+  1-6-global-shell-providers: done
+  1-7-authentication-ui-flows: done
+  1-8-project-workspace-layout: done
+  1-9-global-ui-components: done
+  epic-1-retrospective: optional
+
+  # Epic 2: Visual Form Builder & Schema Engine
+  epic-2: backlog
+  2-1-drag-and-drop-form-builder: backlog
+  2-2-field-validation-logic: backlog
+  2-3-smart-table-field: done
+  2-4-form-schema-versioning: done
+  2-5-restore-blame-form-history: done
+  2-6-retroactive-renaming: done
+  epic-2-retrospective: optional
+
+  # Epic 3: Field Operations Mobile App (Offline First)
+  epic-3: in-progress
+  3-1-route-list-schedule-view: done
+  3-2-offline-mode-local-first: done
+  3-3-contextual-compass-geofences: done
+  3-4-deep-linking-navigation: done
+  3-5-mobile-form-entry-experience: done
+  epic-3-retrospective: optional
+
+  # Epic 4: Submission Lifecycle & Sync Engine
+  epic-4: backlog
+  4-1-background-sync-queue: done
+  4-2-image-optimization-auto-naming: done
+  4-3-signature-capture: done
+  epic-4-retrospective: optional
+
+  # Epic 5: Smart Grid & Mission Control
+  epic-5: in-progress
+  5-1-project-dashboard-configuration: done
+  5-2-data-grid-custom-columns: done
+  5-3-lightbox-media-zip: done
+  5-4-finops-quotas-alerts: done
+  5-5-map-dispatcher-interface: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Live Smart Grid & Collaboration
+  epic-6: in-progress
+  6-1-high-performance-data-viewing: done
+  6-2-real-time-sync-yjs-integration: done
+  6-3-row-assignment: done # Updated from _bmad
+  6-4-project-team-chat: done # Updated from _bmad
+  6-5-notification-subscription-preferences: done # Updated from _bmad
+  6-6-rich-column-types: done # Legacy 6-3
+  6-7-row-hierarchy-grouping: done # Legacy 6-4
+  6-8-formula-engine-integration: done # Legacy 6-5
+  6-9-row-detail-panel: done # Legacy 6-6
+  6-10-form-to-sheet-integration: done # Legacy 6-9
+  6-11-sheet-to-route-integration: done # Legacy 6-10
+  6-12-view-persistence-privacy: done # Legacy 6-11
+  6-13-governance-permissions: done # Legacy 6-12
+  6-14-offline-resilience: done # Legacy 6-13
+  epic-6-retrospective: optional
+
+  # Epic 7: Document Control & Field Tools
+  epic-7: done
+  7-1-rfi-management: done
+  7-2-spec-library-search: done
+  7-3-pdf-blueprint-viewer: done
+  7-4-schedule-visualization: done
+  epic-7-retrospective: optional
+
+  # Epic 8: Legacy Integration & Data Migration
+  epic-8: done
+  8-1-pdf-overlay-mapping: done
+  8-2-flattened-pdf-export: done
+  8-3-bulk-import-wizard: done
+  epic-8-retrospective: optional
+
+  # Epic 9: Compliance, Access & Public Gates
+  epic-9: in-progress
+  9-1-visa-wizard-onboarding-gate: done
+  9-2-public-link-sharing: done
+  9-3-marketing-landing-page: done
+  epic-9-retrospective: optional
+
+  # Epic 10: AI Automation & Intelligence Layer
+  epic-10: done
+  10-1-native-rag-ingestion: done
+  10-2-magic-forward-email-ingestion: done
+  10-3-ai-assistant-interface: done
+  10-4-api-key-management: done
+  10-5-webhooks-event-subscriptions: done
+  epic-10-retrospective: optional
+
+  # Epic 11: Help Center & Support System
+  epic-11: in-progress
+  11-1-help-article-editor: done
+  11-2-mobile-offline-reader: done
+  11-3-support-feedback-shake: backlog
+  epic-11-retrospective: optional

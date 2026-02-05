@@ -8,7 +8,8 @@ import {
   useSensors
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { useFormBuilderStore } from '@/lib/stores/form-builder-store'
+import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
+
 
 /**
  * Custom hook for DND Kit drag-and-drop operations
@@ -23,6 +24,7 @@ export function useDragDrop() {
     addSection,
     addHalfWidthField,
     setFieldWidth,
+    updateField,
     currentPageIndex,
     formSchema
   } = useFormBuilderStore()
@@ -60,7 +62,7 @@ export function useDragDrop() {
    * Handle drag end - perform the actual move or add operation
    */
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
+    const { active, over, delta } = event
 
     setActiveId(null)
 
@@ -68,6 +70,94 @@ export function useDragDrop() {
 
     const activeData = active.data.current
     const overData = over.data.current
+
+    // CASE 0: Dropping onto PDF Canvas (Absolute Positioning)
+    if (overData?.type === 'pdf-canvas') {
+        const pageIndex = overData.pageIndex
+        
+        // Calculate new position
+        // If it's a new field (from palette):
+        // The mouse position is roughly where we want it.
+        // We need coordinates relative to the PDF container.
+        
+        // However, dnd-kit gives us delta from start.
+        // For existing fields, delta + currentX/Y works.
+        // For new fields, we need to know where the drop happened relative to the container.
+        // This is tricky without access to the container Rect here directly.
+        // BUT, `over.rect` (if we had it) would help. 
+        // We can approximate or use a simple hack: 
+        // We'll place it at 0,0 initially if new, or use a heuristic.
+        // Better: DraggablePdfField stores currentX/Y.
+        
+        let newX = 0
+        let newY = 0
+
+        if (activeData?.type === 'field') {
+            // Moving existing field
+            const currentX = activeData.currentX || 0
+            const currentY = activeData.currentY || 0
+            newX = currentX + delta.x
+            newY = currentY + delta.y
+            
+            // Update immediately
+            updateField(activeData.fieldId, {
+                overlay: { x: newX, y: newY, pageIndex }
+            })
+            return
+        }
+
+        if (activeData?.source === 'palette') {
+            // New field from palette
+            // We don't have perfect coordinates here without more context.
+            // Let a robust solution be: Add it securely, then let user move it.
+            // OR use the delta to guess.
+            // Palette items start at arbitrary positions.
+            // We'll default to center of view? Or 50, 50.
+            newX = 50
+            newY = 50
+            
+            // If we want it to follow mouse, we need client coordinates of the drop vs container rect.
+            // dnd-kit `event` has `activatorEvent` which is the mouse event.
+            // We could try to extract it, but let's stick to safe simple placement first.
+            
+            // Add field to first section (or create one if needed)
+            // We'll put it in the first section of the page for data storage purposes.
+            // If no sections, we create one.
+            const sections = formSchema?.pages[pageIndex]?.sections || []
+            let sectionIndex = 0
+            
+            if (sections.length === 0) {
+                 addSection(pageIndex)
+                 // sectionIndex 0 is created.
+                 // We need to wait for store update or assume it works.
+                 // This delay logic is same as existing one below.
+            }
+            
+            // Add at end of section
+             // We can use setTimeout to ensure section exists and get ID.
+             setTimeout(() => {
+                  const state = useFormBuilderStore.getState()
+                  const currentSections = state.formSchema?.pages[pageIndex]?.sections || []
+                  if (currentSections.length === 0) return // Should have been added
+                  
+                  // Add field
+                  const targetSectionIndex = 0 
+                  const fields = currentSections[0].fields || []
+                  
+                  addField(activeData.type, targetSectionIndex, fields.length, pageIndex)
+                  
+                  // Now get the new field ID and update position
+                  // The store sets `selectedFieldId` to the new field.
+                  const newFieldId = useFormBuilderStore.getState().selectedFieldId
+                  if (newFieldId) {
+                      updateField(newFieldId, {
+                          overlay: { x: newX, y: newY, pageIndex }
+                      })
+                  }
+             }, 50)
+             return
+        }
+    }
 
     // CASE 1: Dragging from palette to canvas
     if (activeData?.source === 'palette' && overData?.type === 'dropzone') {
@@ -128,7 +218,6 @@ export function useDragDrop() {
       return
     }
 
-    // CASE 3: Reordering fields (sortable within section)
     if (activeData?.type === 'field' && overData?.type === 'field') {
       const fromSection = activeData.sectionIndex
       const fromField = activeData.fieldIndex

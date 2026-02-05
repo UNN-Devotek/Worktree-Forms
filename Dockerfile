@@ -10,9 +10,9 @@ RUN apk add --no-cache openssl
 RUN npm install -g pnpm turbo
 
 # ==========================================
-# Stage 2: Builder
+# Stage 2: Dependencies & Source (No Build)
 # ==========================================
-FROM base AS builder
+FROM base AS deps
 # Copy root package files
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
@@ -26,6 +26,12 @@ COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate --schema=./apps/backend/prisma/schema.prisma
+RUN npx prisma generate --schema=./apps/frontend/prisma/schema.prisma
+
+# ==========================================
+# Stage 3: Builder
+# ==========================================
+FROM deps AS builder
 
 # Build Backend
 RUN npm run build -w apps/backend
@@ -34,6 +40,9 @@ RUN npm run build -w apps/backend
 # Set NEXT_PUBLIC_API_URL for build time if needed, or rely on runtime env
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=true
+ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 RUN npm run build -w apps/frontend
 
 # ==========================================

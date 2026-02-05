@@ -1,0 +1,128 @@
+
+Running 5 tests using 2 workers
+
+[1A[2K[1/5] [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[1A[2K[2/5] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[1A[2K[chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-8345fd6a-ce12-49da-83ab-fab37bbb7e1f@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=20081282-6d5a-402e-8f6b-ea32a849e127
+
+[1A[2K[3/5] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-d59d3c8a-c898-4700-b09d-93b6b344fd14@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=2e883f6a-cdd4-44c4-b2b8-f30d7d927fa9
+
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Generic Bronze Bike')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Generic Bronze Bike')[22m
+
+
+      23 |         
+      24 |         // 6. Verify
+    > 25 |         await expect(page.getByText(projectData.name)).toBeVisible();
+         |                                                        ^
+      26 |     });
+      27 | });
+      28 |
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\projects.spec.ts:25:56
+
+    Error Context: test-results\e2e-projects-Project-Manag-b4afd--a-user-to-create-a-project-chromium\error-context.md
+
+
+[1A[2K[4/5] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components
+[1A[2K  2) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+
+
+      19 |     await page.fill('#formTitle', testTitle);
+      20 |     await page.fill('#formDescription', testDesc);
+    > 21 |     await page.click('button[type="submit"]');
+         |                ^
+      22 |
+      23 |     // Should redirect to builder
+      24 |     await expect(page).toHaveURL(/\/builder/); 
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:21:16
+
+    Error Context: test-results\legacy-forms-Form-Manageme-6227b--form-and-persistence-works-chromium\error-context.md
+
+
+[1A[2K[5/5] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality
+[1A[2K  3) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+
+
+      38 |      await page.goto('/forms/new');
+      39 |      await page.fill('#formTitle', 'Builder Test');
+    > 40 |      await page.click('button[type="submit"]');
+         |                 ^
+      41 |      
+      42 |      // Wait for builder
+      43 |      await page.waitForTimeout(1000);
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:40:17
+
+    Error Context: test-results\legacy-forms-Form-Management-can-drag-and-drop-components-chromium\error-context.md
+
+
+[1A[2K  4) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+
+
+      68 |      await page.goto('/forms/new');
+      69 |      await page.fill('#formTitle', 'Upload Test');
+    > 70 |      await page.click('button[type="submit"]');
+         |                 ^
+      71 |
+      72 |      // Add upload component (mocking the drag for now, or just finding the setting if it's there)
+      73 |      // If we can't drag in this generic test, we check if the component is available in the list.
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:70:17
+
+    Error Context: test-results\legacy-forms-Form-Manageme-d536a-oad-component-functionality-chromium\error-context.md
+
+
+[1A[2K  4 failed
+    [chromium] ΓÇ║ tests\e2e\projects.spec.ts:6:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇΓöÇ
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+  1 passed (1.1m)
+
+[36m  Serving HTML report at http://localhost:50429. Press Ctrl+C to quit.[39m

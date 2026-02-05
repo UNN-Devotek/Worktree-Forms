@@ -4,21 +4,20 @@ module.exports = {
       name: "backend",
       cwd: "./apps/backend",
       script: "npm",
-      args: "run start",
+      args: process.env.NODE_ENV === 'development' ? "run dev" : "run start",
       env: {
-        NODE_ENV: "production",
-        BACKEND_PORT: "5005",
-        PORT: "5005",  // Backend uses PORT env var
+        NODE_ENV: process.env.NODE_ENV || "production",
+        PORT: process.env.BACKEND_PORT || "5005",
       },
     },
     {
       name: "frontend",
       cwd: "./apps/frontend",
       script: "npm",
-      args: "run start",
+      args: process.env.NODE_ENV === 'development' ? "run dev" : "run start",
       env: {
-        NODE_ENV: "production",
-        PORT: "3005",  // Frontend uses PORT env var
+        NODE_ENV: process.env.NODE_ENV || "production",
+        PORT: process.env.PORT || "3005",
       },
     },
   ],

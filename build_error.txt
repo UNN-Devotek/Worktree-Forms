@@ -1,0 +1,35 @@
+
+> worktree-frontend@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.33
+  - Environments: .env
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./features/users/components/dev-login-buttons.tsx
+Error: 
+  x Unexpected eof
+    ,-[C:\Users\White\Documents\Worktree\Worktree\apps\frontend\features\users\components\dev-login-buttons.tsx:97:1]
+ 97 |     </div>
+ 98 |   )
+ 99 | }
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./features/users/components/dev-login-buttons.tsx
+./features/users/components/login-form.tsx
+
+
+> Build failed because of webpack errors
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path C:\Users\White\Documents\Worktree\Worktree\apps\frontend
+npm error workspace worktree-frontend@1.0.0
+npm error location C:\Users\White\Documents\Worktree\Worktree\apps\frontend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next build

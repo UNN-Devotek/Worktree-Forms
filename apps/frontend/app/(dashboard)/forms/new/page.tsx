@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
-import { FormBuilderLayout } from '@/components/form-builder/FormBuilderLayout';
+import { FormBuilderLayout } from '@/features/forms/components/builder/FormBuilderLayout';
 import { Loader2 } from 'lucide-react';
 
 export default function NewFormPage() {

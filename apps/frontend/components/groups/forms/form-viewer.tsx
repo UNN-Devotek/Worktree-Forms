@@ -3,6 +3,14 @@
 import { FormSchema } from '@/types/group-forms'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { API_BASE } from '@/lib/api'
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table'
 
 interface FormViewerProps {
   formSchema: FormSchema
@@ -81,6 +89,48 @@ export function FormViewer({ formSchema, responseData }: FormViewerProps) {
                       // These are static elements, arguably we don't show them in submission view unless desired.
                       // Usually submission view shows ANSWERS. But if we want context:
                       return null; // Skip static text elements in submission viewer to focus on data
+                  }
+
+                  if (field.type === 'smart_table') {
+                      const rows = Array.isArray(value) ? value : [];
+                      const columns = field.columns || [];
+                      
+                      return (
+                        <div key={field.id} className="space-y-2">
+                           <div className="font-medium text-sm text-muted-foreground">{field.label}</div>
+                           <div className="border rounded-md overflow-hidden">
+                               <Table>
+                                   <TableHeader>
+                                       <TableRow className="bg-muted/50">
+                                           {columns.map(col => (
+                                               <TableHead key={col.id} className="h-8 text-xs font-semibold uppercase">{col.label}</TableHead>
+                                           ))}
+                                       </TableRow>
+                                   </TableHeader>
+                                   <TableBody>
+                                       {rows.length === 0 ? (
+                                           <TableRow>
+                                               <TableCell colSpan={columns.length} className="text-center text-muted-foreground text-sm h-16">
+                                                   No entries
+                                               </TableCell>
+                                           </TableRow>
+                                       ) : (
+                                           rows.map((row: any, i: number) => (
+                                               <TableRow key={i}>
+                                                   {columns.map(col => (
+                                                       <TableCell key={col.id} className="py-2">
+                                                           {/* For now, just render value as string. Future: Use shared renderer for complex types */}
+                                                            {row[col.name]?.toString() || ''}
+                                                       </TableCell>
+                                                   ))}
+                                               </TableRow>
+                                           ))
+                                       )}
+                                   </TableBody>
+                               </Table>
+                           </div>
+                        </div>
+                      )
                   }
 
                   return (

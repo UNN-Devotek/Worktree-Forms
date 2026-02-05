@@ -1,0 +1,41 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1, h2, div')
+    Expected substring: [32m"Account Verification"[39m
+    Error: strict mode violation: locator('h1, h2, div') resolved to 10 elements:
+        1) <div class="flex flex-col items-center justify-center min-h-screen bg-muted/50 p-4">ΓÇª</div> aka locator('div').first()
+        2) <div class="rounded-xl border bg-card text-card-foreground shadow w-full max-w-2xl">ΓÇª</div> aka getByText('Account Verification (Visa)Welcome to Worktree. Before you can access project')
+        3) <div class="flex flex-col space-y-1.5 p-6">ΓÇª</div> aka locator('div').nth(2)
+        4) <div class="tracking-tight text-2xl font-bold">Account Verification (Visa)</div> aka getByText('Account Verification (Visa)')
+        5) <div class="p-6 pt-0">ΓÇª</div> aka locator('div').nth(4)
+        6) <div class="p-6 border rounded bg-background">ΓÇª</div> aka getByText('Please upload your valid Insurance Certificate (PDF or Image).Insurance')
+        7) <div class="space-y-4">ΓÇª</div> aka locator('div').filter({ hasText: 'Insurance Document' }).nth(4)
+        8) <div class="grid w-full max-w-sm items-center gap-1.5">ΓÇª</div> aka locator('div').filter({ hasText: 'Insurance Document' }).nth(5)
+        9) <div class="mt-6 flex justify-end">ΓÇª</div> aka locator('div').filter({ hasText: /^Submit for Verification$/ })
+        10) <div role="alert" aria-live="assertive" id="__next-route-announcer__"></div> aka locator('[id="__next-route-announcer__"]')
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1, h2, div')[22m
+
+
+      18 |   test('User can access onboarding and submit insurance', async ({ page }) => {
+      19 |     await page.goto('/onboarding');
+    > 20 |     await expect(page.locator('h1, h2, div')).toContainText('Account Verification');
+         |                                               ^
+      21 |     
+      22 |     // Upload File
+      23 |     // We need a dummy file.
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\onboarding.spec.ts:20:47
+
+    Error Context: test-results\e2e-onboarding-Onboarding--8de13-arding-and-submit-insurance-chromium\error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 

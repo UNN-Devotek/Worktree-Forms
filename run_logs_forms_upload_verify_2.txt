@@ -1,0 +1,91 @@
+
+Running 4 tests using 2 workers
+
+[1A[2K[1/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[1A[2K[2/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[TEST] Mocked Auth Session for user-68181edf-3b99-4a41-86bd-c575d9c3d399@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=854f68e2-71ba-423d-8f86-37a80a2fbf20
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-e1966191-17f1-46c7-bb64-f52f5ac31032@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=51bd54f0-4520-4610-87eb-e3b7fde1f5ac
+
+[1A[2K[3/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:36:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components
+[1A[2K[4/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:68:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality
+[1A[2K  1) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/builder/[39m
+    Received string:  [31m"http://localhost:3005/forms/new"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 ├ù unexpected value "http://localhost:3005/forms/new"[22m
+
+
+      23 |
+      24 |     // Should redirect to builder
+    > 25 |     await expect(page).toHaveURL(/\/builder/); 
+         |                        ^
+      26 |
+      27 |     // Verify Title Persistence
+      28 |     await expect(page.locator('h1')).toContainText(testTitle);
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:25:24
+
+    Error Context: test-results\legacy-forms-Form-Manageme-6227b--form-and-persistence-works-chromium\error-context.md
+
+
+[1A[2K  2) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:68:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.waitForRequest: Test timeout of 30000ms exceeded.
+
+      84 |
+      85 |      // Verify upload request URL checks for DOUBLE API prefix
+    > 86 |      const uploadPromise = page.waitForRequest(req => req.url().includes('/upload') && req.method() === 'POST');
+         |                                 ^
+      87 |
+      88 |      // Trigger upload in Preview modal
+      89 |      // Use form tag to scope to preview modal
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:86:33
+
+    Error: locator.setInputFiles: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('form input[type="file"]')[22m
+
+
+      88 |      // Trigger upload in Preview modal
+      89 |      // Use form tag to scope to preview modal
+    > 90 |      await page.locator('form input[type="file"]').setInputFiles({
+         |      ^
+      91 |        name: 'test.txt',
+      92 |        mimeType: 'text/plain',
+      93 |        buffer: Buffer.from('test content')
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:90:6
+
+    Error Context: test-results\legacy-forms-Form-Manageme-d536a-oad-component-functionality-chromium\error-context.md
+
+
+[1A[2K  2 failed
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:68:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+  2 passed (33.9s)
+
+[36m  Serving HTML report at http://localhost:54847. Press Ctrl+C to quit.[39m
+^C

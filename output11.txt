@@ -1,0 +1,36 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+       5 | test.describe('Onboarding (Visa Wizard)', () => {
+       6 |
+    >  7 |   test.beforeEach(async ({ page }) => {
+         |        ^
+       8 |     // Login as Admin (who is VERIFIED by default, but we can access /onboarding)
+       9 |     // If we wanted to test PENDING, we'd need to mock or seed a PENDING user.
+      10 |     // For now, we test the Page Load and Submission flow regardless of redirect.
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\onboarding.spec.ts:7:8
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Dev Admin")')[22m
+
+
+      11 |     await page.goto('/login');
+      12 |     // Use Dev Admin button
+    > 13 |     await page.click('button:has-text("Dev Admin")');
+         |                ^
+      14 |     // Wait for redirect to dashboard or similar
+      15 |     await expect(page).toHaveURL('/dashboard', { timeout: 15000 });
+      16 |   });
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\onboarding.spec.ts:13:16
+
+    Error Context: test-results\e2e-onboarding-Onboarding--8de13-arding-and-submit-insurance-chromium\error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 

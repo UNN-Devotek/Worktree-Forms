@@ -15,6 +15,8 @@ import { UserDistributionChart } from '@/components/admin/UserDistributionChart'
 import { FormSubmitView } from '@/components/groups/forms/FormSubmitView'
 import { SubmissionsTable } from '@/components/groups/forms/SubmissionsTable'
 import { useToast } from '@/hooks/use-toast'
+import { PublicShareModal } from '@/features/share/PublicShareModal'
+import { Share } from 'lucide-react'
 
 // Hardcoded for now
 const DEFAULT_GROUP_ID = 1
@@ -105,6 +107,15 @@ export default function FormLandingPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                 </Button>
+
+                <div className="flex items-center gap-2">
+                    {/* Share Button */}
+                     <PublicShareModal 
+                          resourceType="FORM" 
+                          resourceId={String(form.id)} // ID shouldn't be revealed but for now using ID as identifier in DB for simplicity. ideally UUID.
+                          trigger={<Button variant="outline" size="sm"><Share className="mr-2 h-4 w-4" /> Share</Button>}
+                     />
+                </div>
             </div>
             <div className="border-b-0">
                 <TabsList className="bg-muted p-1.5 rounded-full w-fit border border-border h-auto">

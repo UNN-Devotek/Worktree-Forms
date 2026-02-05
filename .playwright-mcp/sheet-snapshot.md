@@ -1,0 +1,120 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e41]:
+      - img "Worktree" [ref=e44]
+      - button [ref=e46] [cursor=pointer]:
+        - img
+      - generic [ref=e47]:
+        - navigation [ref=e48]:
+          - link [ref=e49] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e50]
+          - link [ref=e52] [cursor=pointer]:
+            - /url: /projects
+            - img [ref=e53]
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /forms
+            - img [ref=e56]
+          - link [ref=e58] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e59]
+        - generic [ref=e61]:
+          - button [ref=e62] [cursor=pointer]:
+            - img
+          - button [ref=e63] [cursor=pointer]:
+            - img
+    - main [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - heading "Test Project" [level=1] [ref=e67]
+            - tablist [ref=e70]:
+              - tab "Overview" [ref=e71] [cursor=pointer]:
+                - img [ref=e72]
+                - generic [ref=e77]: Overview
+              - tab "Spreadsheets" [selected] [ref=e78] [cursor=pointer]:
+                - img [ref=e79]
+                - generic [ref=e81]: Spreadsheets
+              - tab "My Route" [ref=e82] [cursor=pointer]:
+                - img [ref=e83]
+                - generic [ref=e86]: My Route
+              - tab "RFIs" [ref=e87] [cursor=pointer]:
+                - img [ref=e88]
+                - generic [ref=e91]: RFIs
+              - tab "Specs" [ref=e92] [cursor=pointer]:
+                - img [ref=e93]
+                - generic [ref=e96]: Specs
+              - tab "Blueprints" [ref=e97] [cursor=pointer]:
+                - img [ref=e98]
+                - generic [ref=e100]: Blueprints
+              - tab "Schedule" [ref=e101] [cursor=pointer]:
+                - img [ref=e102]
+                - generic [ref=e104]: Schedule
+              - tab "Team Chat" [ref=e105] [cursor=pointer]:
+                - img [ref=e106]
+                - generic [ref=e108]: Team Chat
+              - tab "Settings" [ref=e109] [cursor=pointer]:
+                - img [ref=e110]
+                - generic [ref=e113]: Settings
+          - generic [ref=e248]:
+            - generic [ref=e249]:
+              - heading "Untitled Sheet" [level=2]
+              - generic [ref=e250]:
+                - button "Add Row" [ref=e251] [cursor=pointer]:
+                  - img
+                  - generic [ref=e252]: Add Row
+                - button [disabled]:
+                  - img
+                - button [disabled]:
+                  - img
+              - generic [ref=e253]:
+                - button [disabled]:
+                  - img
+                - button [disabled]:
+                  - img
+                - button [disabled]:
+                  - img
+                - button [disabled]:
+                  - img
+              - button [disabled]:
+                - img
+              - button [disabled]:
+                - img
+              - button "Add Column" [ref=e254] [cursor=pointer]:
+                - img
+                - generic [ref=e255]: Add Column
+              - generic [ref=e256]:
+                - button "Grid" [ref=e257] [cursor=pointer]:
+                  - img
+                  - generic [ref=e258]: Grid
+                - button "Gantt" [ref=e259] [cursor=pointer]:
+                  - img
+                  - generic [ref=e260]: Gantt
+                - button "Calendar" [ref=e261] [cursor=pointer]:
+                  - img
+                  - generic [ref=e262]: Calendar
+                - button "Card" [ref=e263] [cursor=pointer]:
+                  - img
+                  - generic [ref=e264]: Card
+            - generic [ref=e265]:
+              - generic [ref=e266]:
+                - img [ref=e267]
+                - textbox "Search sheet..." [ref=e270]
+              - button "Filter" [ref=e271] [cursor=pointer]:
+                - img
+                - generic [ref=e272]: Filter
+              - button "Sort" [ref=e273] [cursor=pointer]:
+                - img
+                - generic [ref=e274]: Sort
+              - button "Share" [ref=e275] [cursor=pointer]:
+                - img
+                - generic [ref=e276]: Share
+              - button "Export" [ref=e277] [cursor=pointer]:
+                - img
+                - generic [ref=e278]: Export
+              - button [ref=e279] [cursor=pointer]:
+                - img
+        - button [ref=e40] [cursor=pointer]:
+          - img
+  - region "Notifications alt+T"
+  - alert [ref=e211]

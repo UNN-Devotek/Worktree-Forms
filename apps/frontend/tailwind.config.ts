@@ -8,12 +8,14 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
+    './features/**/*.{ts,tsx}',
   ],
   safelist: [
     'grid-cols-6',
     'grid-cols-7',
     'grid-cols-8',
     'grid-cols-9',
+    'md:flex', // Force sidebar visibility class
   ],
   prefix: '',
   theme: {

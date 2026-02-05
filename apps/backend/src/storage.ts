@@ -16,7 +16,8 @@ let useExternalEndpoint = false;
 
 if (MINIO_HOST && MINIO_HOST !== 'undefined' && MINIO_HOST !== '') {
   // Use internal Docker networking (MINIO_HOST is set)
-  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:${MINIO_PORT}`;
+  // FORCE PORT 9000 for internal Docker networking, because MINIO_PORT usually reflects the external mapping (9004)
+  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:9000`;
   console.log(`📦 Using Internal MinIO Endpoint: ${endpoint}`);
 } else if (MINIO_PUBLIC_URL) {
   // Fallback to external endpoint
@@ -35,7 +36,7 @@ console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`)
 // Use longer timeout for external endpoints (30s), shorter for internal (10s)
 const requestTimeout = useExternalEndpoint ? 30000 : 10000;
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
   endpoint: endpoint,
   credentials: {

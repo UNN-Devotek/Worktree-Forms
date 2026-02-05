@@ -19,6 +19,7 @@ interface FormRendererProps {
   formId: number
   groupId: number
   allowAnonymous?: boolean
+  latestVersionId?: number | null // [VERSIONING]
   onSuccess?: (submissionId: number) => void
 }
 
@@ -26,6 +27,7 @@ export function FormRenderer({
   formSchema,
   formId,
   groupId,
+  latestVersionId, // [VERSIONING]
   onSuccess
 }: FormRendererProps) {
   // Generate Zod validation schema from form schema
@@ -48,6 +50,7 @@ export function FormRenderer({
   const { submitForm, isSubmitting, error } = useFormSubmission({
     formId,
     groupId,
+    latestVersionId, // [VERSIONING]
     onSuccess: (submissionId) => {
       clearDraft()
       onSuccess?.(submissionId)

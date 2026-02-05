@@ -1,4 +1,4 @@
-# 📚 Gemini Development Guide - Worktree-Forms
+# 📚 Gemini Development Guide - Worktree
 
 **Last Updated**: December 16, 2025 (Docker Setup Documentation)
 **For**: AI Assistant (Gemini) & Development Team
@@ -146,7 +146,12 @@ docker-compose down
 
 ```bash
 docker-compose up -d --build
+docker-compose up -d --build
 docker-compose logs -f app
+
+> [!NOTE]
+> **Hot Reload**:
+> Hot reload is enabled for the frontend via volume binding (`./apps/frontend:/app/apps/frontend`) and forced polling (`WATCHPACK_POLLING=true`) to support Windows environments. Changes to frontend files should reflect immediately without rebuilding.
 ```
 
 **Run Database Migrations:**
@@ -222,6 +227,7 @@ Production runs entirely on Dokploy infrastructure. All environment variables ar
    - Deploys with configured environment variables
 
 3. **Verify**
+
    ```bash
    curl https://worktree.pro/api/health
    ```
@@ -702,6 +708,28 @@ npm run build
   - Fixed "Create Form" button link in FileBrowser.
   - Implemented `persist` middleware in `file-system-store` to save folders and state to localStorage.
 - **Styling Update**: The frontend application's global styles (`globals.css`) and Tailwind CSS configuration (`tailwind.config.ts`) have been updated to align with the `Squidhub 2.1` project's shadcn-based theming. Unused font-face declarations were removed, and the color palette now uses CSS variables for enhanced theming capabilities.
+- **System Verification & Fixes (Jan 19, 2026)**:
+  - **Critical Fix**: Resolved a frontend build error caused by missing `'use client'` directives in `RfiList`, `BlueprintList`, and `OfflineHelpCenter`.
+  - **API Configuration**: Fixed a double `/api` prefix issue in local development by removing `NEXT_PUBLIC_API_URL` from `.env`, ensuring requests correctly use the Next.js proxy.
+  - **Verification**: Confirmed successful execution of critical flows: Login, Project Creation, RFI Management, Help Center Access, and Blueprints/Specs UI.
+- **Fixes (Jan 20, 2026)**:
+  - **Build Fix**: Resolved `SpecList.tsx` build error by adding `'use client'` and fixing type definitions.
+  - **Docker Troubleshooting**: Resolved `idb-keyval` "Module not found" error by identifying stale Docker volumes and performing a clean rebuild (`docker-compose down -v`).
+  - **Refactor**: Fixed incorrect import paths for `form-builder-store` in 19 files (moved from `@/lib/stores` to `@/features/forms/stores`).
+- **Fixes (Jan 22, 2026)**:
+  - **Build Fix**: Resolved `Can't resolve 'ag-grid-react'` in monorepo by adding package to `transpilePackages`.
+  - **Route Conflict**: Deleted duplicate `perform/page.tsx` that conflicted with `(field-ops)`.
+  - **Environment**: Fixed `scaffold-test-isolation.ts` to load root `.env` correctly.
+  - **Debugging**: Investigating Next.js 500 startup errors (likely stale build cache).
+- **Epic 6 Smart Grid Fixes (Jan 23, 2026)**:
+  - **Cell Interactivity**: Implemented Smartsheet-style cell selection and editing:
+    - Single-click selects cell (blue focus ring)
+    - Double-click or Enter key enters edit mode
+    - Escape cancels edit or clears selection
+    - Space bar opens Row Detail side panel
+    - Arrow keys navigate between cells
+  - **Files Changed**: `SheetProvider.tsx`, `CellFactory.tsx`, `SmartGrid.tsx`, `SheetDetailView.tsx`, `RowDetailPanel.tsx`
+  - **Bug Fix**: Fixed keyboard navigation failing when `dynamicColumns` was empty by adding fallback to `navigableColumnIds`.
 
 ## 📋 Commit Conventions
 
@@ -785,3 +813,18 @@ curl http://localhost:5000/api/health
     - Backend: Generates **Presigned URL** and redirects (302) to it.
     - This ensures secure access even for private buckets.
 3.  **Database**: All files are tracked in `FileUpload` table with `objectKey` and `submissionId`.
+
+## 🔒 Security & RLS Implementation (Added Jan 2026)
+
+### Row Level Security (RLS)
+
+- **Role Enforcement**: Application transactions MUST use `apps/frontend/lib/auth-db.ts` which switches to the restricted `app_user` role.
+  - Default `db` connection (Owner) bypasses RLS policies!
+  - `getAuthenticatedDb(userId, projectId)` handles the role switch and context setting automatically.
+- **Project Structure**:
+  - `Project` model requires `createdById` for RLS visibility rules.
+  - Users can self-insert into `ProjectMember` (e.g. Invitation acceptance).
+- **Schema Management**:
+  - **Constraint**: `apps/frontend` and `apps/backend` schemas MUST stay synchronized manually until unified.
+  - Run `prisma migrate dev` in backend, then `prisma generate` in frontend.
+  - Always verify `Form` and `Submission` models exist in frontend client.

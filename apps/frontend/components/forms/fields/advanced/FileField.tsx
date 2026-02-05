@@ -4,13 +4,16 @@ import { forwardRef, useState, useRef, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+ // Dialog imports removed
 import { FieldWrapper } from '../base/FieldWrapper'
 import { FormFieldBase } from '@/types/group-forms'
-import { Upload, X, Image as ImageIcon, FileText, File, ZoomIn, ChevronLeft, ChevronRight, Download, AlertCircle } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, FileText, File, AlertCircle, ZoomIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import { useParams } from 'next/navigation'
 import { useFormUpload } from '@/contexts/form-upload-context'
+import { ImageOptimizer } from '@/lib/image-optimizer'
+import { MediaLightbox } from '@/components/ui/media-lightbox'
 
 // Uploaded file metadata from server
 interface UploadedFileData {
@@ -28,6 +31,7 @@ interface FileWithPreview {
   uploadComplete?: boolean
   uploadedData?: UploadedFileData
   uploadError?: boolean
+  isCompressing?: boolean
 }
 
 // Helper function to format file size
@@ -58,6 +62,8 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
     const form = useFormContext()
     const error = form.formState.errors[field.name]?.message as string
     const { uploadFile, isConfigured } = useFormUpload()
+    const params = useParams()
+    const projectSlug = params.slug as string || 'global'
 
     const fieldNameRef = useRef(field.name)
     fieldNameRef.current = field.name
@@ -142,21 +148,26 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
     const processFiles = async (fileList: FileList) => {
       const newFiles: FileWithPreview[] = []
 
+      // First, create placeholders for all files to show immediately
       for (let i = 0; i < fileList.length; i++) {
         const file = fileList[i]
         if (!validateFile(file)) continue
 
-        const fileWithPreview: FileWithPreview = { file, progress: 0 }
-
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const preview = e.target?.result as string
-            setFiles(prev => prev.map(f => f.file === file ? { ...f, preview } : f))
-          }
-          reader.readAsDataURL(file)
+        const fileWithPreview: FileWithPreview = { 
+          file, 
+          progress: 0,
+          isCompressing: file.type.startsWith('image/')
         }
 
+        if (file.type.startsWith('image/')) {
+           const reader = new FileReader()
+           reader.onload = (e) => {
+             const preview = e.target?.result as string
+             setFiles(prev => prev.map(f => f.file === file ? { ...f, preview } : f))
+           }
+           reader.readAsDataURL(file)
+        }
+        
         newFiles.push(fileWithPreview)
       }
 
@@ -166,7 +177,38 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
         setFiles(prev => [...prev, ...newFiles])
       }
 
-      uploadFilesToServer(newFiles)
+      // Now process them (Optimise -> Upload)
+      // We do this after setting state so user sees "Compressing..."
+      processAndUpload(newFiles)
+    }
+
+    const processAndUpload = async (fileItems: FileWithPreview[]) => {
+       const processedItems: FileWithPreview[] = []
+       
+       for (const item of fileItems) {
+           let finalFile = item.file
+
+           if (item.isCompressing) {
+               try {
+                   // 1. Rename first (to ensure optimized file has correct name)
+                   const renamed = ImageOptimizer.rename(finalFile, field.label || field.name, projectSlug)
+                   
+                   // 2. Compress
+                   const compressed = await ImageOptimizer.compress(renamed)
+                   finalFile = compressed
+                   
+                   // Update item in state with new file and clear compressing flag
+                   setFiles(prev => prev.map(f => f.file === item.file ? { ...f, file: finalFile, isCompressing: false } : f))
+               } catch (err) {
+                   console.error("Optimization failed", err)
+                   setFiles(prev => prev.map(f => f.file === item.file ? { ...f, isCompressing: false } : f))
+               }
+           }
+           
+           processedItems.push({ ...item, file: finalFile, isCompressing: false })
+       }
+       
+       uploadFilesToServer(processedItems)
     }
 
     const uploadFilesToServer = async (newFiles: FileWithPreview[]) => {
@@ -242,14 +284,6 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
     const openLightbox = (index: number) => {
       setCurrentImageIndex(index)
       setLightboxOpen(completedImages.length > 0 ? 1 : 0) // Set to 1 (true) if images exist
-    }
-
-    const navigateLightbox = (direction: 'prev' | 'next') => {
-      if (direction === 'prev') {
-        setCurrentImageIndex(prev => prev > 0 ? prev - 1 : completedImages.length - 1)
-      } else {
-        setCurrentImageIndex(prev => prev < completedImages.length - 1 ? prev + 1 : 0)
-      }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,8 +363,11 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
                       <p className="text-sm font-medium truncate">{fileItem.file.name}</p>
                       <p className="text-xs text-muted-foreground">{formatFileSize(fileItem.file.size)}</p>
                       <div className="mt-2">
-                        <Progress value={fileItem.progress} className="h-1.5 transition-all duration-200" />
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading... {fileItem.progress}%</p>
+                        <Progress value={fileItem.isCompressing ? 100 : fileItem.progress} className={cn("h-1.5 transition-all duration-200", fileItem.isCompressing && "animate-pulse")} />
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          {fileItem.isCompressing ? 'Optimizing...' : `Uploading... ${fileItem.progress}%`}
+                        </p>
                       </div>
                     </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveFile(files.indexOf(fileItem))} className="opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-4 w-4" /></Button>
@@ -384,43 +421,18 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
             </div>
           )}
 
-          <Dialog open={lightboxOpen === 1} onOpenChange={(open) => setLightboxOpen(open ? 1 : 0)}>
-            <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-0 bg-black/95 border-none">
-              <DialogTitle className="sr-only">Image Preview: {completedImages[currentImageIndex]?.file.name}</DialogTitle>
-              {completedImages[currentImageIndex] && (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <div className="relative max-w-full max-h-[85vh] animate-[fadeIn_0.3s_ease-out]">
-                    <Image src={completedImages[currentImageIndex].preview!} alt={completedImages[currentImageIndex].file.name} width={1200} height={800} className="max-h-[85vh] w-auto h-auto object-contain" unoptimized />
-                  </div>
-                  <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 h-10 w-10" onClick={() => setLightboxOpen(0)}><X className="h-6 w-6" /></Button>
-                  {completedImages.length > 1 && (
-                    <>
-                      <Button variant="ghost" size="icon" className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12 transition-transform hover:scale-110" onClick={() => navigateLightbox('prev')}><ChevronLeft className="h-8 w-8" /></Button>
-                      <Button variant="ghost" size="icon" className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12 transition-transform hover:scale-110" onClick={() => navigateLightbox('next')}><ChevronRight className="h-8 w-8" /></Button>
-                    </>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <div className="flex items-center justify-between text-white">
-                      <div>
-                        <p className="font-medium">{completedImages[currentImageIndex].file.name}</p>
-                        <p className="text-sm text-white/70">{formatFileSize(completedImages[currentImageIndex].file.size)} • {currentImageIndex + 1} of {completedImages.length}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={() => { const link = document.createElement('a'); link.href = completedImages[currentImageIndex].preview!; link.download = completedImages[currentImageIndex].file.name; link.click() }}><Download className="h-4 w-4 mr-2" />Download</Button>
-                    </div>
-                  </div>
-                  {completedImages.length > 1 && (
-                    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 p-2 rounded-lg backdrop-blur-sm">
-                      {completedImages.map((img, idx) => (
-                        <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={cn('relative w-12 h-12 rounded overflow-hidden transition-all duration-200', idx === currentImageIndex ? 'ring-2 ring-white scale-110' : 'opacity-50 hover:opacity-100')}>
-                          <Image src={img.preview!} alt={img.file.name} fill className="object-cover" unoptimized />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+
+          <MediaLightbox 
+            isOpen={lightboxOpen === 1} 
+            onClose={() => setLightboxOpen(0)} 
+            items={completedImages.map(img => ({
+                url: img.preview!,
+                name: img.file.name,
+                type: img.file.type,
+                size: img.file.size
+            }))}
+            initialIndex={currentImageIndex}
+          />
         </div>
       </FieldWrapper>
     );

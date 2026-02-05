@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Force restart
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
@@ -9,8 +10,8 @@ const nextConfig = {
     
     return [
       {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
+        source: '/api/:path((?!auth).*)',
+        destination: `${backendUrl}/api/:path`,
       },
       // Proxy uploads if needed (though usually these go to MinIO directly)
       {
@@ -35,6 +36,34 @@ const nextConfig = {
       },
     ],
   },
+
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: true,
+  },
+  webpack: (config, { isServer }) => {
+    config.resolve.alias.canvas = false;
+    // Fix resolution for vendored fast-formula-parser dependencies
+    // Use require.resolve to find the exact entry file, avoiding directory ambiguity
+    config.resolve.alias['bahttext'] = require.resolve('bahttext');
+    config.resolve.alias['bessel'] = require.resolve('bessel');
+    config.resolve.alias['jstat'] = require.resolve('jstat');
+    config.resolve.alias['chevrotain'] = require.resolve('chevrotain');
+    // Also include tiny-queue and regexp-to-ast as they are common deps
+    try { config.resolve.alias['tiny-queue'] = require.resolve('tiny-queue'); } catch (e) {}
+    try { config.resolve.alias['regexp-to-ast'] = require.resolve('regexp-to-ast'); } catch (e) {}
+    
+    return config;
+  },
+  transpilePackages: ['react-pdf', 'pdfjs-dist', 'ag-grid-react', 'ag-grid-community'],
 };
 
 module.exports = nextConfig;

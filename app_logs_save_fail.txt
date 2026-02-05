@@ -1,0 +1,492 @@
+worktree-forms  | Starting deployment script...
+worktree-forms  | Running backend migrations...
+worktree-forms  | Prisma schema loaded from prisma/schema.prisma
+worktree-forms  | Datasource "db": PostgreSQL database "worktreedatabasedev", schema "public" at "67.222.144.10:5433"
+worktree-forms  | 
+worktree-forms  | 4 migrations found in prisma/migrations
+worktree-forms  | 
+worktree-forms  | 
+worktree-forms  | No pending migrations to apply.
+worktree-forms  | Starting application with PM2...
+worktree-forms  | 2026-01-15T06:07:49: PM2 log: Launching in no daemon mode
+worktree-forms  | 2026-01-15T06:07:49: PM2 log: App [backend:0] starting in -fork mode-
+worktree-forms  | 2026-01-15T06:07:49: PM2 log: App [frontend:1] starting in -fork mode-
+worktree-forms  | 2026-01-15T06:07:49: PM2 log: App [backend:0] online
+worktree-forms  | 2026-01-15T06:07:49: PM2 log: App [frontend:1] online
+worktree-forms  | > worktree-frontend@1.0.0 start
+worktree-forms  | > next start -H 0.0.0.0
+worktree-forms  | > worktree-backend@1.0.0 start
+worktree-forms  | > node dist/index.js
+worktree-forms  |  ΓÜá You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+worktree-forms  |   Γû▓ Next.js 14.2.33
+worktree-forms  |   - Local:        http://localhost:3005
+worktree-forms  |   - Network:      http://0.0.0.0:3005
+worktree-forms  |  Γ£ô Starting...
+worktree-forms  | ≡ƒôª Using Internal MinIO Endpoint: http://minio:9000
+worktree-forms  | ≡ƒ¬ú MinIO Bucket: worktree
+worktree-forms  | Γ£ô Environment validation passed
+worktree-forms  | ≡ƒöô Using development security headers (relaxed CSP)
+worktree-forms  | ≡ƒÜÇ Worktree API running on port 5005
+worktree-forms  | ≡ƒôÜ API Docs: /api/docs
+worktree-forms  | Γ£à Health Check: /api/health
+worktree-forms  | ≡ƒöì Checking if bucket 'worktree' exists...
+worktree-forms  | Γ£à MinIO bucket 'worktree' already exists
+worktree-forms  |  Γ£ô Ready in 383ms
+worktree-forms  | [2026-01-15T06:07:58.462Z] POST /api/auth/register
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:07:58.716Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:08:47.556Z] POST /api/auth/register
+worktree-forms  | prisma:query SELECT 1
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:08:47.621Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | prisma:error 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  | Failed to create project: PrismaClientKnownRequestError: 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  |     at $n.handleRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:7216)
+worktree-forms  |     at $n.handleAndLogRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:6535)
+worktree-forms  |     at $n.request (/app/apps/frontend/.next/server/chunks/841.js:121:6219)
+worktree-forms  |     at async s (/app/apps/frontend/.next/server/chunks/841.js:130:9486)
+worktree-forms  |     at async /app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17669
+worktree-forms  |     at async Proxy._transactionWithCallback (/app/apps/frontend/.next/server/chunks/841.js:130:7861)
+worktree-forms  |     at async p (/app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17484)
+worktree-forms  |     at async /app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:16:418
+worktree-forms  |     at async rE (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:15:8146)
+worktree-forms  |     at async r7 (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:18:1144) {
+worktree-forms  |   code: 'P2003',
+worktree-forms  |   clientVersion: '5.22.0',
+worktree-forms  |   meta: {
+worktree-forms  |     modelName: 'ProjectMember',
+worktree-forms  |     field_name: 'ProjectMember_userId_fkey (index)'
+worktree-forms  |   }
+worktree-forms  | }
+worktree-forms  | [2026-01-15T06:09:17.188Z] POST /api/auth/register
+worktree-forms  | prisma:query SELECT 1
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:09:17.259Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | prisma:error 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  | Failed to create project: PrismaClientKnownRequestError: 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  |     at $n.handleRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:7216)
+worktree-forms  |     at $n.handleAndLogRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:6535)
+worktree-forms  |     at $n.request (/app/apps/frontend/.next/server/chunks/841.js:121:6219)
+worktree-forms  |     at async s (/app/apps/frontend/.next/server/chunks/841.js:130:9486)
+worktree-forms  |     at async /app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17669
+worktree-forms  |     at async Proxy._transactionWithCallback (/app/apps/frontend/.next/server/chunks/841.js:130:7861)
+worktree-forms  |     at async p (/app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17484)
+worktree-forms  |     at async /app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:16:418
+worktree-forms  |     at async rE (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:15:8146)
+worktree-forms  |     at async r7 (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:18:1144) {
+worktree-forms  |   code: 'P2003',
+worktree-forms  |   clientVersion: '5.22.0',
+worktree-forms  |   meta: {
+worktree-forms  |     modelName: 'ProjectMember',
+worktree-forms  |     field_name: 'ProjectMember_userId_fkey (index)'
+worktree-forms  |   }
+worktree-forms  | }
+worktree-forms  | [2026-01-15T06:10:53.280Z] POST /api/auth/register
+worktree-forms  | [2026-01-15T06:10:53.282Z] POST /api/auth/register
+worktree-forms  | prisma:query SELECT 1
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:10:53.344Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: worktree-test-bypass
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:10:53.478Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: worktree-test-bypass
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:10:54.110Z] GET /api/api/folders
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:10:54.114Z] GET /api/api/groups/1/forms
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:13:26.924Z] POST /api/auth/register
+worktree-forms  | prisma:query SELECT 1
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:13:27.001Z] POST /api/auth/login
+worktree-forms  | [2026-01-15T06:13:27.013Z] POST /api/auth/register
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:13:27.211Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: worktree-test-bypass
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:13:27.694Z] GET /api/api/folders
+worktree-forms  | [2026-01-15T06:13:27.696Z] GET /api/api/groups/1/forms
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | prisma:error 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  | Failed to create project: PrismaClientKnownRequestError: 
+worktree-forms  | Invalid `prisma.projectMember.create()` invocation:
+worktree-forms  | Foreign key constraint violated: `ProjectMember_userId_fkey (index)`
+worktree-forms  |     at $n.handleRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:7216)
+worktree-forms  |     at $n.handleAndLogRequestError (/app/apps/frontend/.next/server/chunks/841.js:121:6535)
+worktree-forms  |     at $n.request (/app/apps/frontend/.next/server/chunks/841.js:121:6219)
+worktree-forms  |     at async s (/app/apps/frontend/.next/server/chunks/841.js:130:9486)
+worktree-forms  |     at async /app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17669
+worktree-forms  |     at async Proxy._transactionWithCallback (/app/apps/frontend/.next/server/chunks/841.js:130:7861)
+worktree-forms  |     at async p (/app/apps/frontend/.next/server/app/(dashboard)/dashboard/page.js:1:17484)
+worktree-forms  |     at async /app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:16:418
+worktree-forms  |     at async rE (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:15:8146)
+worktree-forms  |     at async r7 (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:18:1144) {
+worktree-forms  |   code: 'P2003',
+worktree-forms  |   clientVersion: '5.22.0',
+worktree-forms  |   meta: {
+worktree-forms  |     modelName: 'ProjectMember',
+worktree-forms  |     field_name: 'ProjectMember_userId_fkey (index)'
+worktree-forms  |   }
+worktree-forms  | }
+worktree-forms  | [2026-01-15T06:13:27.995Z] POST /api/auth/register
+worktree-forms  | prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+worktree-forms  | [2026-01-15T06:13:28.030Z] POST /api/auth/login
+worktree-forms  | prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: worktree-test-bypass
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: 
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: next-auth.csrf-token, next-auth.callback-url
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/favicon.svg
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/dashboard
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [AUTH] Mocking session due to DEV MODE forced fallback: e2e-test-user
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/projects
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/users
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/admin
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:15:20.234Z] GET /api/api/folders
+worktree-forms  | [2026-01-15T06:15:20.235Z] GET /api/api/groups/1/forms
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [MIDDLEWARE] NODE_ENV=production, Path=/forms/new
+worktree-forms  | [MIDDLEWARE] Cookies: rl_page_init_referrer, rl_page_init_referring_domain, rl_anonymous_id, rl_user_id, rl_trait, rl_session, ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog, sidebar_state, authjs.csrf-token, authjs.callback-url, authjs.session-token, next-auth.csrf-token, next-auth.callback-url, __next_hmr_refresh_hash__, next-auth.session-token
+worktree-forms  | [MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+worktree-forms  | [2026-01-15T06:16:17.154Z] POST /api/api/groups/1/forms
+worktree-forms  | [2026-01-15T06:16:18.550Z] POST /api/api/groups/1/forms
+worktree-forms  | [2026-01-15T06:16:19.162Z] POST /api/api/groups/1/forms

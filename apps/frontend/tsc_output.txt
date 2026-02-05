@@ -1,0 +1,123 @@
+
+> worktree-frontend@1.0.0 type-check
+> tsc --noEmit
+
+.next/types/app/api/auth/ws-token/route.ts(26,4): error TS2344: Type 'typeof import("C:/Users/White/Documents/Worktree/Worktree/apps/frontend/app/api/auth/ws-token/route")' does not satisfy the constraint '{ GET?: Function | undefined; HEAD?: Function | undefined; OPTIONS?: Function | undefined; POST?: Function | undefined; PUT?: Function | undefined; ... 10 more ...; maxDuration?: number | undefined; }'.
+  Types of property 'GET' are incompatible.
+    Type 'Promise<Session | { user: { name: string; email: string; image: null; id: string; systemRole: string; complianceStatus: string; }; expires: string; } | null>' is missing the following properties from type 'Function': apply, call, bind, prototype, and 5 more.
+.next/types/app/api/share-proxy/route.ts(26,4): error TS2344: Type 'typeof import("C:/Users/White/Documents/Worktree/Worktree/apps/frontend/app/api/share-proxy/route")' does not satisfy the constraint '{ GET?: Function | undefined; HEAD?: Function | undefined; OPTIONS?: Function | undefined; POST?: Function | undefined; PUT?: Function | undefined; ... 10 more ...; maxDuration?: number | undefined; }'.
+  Types of property 'POST' are incompatible.
+    Type 'Promise<Session | { user: { name: string; email: string; image: null; id: string; systemRole: string; complianceStatus: string; }; expires: string; } | null>' is missing the following properties from type 'Function': apply, call, bind, prototype, and 5 more.
+actions/user.ts(24,5): error TS2322: Type '{ userId: string; }' is not assignable to type 'UserPreferenceWhereUniqueInput'.
+  Type '{ userId: string; }' is not assignable to type '{ id: string | UserPreferenceUserIdKeyProjectIdCompoundUniqueInput; userId_key_projectId: string | UserPreferenceUserIdKeyProjectIdCompoundUniqueInput; } & { ...; }'.
+    Type '{ userId: string; }' is missing the following properties from type '{ id: string | UserPreferenceUserIdKeyProjectIdCompoundUniqueInput; userId_key_projectId: string | UserPreferenceUserIdKeyProjectIdCompoundUniqueInput; }': id, userId_key_projectId
+actions/user.ts(28,7): error TS2353: Object literal may only specify known properties, and 'theme' does not exist in type '(Without<UserPreferenceUpdateInput, UserPreferenceUncheckedUpdateInput> & UserPreferenceUncheckedUpdateInput) | (Without<...> & UserPreferenceUpdateInput)'.
+actions/user.ts(32,7): error TS2353: Object literal may only specify known properties, and 'theme' does not exist in type 'Without<UserPreferenceCreateInput, UserPreferenceUncheckedCreateInput> & UserPreferenceUncheckedCreateInput'.
+app/(dashboard)/dashboard/page.tsx(5,1): error TS6192: All imports in import declaration are unused.
+app/(dashboard)/dashboard/page.tsx(6,1): error TS6192: All imports in import declaration are unused.
+app/(dashboard)/dashboard/page.tsx(18,9): error TS6133: 'stats' is declared but its value is never read.
+app/(dashboard)/project/[slug]/chat/page.tsx(3,1): error TS6133: 'ChatPanel' is declared but its value is never read.
+app/(dashboard)/project/[slug]/chat/page.tsx(71,68): error TS6133: 'users' is declared but its value is never read.
+app/(dashboard)/project/[slug]/settings/page.tsx(142,21): error TS6133: 'slug' is declared but its value is never read.
+app/(field-ops)/project/[slug]/route/stop/[stopId]/perform/page.tsx(5,20): error TS6133: 'useMutation' is declared but its value is never read.
+app/(field-ops)/project/[slug]/route/stop/[stopId]/perform/page.tsx(7,30): error TS6133: 'Save' is declared but its value is never read.
+app/(field-ops)/project/[slug]/route/stop/[stopId]/perform/page.tsx(9,1): error TS6133: 'apiClient' is declared but its value is never read.
+app/(field-ops)/project/[slug]/route/stop/[stopId]/perform/page.tsx(24,11): error TS6133: 'coordinates' is declared but its value is never read.
+app/(field-ops)/project/[slug]/routes/my-daily/page.tsx(17,24): error TS2322: Type '{ projectSlug: string; }' is not assignable to type 'IntrinsicAttributes & { projectId: string; userId: string; }'.
+  Property 'projectSlug' does not exist on type 'IntrinsicAttributes & { projectId: string; userId: string; }'.
+app/api/debug-sheets/route.ts(9,17): error TS2339: Property 'slug' does not exist on type '{ title: string; id: string; content: Buffer<ArrayBufferLike> | null; createdAt: Date; updatedAt: Date; projectId: string; }'.
+app/page.tsx(6,10): error TS6133: 'ArrowRight' is declared but its value is never read.
+components/ai/AiAssistant.tsx(109,48): error TS2322: Type '{ children: (false | Element)[]; className: string; viewportRef: RefObject<HTMLDivElement>; }' is not assignable to type 'IntrinsicAttributes & Omit<ScrollAreaProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<...>'.
+  Property 'viewportRef' does not exist on type 'IntrinsicAttributes & Omit<ScrollAreaProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<...>'.
+components/forms/fields/advanced/SignatureField.tsx(40,11): error TS6133: 'projectSlug' is declared but its value is never read.
+components/ui/data-table.tsx(6,3): error TS6133: 'ColumnFiltersState' is declared but its value is never read.
+components/ui/data-table.tsx(11,3): error TS6133: 'getFilteredRowModel' is declared but its value is never read.
+components/ui/media-lightbox.tsx(6,50): error TS6133: 'ZoomIn' is declared but its value is never read.
+features/blueprints/components/BlueprintList.tsx(8,27): error TS6133: 'FileText' is declared but its value is never read.
+features/blueprints/components/BlueprintList.tsx(8,50): error TS6133: 'ExternalLink' is declared but its value is never read.
+features/field-ops/components/compass.tsx(4,10): error TS6133: 'Navigation' is declared but its value is never read.
+features/field-ops/stop-detail.tsx(185,200): error TS7006: Parameter 'path' implicitly has an 'any' type.
+features/field-ops/stop-detail.tsx(205,37): error TS6133: 'distance' is declared but its value is never read.
+features/forms/components/builder/canvas/PdfFormCanvas.tsx(84,27): error TS2322: Type '(error: any) => Element' is not assignable to type 'NodeOrRenderer'.
+  Type '(error: any) => Element' is not assignable to type '() => ReactNode'.
+    Target signature provides too few arguments. Expected 1 or more, but got 0.
+features/forms/components/builder/canvas/PdfFormCanvas.tsx(84,29): error TS7006: Parameter 'error' implicitly has an 'any' type.
+features/forms/components/builder/properties/editors/SmartTableColumnEditor.tsx(58,9): error TS6133: 'getColumnIndex' is declared but its value is never read.
+features/maps/components/map-visualizer.tsx(13,18): error TS6133: 'Navigation' is declared but its value is never read.
+features/maps/components/map-visualizer.tsx(14,1): error TS6133: 'MapType' is declared but its value is never read.
+features/offline/context/offline-sync-provider.tsx(64,13): error TS7034: Variable 'nextQueue' implicitly has type 'any[]' in some locations where its type cannot be determined.
+features/offline/context/offline-sync-provider.tsx(65,13): error TS6133: 'processingBatch' is declared but its value is never read.
+features/offline/context/offline-sync-provider.tsx(118,32): error TS7005: Variable 'nextQueue' implicitly has an 'any[]' type.
+features/share/PublicShareModal.tsx(28,9): error TS6133: 'session' is declared but its value is never read.
+features/share/PublicShareModal.tsx(107,49): error TS2322: Type '{ children: Element[]; type: "button"; size: "sm"; class: string; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'class' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'. Did you mean 'className'?
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(199,9): error TS6133: 'endCol' is declared but its value is never read.
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(299,9): error TS6133: 'errorCode' is declared but its value is never read.
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(334,19): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(334,46): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(334,77): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CanvasRenderer.tsx(334,92): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CellEditor.tsx(4,54): error TS6133: 'getColumnLabel' is declared but its value is never read.
+features/sheets/components/canvas-grid/CellEditor.tsx(49,3): error TS6133: 'onCellReferenceAdd' is declared but its value is never read.
+features/sheets/components/canvas-grid/CellEditor.tsx(185,23): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CellEditor.tsx(186,24): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CellEditor.tsx(187,23): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/CellEditor.tsx(188,22): error TS18048: 'font' is possibly 'undefined'.
+features/sheets/components/canvas-grid/hooks/useClipboard.ts(154,36): error TS6133: 'e' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts(68,14): error TS18046: 'cellData' is of type 'unknown'.
+features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts(69,30): error TS18046: 'cellData' is of type 'unknown'.
+features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts(103,20): error TS2339: Property 'formula' does not exist on type '{}'.
+features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts(106,48): error TS2339: Property 'formula' does not exist on type '{}'.
+features/sheets/components/canvas-grid/hooks/useFormulaEngine.ts(130,23): error TS2339: Property 'value' does not exist on type '{}'.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(67,10): error TS6133: 'hslToHex' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(81,11): error TS6133: 'theme' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(103,13): error TS6133: 'background' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(104,13): error TS6133: 'foreground' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(105,13): error TS6133: 'border' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(106,13): error TS6133: 'muted' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(107,13): error TS6133: 'mutedForeground' is declared but its value is never read.
+features/sheets/components/canvas-grid/hooks/useThemeColors.ts(108,13): error TS6133: 'primary' is declared but its value is never read.
+features/sheets/components/canvas-grid/RnCGridWrapper.tsx(40,19): error TS6133: 'setColumns' is declared but its value is never read.
+features/sheets/components/canvas-grid/RnCGridWrapper.tsx(41,16): error TS6133: 'setRows' is declared but its value is never read.
+features/sheets/components/filters/FilterModal.tsx(23,1): error TS6133: 'Label' is declared but its value is never read.
+features/sheets/components/filters/FilterModal.tsx(126,39): error TS6133: 'index' is declared but its value is never read.
+features/sheets/components/RowAssignmentMenu.tsx(2,1): error TS6192: All imports in import declaration are unused.
+features/sheets/components/RowAssignmentMenu.tsx(10,1): error TS6192: All imports in import declaration are unused.
+features/sheets/hooks/useSheets.ts(28,26): error TS7030: Not all code paths return a value.
+features/sheets/providers/SheetProvider.tsx(11,11): error TS6196: 'FocusedCell' is declared but never used.
+features/sheets/server/sheet-actions-nocodb.ts(64,9): error TS2353: Object literal may only specify known properties, and 'nocodbTableId' does not exist in type '(Without<SheetUpdateInput, SheetUncheckedUpdateInput> & SheetUncheckedUpdateInput) | (Without<...> & SheetUpdateInput)'.
+features/sheets/server/sheet-actions.ts(52,11): error TS6133: 'cellsMap' is declared but its value is never read.
+features/sheets/stores/useYjsStore.ts(97,5): error TS18047: 'provider.awareness' is possibly 'null'.
+features/sync/components/sync-provider.tsx(6,1): error TS6133: 'toast' is declared but its value is never read.
+hooks/use-drag-drop.ts(127,17): error TS6133: 'sectionIndex' is declared but its value is never read.
+lib/audit.ts(84,9): error TS2322: Type 'AuditEventDetails | null' is not assignable to type 'string | null | undefined'.
+  Type '{ type: "INVITE_SENT"; email: string; roles: string[]; }' is not assignable to type 'string'.
+lib/auth-db.ts(21,20): error TS2349: This expression is not callable.
+  Type 'never' has no call signatures.
+remotion/index.ts(1,10): error TS2459: Module '"remotion"' declares 'registerRoot' locally, but it is not exported.
+remotion/PromoVideo.tsx(1,10): error TS2305: Module '"remotion"' has no exported member 'AbsoluteFill'.
+remotion/PromoVideo.tsx(1,24): error TS2305: Module '"remotion"' has no exported member 'Img'.
+remotion/PromoVideo.tsx(1,29): error TS2305: Module '"remotion"' has no exported member 'interpolate'.
+remotion/PromoVideo.tsx(1,42): error TS2305: Module '"remotion"' has no exported member 'spring'.
+remotion/PromoVideo.tsx(1,50): error TS2305: Module '"remotion"' has no exported member 'useCurrentFrame'.
+remotion/PromoVideo.tsx(1,67): error TS2305: Module '"remotion"' has no exported member 'useVideoConfig'.
+remotion/PromoVideo.tsx(1,83): error TS2305: Module '"remotion"' has no exported member 'staticFile'.
+remotion/PromoVideo.tsx(22,43): error TS7006: Parameter 't' implicitly has an 'any' type.
+remotion/PromoVideo.tsx(31,43): error TS7006: Parameter 't' implicitly has an 'any' type.
+remotion/PromoVideo.tsx(40,43): error TS7006: Parameter 't' implicitly has an 'any' type.
+remotion/Root.tsx(2,10): error TS2305: Module '"remotion"' has no exported member 'Composition'.
+test/api-routing-fix.test.ts(15,3): error TS2304: Cannot find name 'beforeEach'.
+test/api-routing-fix.test.ts(20,3): error TS2304: Cannot find name 'afterEach'.
+test/api-routing-fix.test.ts(29,5): error TS2708: Cannot use namespace 'jest' as a value.
+test/api-routing-fix.test.ts(36,5): error TS2708: Cannot use namespace 'jest' as a value.
+test/api-routing-fix.test.ts(47,5): error TS2708: Cannot use namespace 'jest' as a value.
+test/api-routing-fix.test.ts(67,5): error TS2708: Cannot use namespace 'jest' as a value.
+test/form-builder-validation-logic.test.ts(361,20): error TS2339: Property 'validation' does not exist on type '{ id: string; type: "text"; name: string; label: string; }'.
+test/profile-action.test.ts(21,23): error TS6133: 'uploadAvatar' is declared but its value is never read.
+npm error Lifecycle script `type-check` failed with error:
+npm error code 1
+npm error path C:\Users\White\Documents\Worktree\Worktree\apps\frontend
+npm error workspace worktree-frontend@1.0.0
+npm error location C:\Users\White\Documents\Worktree\Worktree\apps\frontend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc --noEmit

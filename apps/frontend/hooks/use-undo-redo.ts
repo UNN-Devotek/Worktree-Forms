@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useFormBuilderStore } from '@/lib/stores/form-builder-store'
+import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
 
 /**
  * Custom hook for undo/redo functionality with keyboard shortcuts

@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api'
 interface UseFormSubmissionProps {
   formId: number
   groupId: number
+  latestVersionId?: number | null // [VERSIONING]
   onSuccess?: (submissionId: number) => void
   onError?: (error: string) => void
 }
@@ -20,6 +21,7 @@ interface SubmitResponse {
 export function useFormSubmission({
   formId,
   groupId,
+  latestVersionId,
   onSuccess,
   onError
 }: UseFormSubmissionProps) {
@@ -29,6 +31,42 @@ export function useFormSubmission({
   const submitForm = async (data: any) => {
     setIsSubmitting(true)
     setError(null)
+
+    // Check offline status
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+    if (!isOnline) {
+      try {
+        // Import dynamically to avoid SSR issues if any, though IDB is client-side
+        const { MutationQueue } = await import('@/lib/sync/mutation-queue');
+        const { toast } = await import('sonner');
+
+        const submissionId = Math.floor(Math.random() * 1000000); // Temp ID
+
+        await MutationQueue.enqueue({
+          url: `/api/groups/${groupId}/forms/${formId}/submit`,
+          method: 'POST',
+          body: {
+            response_data: data,
+            form_version_id: latestVersionId,
+            submitted_at: new Date().toISOString(),
+            device_type: getDeviceType(),
+            user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+          }
+        });
+
+        toast.success("Saved to Outbox. Will sync when online.", { id: 'offline-save' });
+        onSuccess?.(submissionId); // Optimistic success
+        setIsSubmitting(false);
+        return { success: true, submission_id: submissionId, message: 'Saved to Outbox' };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to save offline';
+        setError(errorMessage);
+        onError?.(errorMessage);
+        setIsSubmitting(false);
+        throw err;
+      }
+    }
 
     try {
       const response = await apiClient<SubmitResponse>(
@@ -40,6 +78,7 @@ export function useFormSubmission({
           },
           body: JSON.stringify({
             response_data: data,
+            form_version_id: latestVersionId, // [VERSIONING]
             submitted_at: new Date().toISOString(),
             device_type: getDeviceType(),
             user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null

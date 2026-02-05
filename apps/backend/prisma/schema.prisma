@@ -2,67 +2,218 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // extensions = [vector] // Commented out - pgvector is optional for Dokploy compatibility
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("viewer") // "admin", "editor", "viewer"
+  id               String    @id @default(uuid())
+  email            String    @unique
+  // password removed
+  name             String?
+  // role removed
+  emailVerified    DateTime?
+  image            String?
+  systemRole       String    @default("MEMBER") // for Frontend RBAC
+  complianceStatus String    @default("PENDING") // PENDING | VERIFIED
+  insuranceUrl     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  auditLogs          AuditLog[]
+  accounts           Account[]
+  sessions           Session[]
+  projectMembers     ProjectMember[]
+  sentInvitations    Invitation[]
+  createdProjects    Project[]        @relation("CreatedProjects")
+  editedFormVersions FormVersion[]
+  assignedRoutes     Route[]
+  preferences        UserPreference[]
+
+  createdRfis           Rfi[]                @relation("CreatedRfis")
+  assignedRfis          Rfi[]                @relation("AssignedRfis")
+  uploadedSpecs         Specification[]      @relation("UploadedSpecs")
+  assignedScheduleTasks ScheduleTask[]       @relation("AssignedScheduleTasks")
+  apiKeys               ApiKey[]
+  webhooks              Webhook[]
+  helpArticles          HelpArticle[]
+  helpArticleVersions   HelpArticleVersion[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Project Core (from Frontend)
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  // FinOps & Usage
+  plan            String @default("FREE")
+  storageUsage    BigInt @default(0)
+  submissionCount Int    @default(0)
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  roles            Json?
+  members          ProjectMember[]
+  forms            Form[]
+  folders          Folder[]
+  invitations      Invitation[]
+  createdById      String
+  createdBy        User              @relation("CreatedProjects", fields: [createdById], references: [id])
+  routes           Route[]
+  preferences      UserPreference[]
+  sheets           Sheet[]
+  rfis             Rfi[]
+  specifications   Specification[]
+  scheduleTasks    ScheduleTask[]
+  vectorEmbeddings VectorEmbedding[]
+  webhooks         Webhook[]
+  helpArticles     HelpArticle[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  roles     String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  auditLogs AuditLog[]
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model ScheduleTask {
+  id           String   @id @default(cuid())
+  projectId    String
+  title        String
+  startDate    DateTime
+  endDate      DateTime
+  status       String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
+  assignedToId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo User?   @relation("AssignedScheduleTasks", fields: [assignedToId], references: [id])
 }
 
 model Folder {
   id        Int      @id @default(autoincrement())
   name      String
-  parentId  Int?     // For nested folders
+  parentId  Int? // For nested folders
   parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
   children  Folder[] @relation("FolderToFolder")
   forms     Form[]
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Form {
-  id          Int      @id @default(autoincrement())
-  group_id    Int      @default(1)
-  slug        String   @unique
-  title       String
-  description String?
-  form_type   String   @default("general")
-  form_schema Json
+  id           Int      @id @default(autoincrement())
+  group_id     Int      @default(1)
+  slug         String   @unique
+  title        String
+  description  String?
+  form_type    String   @default("general")
+  form_schema  Json
   is_published Boolean  @default(false)
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  
-  folderId    Int?
-  folder      Folder?  @relation(fields: [folderId], references: [id])
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  folderId Int?
+  folder   Folder? @relation(fields: [folderId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  targetSheetId String?
+  targetSheet   Sheet?   @relation("FormToSheet", fields: [targetSheetId], references: [id])
 
   submissions Submission[]
+  versions    FormVersion[]
+  routeStops  RouteStop[]
 }
 
-model Submission {
+model FormVersion {
   id         Int      @id @default(autoincrement())
   form_id    Int
   form       Form     @relation(fields: [form_id], references: [id], onDelete: Cascade)
-  data       Json
-  status     String   @default("pending")
+  version    Int // Incremental version number (1, 2, 3...)
+  schema     Json // The snapshot of the layout
+  changelog  String?
+  editorId   String? // Nullable for legacy
+  editor     User?    @relation(fields: [editorId], references: [id])
   created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
 
-  files      FileUpload[]
+  submissions Submission[]
+
+  @@unique([form_id, version])
+}
+
+model Submission {
+  id              Int          @id @default(autoincrement())
+  form_id         Int
+  form            Form         @relation(fields: [form_id], references: [id], onDelete: Cascade)
+  form_version_id Int?
+  form_version    FormVersion? @relation(fields: [form_version_id], references: [id])
+  data            Json
+  status          String       @default("pending")
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  files            FileUpload[]
+  vectorEmbeddings VectorEmbedding[]
 }
 
 model AuditLog {
@@ -76,21 +227,317 @@ model AuditLog {
 }
 
 model FileUpload {
-  id            String    @id @default(uuid())
-  objectKey     String    @unique  // MinIO object key (e.g., "form_uploads/abc123.pdf")
-  filename      String              // Original filename
-  contentType   String              // MIME type
-  size          Int                 // File size in bytes
-  folder        String    @default("uploads")  // Organization folder
-  uploadedBy    String?             // User ID who uploaded
-  uploadedAt    DateTime  @default(now())
+  id          String   @id @default(uuid())
+  objectKey   String   @unique // MinIO object key (e.g., "form_uploads/abc123.pdf")
+  filename    String // Original filename
+  contentType String // MIME type
+  size        Int // File size in bytes
+  folder      String   @default("uploads") // Organization folder
+  uploadedBy  String? // User ID who uploaded
+  uploadedAt  DateTime @default(now())
 
   // Relations
-  submissionId  Int?
-  submission    Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  submissionId Int?
+  submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
 
   @@index([objectKey])
   @@index([uploadedBy])
   @@map("file_uploads")
 }
 
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  projectId String
+  roles     String[]
+  expiresAt DateTime
+  inviterId String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inviter User    @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, email])
+  @@index([token])
+}
+
+model Route {
+  id         Int      @id @default(autoincrement())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId String? // The Technician
+  assignee   User?    @relation(fields: [assigneeId], references: [id])
+  date       DateTime @db.Date // Scheduled Date
+  status     String   @default("draft") // draft, published, completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  stops RouteStop[]
+}
+
+model RouteStop {
+  id      Int   @id @default(autoincrement())
+  routeId Int
+  route   Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  // Optional: Link to a specific form that needs to be filled at this stop
+  formId Int?
+  form   Form? @relation(fields: [formId], references: [id])
+
+  title     String // e.g., "Inspection at Site A"
+  address   String // Full address
+  latitude  Float? // For contextual compass/sorting
+  longitude Float?
+
+  priority String @default("medium") // high, medium, low
+  status   String @default("pending") // pending, en-route, arrived, completed, skipped
+
+  scheduledAt DateTime? // Optional specific time
+  completedAt DateTime?
+
+  order Int @default(0) // Sequence to visit
+
+  sheetRowId String?
+  sheetRow   SheetRow? @relation(fields: [sheetRowId], references: [id])
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String // e.g. "grid-config:daily-logs"
+  value     Json
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key, projectId])
+}
+
+// Epic 6: Real-Time Sheets
+model Sheet {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+
+  // Latest binary snapshot of the Yjs doc
+  content Bytes?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  columns   SheetColumn[]
+  rows      SheetRow[]
+  snapshots SheetSnapshot[]
+  linkedForms Form[] @relation("FormToSheet")
+}
+
+model SheetColumn {
+  id      String @id @default(cuid())
+  sheetId String
+  sheet   Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  header String
+  type   String // TEXT, NUMBER, STATUS, CONTACT, DATE, CHECKBOX
+  options Json? // Choices for dropdowns
+  size    Int    @default(150)
+  order   Int    @default(0)
+  locked  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SheetRow {
+  id      String @id @default(cuid())
+  sheetId String
+  sheet   Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   SheetRow?  @relation("RowHierarchy", fields: [parentId], references: [id])
+  children SheetRow[] @relation("RowHierarchy")
+
+  data Json // The cell data for this row
+  rank String // Lexicographical rank for sorting
+
+  routeStops RouteStop[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SheetSnapshot {
+  id      String @id @default(cuid())
+  sheetId String
+  sheet   Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  content   Bytes // Full snapshot
+  createdAt DateTime @default(now())
+}
+
+model Rfi {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  number Int @default(autoincrement()) // Sequential RFI # per system (or scoped if we complexify) - making global likely safer for simple MVP, OR use cuid/uuid and display ID separately. 
+  // Actually, standard is project-scoped sequential ID. But global autoincrement int is easiest unique ID if we don't care about gaps per project. 
+  // Let's stick to CUID for ID and maybe use a visual ID later.
+
+  title            String
+  question         String  @db.Text
+  proposedSolution String? @db.Text
+
+  status String @default("DRAFT") // DRAFT, OPEN, CLOSED
+
+  createdById String
+  createdBy   User   @relation("CreatedRfis", fields: [createdById], references: [id])
+
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedRfis", fields: [assignedToId], references: [id])
+
+  images Json? // Array of objects { url, caption }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Specification {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  section  String // e.g. "03 30 00"
+  title    String // e.g. "Cast-in-Place Concrete"
+  keywords String? // e.g. "mix, psi, rebar"
+  type     String  @default("SPEC") // SPEC, BLUEPRINT
+
+  fileUrl   String
+  objectKey String // For deletion logic if needed
+
+  uploadedById String
+  uploadedBy   User   @relation("UploadedSpecs", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PublicToken {
+  id           String    @id @default(cuid())
+  token        String    @unique // The secret link key
+  resourceType String // FORM | SPEC | BLUEPRINT
+  resourceId   String // ID of the resource
+  expiresAt    DateTime?
+  createdBy    String
+  createdAt    DateTime  @default(now())
+
+  @@index([token])
+}
+
+model VectorEmbedding {
+  id           String     @id @default(cuid())
+  submissionId Int
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  content   String @db.Text
+  embedding Json // Changed from vector(1536) to Json for Dokploy compatibility (stores array of floats)
+
+  createdAt DateTime @default(now())
+
+  @@index([submissionId])
+  @@index([projectId])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  keyHash    String    @unique // Warn: Store hash, not raw key
+  scope      String    @default("read-only") // e.g. "projects:read,forms:write"
+  note       String?
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  url       String // Target endpoint
+  events    String[] // e.g. ["submission.created", "project.updated"]
+  secret    String // For HMAC signing
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  event          String // e.g. "submission.created"
+  payload        Json
+  status         String    @default("pending") // pending, success, failed
+  attempts       Int       @default(0)
+  lastAttemptAt  DateTime?
+  responseStatus Int?
+  createdAt      DateTime  @default(now())
+
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status])
+}
+
+model HelpArticle {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  content     Json // Rich text content from Plate.js
+  category    String    @default("General") // Equipment, Safety, Procedures, etc.
+  status      String    @default("draft") // draft, published
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  versions HelpArticleVersion[]
+
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+model HelpArticleVersion {
+  id        String   @id @default(cuid())
+  version   Int // Incremental version number
+  content   Json // Snapshot of content at this version
+  changelog String? // Optional description of changes
+  createdAt DateTime @default(now())
+
+  articleId String
+  article   HelpArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@unique([articleId, version])
+  @@index([articleId])
+}

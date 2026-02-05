@@ -12,6 +12,7 @@ import { SignatureField } from '@/components/forms/fields/advanced/SignatureFiel
 import { TextElement } from '@/components/forms/fields/elements/TextElement'
 import { HeadingElement } from '@/components/forms/fields/elements/HeadingElement'
 import { ImageElement } from '@/components/forms/fields/elements/ImageElement'
+import { SmartTableField } from '@/components/forms/fields/advanced/SmartTableField'
 import { ComponentType } from 'react'
 
 export interface FieldRegistryEntry {
@@ -108,6 +109,13 @@ export const FIELD_REGISTRY: Record<string, FieldRegistryEntry> = {
     category: 'advanced',
     label: 'Signature',
     description: 'E-signature capture with canvas'
+  },
+  smart_table: {
+    component: SmartTableField,
+    icon: 'Table',
+    category: 'advanced',
+    label: 'Smart Table',
+    description: 'Repeater field for multiple rows of data'
   },
   // Static Display Elements (not form inputs)
   text_element: {

@@ -1,0 +1,97 @@
+
+Running 4 tests using 2 workers
+
+[1A[2K[1/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[1A[2K[2/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works
+[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-dc0c66cd-33b6-4e6f-9738-f8609c61a9f2@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=fc2134c5-f96e-459d-a750-d6c03e44683e
+
+[1A[2K[chromium] ΓÇ║ tests\legacy\forms.spec.ts:6:7 ΓÇ║ Form Management ΓÇ║ can navigate to create form
+[API] POST http://127.0.0.1:5005/api/auth/login
+
+[1A[2K[TEST] Mocked Auth Session for user-7f60d7ea-419d-4960-b366-2786bfeb351b@test.com
+
+[1A[2K[TEST] Bypassing Auth with Cookie Header, UserID=00fd2ec0-62c4-4a62-bc39-2e0d431a0c67
+
+[1A[2K[3/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components
+[1A[2K  1) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+
+
+      19 |     await page.fill('#formTitle', testTitle);
+      20 |     await page.fill('#formDescription', testDesc);
+    > 21 |     await page.click('button[type="submit"]');
+         |                ^
+      22 |
+      23 |     // Should redirect to builder
+      24 |     await expect(page).toHaveURL(/\/builder/); 
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:21:16
+
+    Error Context: test-results\legacy-forms-Form-Manageme-6227b--form-and-persistence-works-chromium\error-context.md
+
+
+[1A[2K  2) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇ
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Save' })[22m
+
+
+      38 |      await page.goto('/forms/new');
+      39 |      await page.fill('#formTitle', 'Builder Test');
+    > 40 |      await page.getByRole('button', { name: 'Save' }).click();
+         |                                                       ^
+      41 |      
+      42 |      // Wait for builder
+      43 |      await page.waitForTimeout(1000);
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:40:55
+
+    Error Context: test-results\legacy-forms-Form-Management-can-drag-and-drop-components-chromium\error-context.md
+
+
+[1A[2K[4/4] [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality
+[1A[2K  3) [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Save' })[22m
+
+
+      68 |      await page.goto('/forms/new');
+      69 |      await page.fill('#formTitle', 'Upload Test');
+    > 70 |      await page.getByRole('button', { name: 'Save' }).click();
+         |                                                       ^
+      71 |
+      72 |      // Add upload component (mocking the drag for now, or just finding the setting if it's there)
+      73 |      // If we can't drag in this generic test, we check if the component is available in the list.
+        at C:\Users\White\Documents\Worktree\Worktree\tests\legacy\forms.spec.ts:70:55
+
+    Error Context: test-results\legacy-forms-Form-Manageme-d536a-oad-component-functionality-chromium\error-context.md
+
+
+[1A[2K  3 failed
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:13:7 ΓÇ║ Form Management ΓÇ║ can create a new form and persistence works 
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:35:7 ΓÇ║ Form Management ΓÇ║ can drag and drop components ΓöÇΓöÇ
+    [chromium] ΓÇ║ tests\legacy\forms.spec.ts:66:7 ΓÇ║ Form Management ΓÇ║ file upload component functionality 
+  1 passed (1.1m)
+
+[36m  Serving HTML report at http://localhost:63603. Press Ctrl+C to quit.[39m

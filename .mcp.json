@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "agentvibes": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package=agentvibes",
+        "agentvibes-mcp-server"
+      ]
+    },
+    "docker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-p",
+        "50051:50051",
+        "gcr.io/google-labs-gemini-ext/mcp-gateway"
+      ]
+    }
+  }
+}

@@ -1,0 +1,39 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\projects.spec.ts:5:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[1A[2K[chromium] ΓÇ║ tests\e2e\projects.spec.ts:5:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project
+[API] POST http://127.0.0.1:5005/api/auth/register
+
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\projects.spec.ts:5:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+
+    Error: apiRequestContext.fetch: connect ECONNREFUSED 127.0.0.1:5005
+    Call log:
+    [2m  - ΓåÆ POST http://127.0.0.1:5005/api/auth/register[22m
+    [2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.4 Safari/537.36[22m
+    [2m    - accept: */*[22m
+    [2m    - accept-encoding: gzip,deflate,br[22m
+    [2m    - x-test-mode: true[22m
+    [2m    - Content-Type: application/json[22m
+    [2m    - content-length: 112[22m
+
+
+       at support\fixtures\api.fixture.ts:12
+
+      10 | ) {
+      11 |   console.log(`[API] ${method} ${url}`);
+    > 12 |   const response = await request.fetch(url, {
+         |                                  ^
+      13 |     method,
+      14 |     data,
+      15 |     headers: {
+        at apiRequestHelper (C:\Users\White\Documents\Worktree\Worktree\tests\support\fixtures\api.fixture.ts:12:34)
+        at apiRequest (C:\Users\White\Documents\Worktree\Worktree\tests\support\fixtures\api.fixture.ts:44:14)
+        at seedUser (C:\Users\White\Documents\Worktree\Worktree\tests\support\fixtures\auth.fixture.ts:17:30)
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\projects.spec.ts:7:15
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\projects.spec.ts:5:9 ΓÇ║ Project Management ΓÇ║ should allow a user to create a project 
+
+[36m  Serving HTML report at http://localhost:57437. Press Ctrl+C to quit.[39m

@@ -52,4 +52,4 @@ postgres_data/
 tests
 test_results
 playwright-report
-.env.dokploy
+.env.dokploynul

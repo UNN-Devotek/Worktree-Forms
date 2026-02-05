@@ -1,0 +1,1212 @@
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 3.1s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.9s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.2s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 8.3s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 8.3s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+📝 Bucket check failed: NotFound
+🏗️  Creating bucket 'worktree'...
+✅ MinIO bucket 'worktree' created successfully
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.7s
+[2026-01-19T20:56:03.309Z] POST /api/ai/chat
+prisma:query 
+        SELECT content, 1 - (vector <=> $1::vector) as similarity
+        FROM "VectorEmbedding"
+        WHERE "projectId" = $2
+        ORDER BY vector <=> $3::vector
+        LIMIT 5
+        
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 939ms (276 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling / ...
+ ✓ Compiled / in 6.4s (733 modules)
+ ✓ Compiled in 3s (351 modules)
+ GET / 200 in 9520ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled in 302ms (337 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 13s (742 modules)
+ GET /login 200 in 13822ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 1941ms (572 modules)
+ GET /api/auth/session 200 in 3946ms
+ GET /api/auth/session 200 in 295ms
+ GET /api/auth/session 200 in 223ms
+ GET /api/auth/session 200 in 280ms
+ GET /api/auth/providers 200 in 310ms
+ GET /api/auth/csrf 200 in 242ms
+[AUTH] Authorizing credentials: { email: 'admin@worktree.pro', flow: 'credentials' }
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[DEV] Auto-creating user: admin@worktree.pro
+prisma:query INSERT INTO "public"."User" ("id","email","name","systemRole","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt"
+ POST /api/auth/callback/credentials? 200 in 292ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /dashboard ...
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /dashboard 500 in 11040ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 500 in 180ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /login 500 in 192ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 500 in 210ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 500 in 233ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /login 500 in 236ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /dashboard 500 in 229ms
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 11.4s
+ ○ Compiling /_not-found ...
+ ✓ Compiled /middleware in 20.5s (933 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling / ...
+ ✓ Compiled / in 4.9s (722 modules)
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 26495ms
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 3807ms
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 3803ms
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 3801ms
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 3759ms
+ GET / 200 in 3919ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 212ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /login ...
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled /api/auth/[...nextauth] in 9.3s (1486 modules)
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET / 200 in 11446ms
+ GET /login 200 in 11906ms
+[getProjects] Found 0 projects for user ede6a039-10ed-42c3-9c50-e1f18abd5cb7
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 11741ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /dashboard 200 in 12280ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled in 4.6s (1486 modules)
+ GET /login 200 in 2231ms
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 13995ms
+ GET /api/auth/session 200 in 2729ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 200 in 2958ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /_next/static/webpack/4ddcfa29a883ecef.webpack.hot-update.json 404 in 347ms
+[MIDDLEWARE] NODE_ENV=development, Path=/
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /login 200 in 801ms
+ GET /api/auth/session 200 in 694ms
+[MIDDLEWARE] NODE_ENV=development, Path=/login
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET / 200 in 777ms
+ GET /api/auth/session 200 in 710ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /login 200 in 988ms
+[MIDDLEWARE] NODE_ENV=development, Path=/Worktree%20Logo.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 522ms
+ GET /api/auth/session 200 in 581ms
+ GET /api/auth/session 200 in 596ms
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 534ms
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 362ms
+ GET /api/auth/session 200 in 802ms
+ GET /api/auth/providers 200 in 931ms
+ GET /api/auth/session 200 in 992ms
+[MIDDLEWARE] NODE_ENV=development, Path=/favicon.svg
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/csrf 200 in 620ms
+ GET /api/auth/session 200 in 677ms
+[AUTH] Authorizing credentials: { email: 'admin@worktree.pro', flow: 'credentials' }
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ POST /api/auth/callback/credentials? 200 in 580ms
+[MIDDLEWARE] NODE_ENV=development, Path=/dashboard
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ GET /api/auth/session 200 in 345ms
+[DashboardPage] Rendering FULL MODE...
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[AUTH] auth() called
+[AUTH] No bypass found. Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+ GET /api/auth/session 200 in 460ms
+[getProjects] Found 0 projects for user ede6a039-10ed-42c3-9c50-e1f18abd5cb7
+prisma:query SELECT "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById", COALESCE("aggr_selection_0_ProjectMember"."_aggr_count_members", 0) AS "_aggr_count_members" FROM "public"."Project" LEFT JOIN (SELECT "public"."ProjectMember"."projectId", COUNT(*) AS "_aggr_count_members" FROM "public"."ProjectMember" WHERE 1=1 GROUP BY "public"."ProjectMember"."projectId") AS "aggr_selection_0_ProjectMember" ON ("public"."Project"."id" = "aggr_selection_0_ProjectMember"."projectId") WHERE ("public"."Project"."id") IN (SELECT "t1"."projectId" FROM "public"."ProjectMember" AS "t1" WHERE ("t1"."userId" = $1 AND "t1"."projectId" IS NOT NULL)) ORDER BY "public"."Project"."updatedAt" DESC OFFSET $2
+ GET /dashboard 200 in 797ms
+ GET /api/auth/session 200 in 341ms
+ GET /api/auth/session 200 in 566ms
+ GET /api/auth/session 200 in 713ms
+ GET /api/auth/session 200 in 315ms
+ GET /api/auth/session 200 in 425ms
+ GET /api/auth/session 200 in 637ms
+ GET /api/auth/session 200 in 559ms
+ GET /api/auth/session 200 in -1313ms
+ GET /api/auth/session 200 in 262ms
+ GET /api/auth/session 200 in 330ms
+ GET /api/auth/session 200 in 323ms
+ GET /api/auth/session 200 in 360ms
+ GET /api/auth/session 200 in 327ms
+ GET /api/auth/session 200 in 285ms
+ GET /api/auth/session 200 in 499ms
+ GET /api/auth/session 200 in 346ms
+ GET /api/auth/session 200 in 260ms
+ GET /api/auth/session 200 in 290ms
+ GET /api/auth/session 200 in 260ms
+ GET /api/auth/session 200 in 263ms
+ GET /api/auth/session 200 in 244ms
+ GET /api/auth/session 200 in 260ms
+ GET /api/auth/session 200 in 265ms
+ GET /api/auth/session 200 in 238ms
+ GET /api/auth/session 200 in 224ms
+ GET /api/auth/session 200 in 233ms
+ GET /api/auth/session 200 in 231ms
+ GET /api/auth/session 200 in 260ms
+ GET /api/auth/session 200 in 241ms
+ GET /api/auth/session 200 in 260ms
+ GET /api/auth/session 200 in 297ms
+ GET /api/auth/session 200 in 282ms
+ GET /api/auth/session 200 in 268ms
+ GET /api/auth/session 200 in 334ms
+ GET /api/auth/session 200 in 309ms
+ GET /api/auth/session 200 in 266ms
+ GET /api/auth/session 200 in 401ms
+ GET /api/auth/session 200 in 343ms
+ GET /api/auth/session 200 in 308ms
+ GET /api/auth/session 200 in 270ms
+ GET /api/auth/session 200 in 279ms
+ GET /api/auth/session 200 in 321ms
+ GET /api/auth/session 200 in 291ms
+ GET /api/auth/session 200 in 257ms
+ GET /api/auth/session 200 in 246ms
+ GET /api/auth/session 200 in 383ms
+ GET /api/auth/session 200 in 283ms
+ GET /api/auth/session 200 in 366ms
+ GET /api/auth/session 200 in 284ms
+[2026-01-19T21:04:58.258Z] POST /api/ai/chat
+prisma:query 
+        SELECT content, 1 - (vector <=> $1::vector) as similarity
+        FROM "VectorEmbedding"
+        WHERE "projectId" = $2
+        ORDER BY vector <=> $3::vector
+        LIMIT 5
+        
+ GET /api/auth/session 200 in 269ms
+ GET /api/auth/session 200 in 289ms
+ GET /api/auth/session 200 in 262ms
+ GET /api/auth/session 200 in 258ms
+ GET /api/auth/session 200 in 245ms
+ GET /api/auth/session 200 in 263ms
+ GET /api/auth/session 200 in 240ms
+ GET /api/auth/session 200 in 258ms
+ GET /api/auth/session 200 in 282ms
+ GET /api/auth/session 200 in 272ms
+ GET /api/auth/session 200 in 310ms
+ GET /api/auth/session 200 in 358ms
+ GET /api/auth/session 200 in 429ms
+ GET /api/auth/session 200 in 393ms
+ GET /api/auth/session 200 in 556ms
+ GET /api/auth/session 200 in 410ms
+ GET /api/auth/session 200 in 273ms
+ GET /api/auth/session 200 in 273ms
+ GET /api/auth/session 200 in 263ms
+ GET /api/auth/session 200 in 487ms
+ GET /api/auth/session 200 in 297ms
+ GET /api/auth/session 200 in 332ms
+ GET /api/auth/session 200 in 321ms
+ GET /api/auth/session 200 in 394ms
+ GET /api/auth/session 200 in 604ms
+ GET /api/auth/session 200 in 344ms
+ GET /api/auth/session 200 in 274ms
+ GET /api/auth/session 200 in 339ms
+ GET /api/auth/session 200 in 316ms
+ GET /api/auth/session 200 in 290ms
+ GET /api/auth/session 200 in 306ms
+ GET /api/auth/session 200 in 317ms
+ GET /api/auth/session 200 in 285ms
+ GET /api/auth/session 200 in 251ms
+ GET /api/auth/session 200 in 279ms
+ GET /api/auth/session 200 in 225ms
+ GET /api/auth/session 200 in 236ms
+ GET /api/auth/session 200 in -602ms
+ GET /api/auth/session 200 in -753ms
+ GET /api/auth/session 200 in 371ms
+ GET /api/auth/session 200 in 256ms
+ GET /api/auth/session 200 in 298ms
+ GET /api/auth/session 200 in 363ms
+ GET /api/auth/session 200 in 296ms
+ GET /api/auth/session 200 in 250ms
+ GET /api/auth/session 200 in 262ms
+ GET /api/auth/session 200 in 248ms
+ GET /api/auth/session 200 in 262ms
+ GET /api/auth/session 200 in 234ms
+ GET /api/auth/session 200 in 259ms
+ GET /api/auth/session 200 in 242ms
+ GET /api/auth/session 200 in 252ms
+ GET /api/auth/session 200 in 292ms
+ GET /api/auth/session 200 in 298ms
+ GET /api/auth/session 200 in 250ms
+ GET /api/auth/session 200 in 218ms
+ GET /api/auth/session 200 in 232ms
+ GET /api/auth/session 200 in 273ms
+ GET /api/auth/session 200 in 274ms
+ GET /api/auth/session 200 in 256ms
+ GET /api/auth/session 200 in 236ms
+ GET /api/auth/session 200 in 235ms
+ GET /api/auth/session 200 in 233ms
+ GET /api/auth/session 200 in 292ms
+ GET /api/auth/session 200 in 232ms
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 6.8s
+[2026-01-19T21:13:07.881Z] POST /api/webhooks/inbound-email
+📧 Processing Inbound Email from admin@worktree.pro
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.8s
+[2026-01-19T21:13:54.249Z] POST /api/webhooks/inbound-email
+📧 Processing Inbound Email from admin@worktree.pro
+prisma:query SELECT "public"."User"."id", "public"."User"."email", "public"."User"."name", "public"."User"."emailVerified", "public"."User"."image", "public"."User"."systemRole", "public"."User"."createdAt", "public"."User"."updatedAt" FROM "public"."User" WHERE ("public"."User"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."Project" ("id","name","slug","description","plan","storageUsage","submissionCount","createdAt","updatedAt","createdById") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "public"."Project"."id", "public"."Project"."name", "public"."Project"."slug", "public"."Project"."description", "public"."Project"."plan", "public"."Project"."storageUsage", "public"."Project"."submissionCount", "public"."Project"."createdAt", "public"."Project"."updatedAt", "public"."Project"."roles", "public"."Project"."createdById"
+prisma:query INSERT INTO "public"."ProjectMember" ("id","projectId","userId","roles","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."ProjectMember"."id", "public"."ProjectMember"."projectId", "public"."ProjectMember"."userId", "public"."ProjectMember"."roles", "public"."ProjectMember"."createdAt", "public"."ProjectMember"."updatedAt"
+✅ Magic Project Created: Magic Tower Renovation (ID: cmklnxd2o00015r6fpnnb4zcq)
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.9s
+[2026-01-19T21:38:57.134Z] POST /api/keys
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+[2026-01-19T21:39:27.818Z] POST /api/keys
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.5s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+[2026-01-19T21:39:58.052Z] POST /api/keys
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.8s
+[2026-01-19T21:40:24.567Z] POST /api/keys
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+[2026-01-19T21:41:05.176Z] POST /api/keys
+🔑 Generating API Key for userId: ede6a039-10ed-42c3-9c50-e1f18abd5cb7, note: Test Key, scope: projects:read
+🔑 Generated keyHash: 43704f111188e5ce...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 3.3s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+[2026-01-19T21:42:39.805Z] POST /api/keys
+🔑 Generating API Key for userId: ede6a039-10ed-42c3-9c50-e1f18abd5cb7, note: Test Key, scope: projects:read
+🔑 Generated keyHash: 705197ccdecf8e81...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.7s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1197ms (276 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/settings
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 6.5s (1235 modules)
+ ✓ Compiled in 2.4s (468 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/settings
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled in 292ms (454 modules)
+9:44:05 PM [tsx] change in ./../../node_modules/.prisma/client/index.js Restarting...
+c9:44:05 PM [tsx] unlink in ./../../node_modules/.prisma/client/default.js Restarting...
+c📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+[2026-01-19T21:44:37.221Z] POST /api/keys
+🔑 Generating API Key for userId: ede6a039-10ed-42c3-9c50-e1f18abd5cb7, note: Test Key, scope: projects:read
+🔑 Generated keyHash: c72b089cd88c0f24...
+prisma:query INSERT INTO "public"."ApiKey" ("id","keyHash","scope","note","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."ApiKey"."id", "public"."ApiKey"."keyHash", "public"."ApiKey"."scope", "public"."ApiKey"."note", "public"."ApiKey"."expiresAt", "public"."ApiKey"."lastUsedAt", "public"."ApiKey"."createdAt", "public"."ApiKey"."userId"
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 4.4s
+[2026-01-19T21:45:31.659Z] POST /api/keys
+🔑 Generating API Key for userId: ede6a039-10ed-42c3-9c50-e1f18abd5cb7, note: Test Key, scope: projects:read
+🔑 Generated keyHash: 8ebefb393d5612de...
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."ApiKey" ("id","keyHash","scope","note","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "public"."ApiKey"."id", "public"."ApiKey"."keyHash", "public"."ApiKey"."scope", "public"."ApiKey"."note", "public"."ApiKey"."expiresAt", "public"."ApiKey"."lastUsedAt", "public"."ApiKey"."createdAt", "public"."ApiKey"."userId"
+✅ API Key created: cmklp213j0003v4vssfqi0642
+[2026-01-19T21:45:31.681Z] GET /api/keys
+prisma:query SELECT "public"."ApiKey"."id", "public"."ApiKey"."keyHash", "public"."ApiKey"."scope", "public"."ApiKey"."note", "public"."ApiKey"."expiresAt", "public"."ApiKey"."lastUsedAt", "public"."ApiKey"."createdAt", "public"."ApiKey"."userId" FROM "public"."ApiKey" WHERE "public"."ApiKey"."userId" = $1 ORDER BY "public"."ApiKey"."createdAt" DESC OFFSET $2
+[2026-01-19T21:45:31.688Z] DELETE /api/keys/cmklp213j0003v4vssfqi0642
+prisma:query DELETE FROM "public"."ApiKey" WHERE ("public"."ApiKey"."id" = $1 AND "public"."ApiKey"."userId" = $2)
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 659ms (276 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/users
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ○ Compiling /users ...
+ ✓ Compiled /users in 8s (1198 modules)
+ ✓ Compiled in 3.2s (450 modules)
+[MIDDLEWARE] NODE_ENV=development, Path=/users
+[MIDDLEWARE] Cookies: authjs.session-token, next-auth.csrf-token, next-auth.callback-url, next-auth.session-token
+[MIDDLEWARE] Bypassing auth for dev/test (Unconditional)
+ ✓ Compiled in 299ms (436 modules)
+9:53:40 PM [tsx] unlink in ./../../node_modules/.prisma/client/default.js Restarting...
+c📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 4.6s
+[2026-01-19T21:54:46.999Z] POST /api/webhooks
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:55:04.265Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:55:30.654Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:57:14.004Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:57:33.102Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:58:00.780Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:58:28.444Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:58:52.673Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:59:21.635Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T21:59:44.103Z] POST /api/webhooks
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T22:01:00.933Z] POST /api/webhooks
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."Webhook" ("id","url","events","secret","isActive","createdAt","userId") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."secret", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."userId", "public"."Webhook"."projectId"
+[2026-01-19T22:01:00.950Z] GET /api/webhooks
+prisma:query SELECT "public"."Webhook"."id", "public"."Webhook"."url", "public"."Webhook"."events", "public"."Webhook"."isActive", "public"."Webhook"."createdAt", "public"."Webhook"."projectId" FROM "public"."Webhook" WHERE "public"."Webhook"."userId" = $1 OFFSET $2
+[2026-01-19T22:01:00.958Z] DELETE /api/webhooks/cmklply4n000l987y18ao0buv
+prisma:query DELETE FROM "public"."Webhook" WHERE ("public"."Webhook"."id" = $1 AND "public"."Webhook"."userId" = $2)
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.5s
+10:04:53 PM [tsx] unlink in ./../../node_modules/.prisma/client/default.js Restarting...
+c📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 2.1s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.2s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.2s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.8s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 7.3s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 5.9s
+[?25h
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 5.3s
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 5.6s
+[2026-01-20T00:30:26.481Z] POST /api/help/articles
+[2026-01-20T00:30:45.563Z] GET /api/health
+prisma:query SELECT 1
+[2026-01-20T00:31:03.204Z] GET /api/help/articles
+[?25h
+
+> worktree-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3005
+
+
+> worktree-backend@1.0.0 dev
+> tsx watch src/index.ts
+
+📦 Using Internal MinIO Endpoint: http://minio:9000
+🪣 MinIO Bucket: worktree
+✓ Environment validation passed
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+🔓 Using development security headers (relaxed CSP)
+
+🚀 Worktree API running on port 5005 bound to 0.0.0.0
+📚 API Docs: /api/docs
+✅ Health Check: /api/health
+
+🔍 Checking if bucket 'worktree' exists...
+✅ MinIO bucket 'worktree' already exists
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3005
+  - Network:      http://0.0.0.0:3005
+  - Environments: .env
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 4.8s
+[2026-01-20T00:32:31.430Z] POST /api/help/articles
+[2026-01-20T00:32:31.481Z] GET /api/help/articles
+[2026-01-20T00:32:31.514Z] PUT /api/help/articles/undefined
+[2026-01-20T00:32:31.542Z] GET /api/help/articles/undefined/versions
+[2026-01-20T00:32:31.570Z] POST /api/help/articles/undefined/publish
+[2026-01-20T00:32:31.601Z] GET /api/help/articles/undefined
+[2026-01-20T00:33:08.018Z] POST /api/help/articles
+[2026-01-20T00:33:08.045Z] GET /api/help/articles
+[2026-01-20T00:33:08.068Z] PUT /api/help/articles/undefined
+[2026-01-20T00:33:08.090Z] GET /api/help/articles/undefined/versions
+[2026-01-20T00:33:08.109Z] POST /api/help/articles/undefined/publish
+[2026-01-20T00:33:08.129Z] GET /api/help/articles/undefined
+[2026-01-20T00:33:13.132Z] POST /api/help/articles

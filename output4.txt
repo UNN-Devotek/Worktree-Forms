@@ -1,0 +1,32 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance
+[1A[2K  1) [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Verification Complete')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('text=Verification Complete')[22m
+
+
+      31 |     
+      32 |     // Check for success message
+    > 33 |     await expect(page.locator('text=Verification Complete')).toBeVisible({ timeout: 10000 });
+         |                                                              ^
+      34 |             
+      35 |     // Should fail?
+      36 |     // The backend `ComplianceService.submitInsurance` calls `prisma.user.update`.
+        at C:\Users\White\Documents\Worktree\Worktree\tests\e2e\onboarding.spec.ts:33:62
+
+    Error Context: test-results\e2e-onboarding-Onboarding--8de13-arding-and-submit-insurance-chromium\error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] ΓÇ║ tests\e2e\onboarding.spec.ts:18:7 ΓÇ║ Onboarding (Visa Wizard) ΓÇ║ User can access onboarding and submit insurance 

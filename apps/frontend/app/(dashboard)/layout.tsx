@@ -1,18 +1,17 @@
-import { Sidebar } from "@/components/layout/Sidebar";
+import { DashboardLayout } from "@/features/projects/components/dashboard-layout";
+import { AiAssistant } from "@/components/ai/AiAssistant";
 
-export default function DashboardLayout({
-  children,
-}: {
+export const dynamic = 'force-dynamic';
+
+interface LayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex w-full h-screen bg-sidebar overflow-hidden">
-      <Sidebar className="shrink-0" />
-      <main className="flex-1 flex flex-col m-2 ml-0 bg-background rounded-xl shadow-2xl overflow-hidden relative z-10 border border-border/50">
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
-            {children}
-        </div>
-      </main>
-    </div>
+    <DashboardLayout>
+      {children}
+      <AiAssistant />
+    </DashboardLayout>
   );
 }
