@@ -1,24 +1,46 @@
 
 import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { t } from '@/lib/i18n';
 
 interface NotificationSettingsProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+/**
+ * Finding #15 (R4): Replaced custom modal with Radix Dialog (via shadcn/ui).
+ * This provides ESC key handling, focus trap, and screen-reader announcements for free.
+ * Also localized all strings.
+ */
 export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen, onClose }) => {
-    const [preferences, setPreferences] = useState({
+    const DEFAULT_PREFS = {
         emailMentions: true,
         pushAssignments: true,
         dailyDigest: false,
-    });
+    };
 
-    // Load from LocalStorage on mount
+    const [preferences, setPreferences] = useState(DEFAULT_PREFS);
+
+    // Finding #12 (R9): merge parsed localStorage with defaults for schema safety.
+    // Older saved data may be missing keys added in future versions.
     useEffect(() => {
+        if (typeof window === 'undefined') return;
         const stored = localStorage.getItem('user_notification_prefs');
         if (stored) {
             try {
-                setPreferences(JSON.parse(stored));
+                const parsed = JSON.parse(stored);
+                setPreferences({ ...DEFAULT_PREFS, ...parsed });
             } catch (e) {
                 console.error("Failed to parse notification prefs", e);
             }
@@ -30,60 +52,67 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-zinc-900 w-96 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-800 p-6">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Notification Preferences</h2>
-                
-                <div className="space-y-4">
-                    <label className="flex items-center justify-between cursor-pointer">
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300">Email me when mentioned (@)</span>
-                        <input 
-                            type="checkbox" 
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>
+                        {t('notifications.title', 'Notification Preferences')}
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="email-mentions" className="text-sm cursor-pointer">
+                            {t('notifications.email_mentions', 'Email me when mentioned (@)')}
+                        </Label>
+                        <Switch
+                            id="email-mentions"
                             checked={preferences.emailMentions}
-                            onChange={(e) => setPreferences(p => ({ ...p, emailMentions: e.target.checked }))}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onCheckedChange={(checked) =>
+                                setPreferences(p => ({ ...p, emailMentions: checked }))
+                            }
                         />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between cursor-pointer">
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300">Browser Push for Assignments</span>
-                        <input 
-                            type="checkbox" 
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="push-assignments" className="text-sm cursor-pointer">
+                            {t('notifications.push_assignments', 'Browser Push for Assignments')}
+                        </Label>
+                        <Switch
+                            id="push-assignments"
                             checked={preferences.pushAssignments}
-                            onChange={(e) => setPreferences(p => ({ ...p, pushAssignments: e.target.checked }))}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onCheckedChange={(checked) =>
+                                setPreferences(p => ({ ...p, pushAssignments: checked }))
+                            }
                         />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between cursor-pointer">
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300">Receive Daily Digest</span>
-                        <input 
-                            type="checkbox" 
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="daily-digest" className="text-sm cursor-pointer">
+                            {t('notifications.daily_digest', 'Receive Daily Digest')}
+                        </Label>
+                        <Switch
+                            id="daily-digest"
                             checked={preferences.dailyDigest}
-                            onChange={(e) => setPreferences(p => ({ ...p, dailyDigest: e.target.checked }))}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onCheckedChange={(checked) =>
+                                setPreferences(p => ({ ...p, dailyDigest: checked }))
+                            }
                         />
-                    </label>
+                    </div>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-2">
-                    <button 
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleSave}
-                        className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
-                    >
-                        Save Preferences
-                    </button>
-                </div>
-            </div>
-        </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">
+                            {t('common.cancel', 'Cancel')}
+                        </Button>
+                    </DialogClose>
+                    <Button onClick={handleSave}>
+                        {t('notifications.save', 'Save Preferences')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };

@@ -290,7 +290,7 @@ Features should interact via **Public API** (exported functions) or **Events** (
   - **Pattern**: **Mutation-Based Audit Log**.
   - **Implementation**:
     - **Forms**: Store JSON Schema versions in `FormVersions` table.
-    - **Sheets/Routes**: Use the **Offline Sync Ledger** (Replicache pattern) as the source of truth. Every change is a "Mutation" stored in `replicache_client_view`. We can reconstruct any state by replaying mutations up to timestamp `T`.
+    - **Sheets/Routes**: Use **Yjs CRDT** with **y-websocket** + **y-leveldb** persistence as the source of truth. Every change produces a Yjs update that is stored in LevelDB and can be replayed to reconstruct any state at timestamp `T`.
     - **Fallback**: For non-sync entities, use a lightweight `_history` table pattern (via Triggers) if strict audit is required.
 
 ### Authentication & Security
@@ -313,11 +313,11 @@ Features should interact via **Public API** (exported functions) or **Events** (
 
 - **Libraries**:
   - **State**: **Yjs** (CRDT) for conflict-free sync.
-  - **Rendering**: **TanStack Table v8** (Headless) + **TanStack Virtual** (Virtualization).
+  - **Rendering**: Custom CSS-Grid renderer (primary) with **TanStack Table v8** + **TanStack Virtual** available as an alternate `LiveTable` view mode.
   - **Math**: **Hyperformula** (Headless Formula Engine).
 - **Architecture**:
   - **Frontend**: Custom `SmartGrid` component. Connects to WebSocket via `y-websocket`.
-  - **Backend**: Dedicated **Hocuspocus** (or custom Node/WS) server to manage active Yjs documents.
+  - **Backend**: Custom **y-websocket** server (`y-websocket-server.js`) with **LevelDB persistence** and **JWT authentication**.
   - **Persistence**: Hybrid model.
     - Active State: Stored in Redis/Memory during editing.
     - Durability: Snapshotted to Postgres `Sheet` tables (Rows/Columns) periodically or on "Save".

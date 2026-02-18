@@ -16,41 +16,43 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
   // Real implementation would use bcrypt to compare passwords.
   
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    if (process.env.ENABLE_DEV_LOGIN === 'true') {
+      const user = await prisma.user.findUnique({ where: { email } });
 
-    // Allow login if user exists (Dev/Test mode - Passwordless)
-    if (user) { 
-       return res.json({
-        success: true,
-        data: {
-          token: `mock-jwt-token-for-${user.id}`, // In real app, sign JWT here
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            // role removed from schema, mapping systemRole to role for compatibility
-            role: (user as any).systemRole || 'viewer',
+      // Allow login if user exists (Dev/Test mode - Passwordless)
+      if (user) {
+        return res.json({
+          success: true,
+          data: {
+            token: `mock-jwt-token-for-${user.id}`, // In real app, sign JWT here
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              // role removed from schema, mapping systemRole to role for compatibility
+              role: (user as any).systemRole || 'viewer',
+            },
           },
-        },
-        message: 'Login successful',
-      });
-    }
+          message: 'Login successful',
+        });
+      }
 
-    // Fallback for the hardcoded admin if not in DB yet (or just rely on seed)
-    if (email === 'admin@worktree.pro' && password === 'admin123') {
-       return res.json({
-        success: true,
-        data: {
-          token: `demo-token`,
-          user: {
-            id: '1',
-            email: 'admin@worktree.pro',
-            name: 'Admin User',
-            role: 'admin', // Mapped for frontend compatibility
+      // Fallback for the hardcoded admin if not in DB yet (or just rely on seed)
+      if (email === 'admin@worktree.pro' && password === 'admin123') {
+        return res.json({
+          success: true,
+          data: {
+            token: `demo-token`,
+            user: {
+              id: '1',
+              email: 'admin@worktree.pro',
+              name: 'Admin User',
+              role: 'admin', // Mapped for frontend compatibility
+            },
           },
-        },
-        message: 'Login successful',
-      });
+          message: 'Login successful',
+        });
+      }
     }
 
     res.status(401).json({

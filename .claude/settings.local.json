@@ -16,7 +16,9 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(git log:*)",
-      "Bash(docker-compose down:*)"
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose ps:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

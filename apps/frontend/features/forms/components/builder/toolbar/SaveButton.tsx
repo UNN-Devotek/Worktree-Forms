@@ -121,7 +121,10 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
           visible_to_non_members: false,
           visible_to_members: true,
           sig_ids: sigIds,
-          folderId: folderId
+          visible_to_members: true,
+          sig_ids: sigIds,
+          folderId: folderId,
+          groupSlug: groupSlug // Send slug to help backend find the project
         }
         
         console.log('Sending POST request to', `/api/groups/${groupId}/forms`, createData)

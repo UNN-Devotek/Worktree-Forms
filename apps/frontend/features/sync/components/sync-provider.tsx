@@ -1,43 +1,44 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
-// import { SyncEngine } from '../services/sync-engine';
+import React from 'react';
 import { toast } from 'sonner';
+import { OfflineIndicator } from './OfflineIndicator';
+import { t } from '@/lib/i18n';
 
+/**
+ * Finding #1 (R3): Toast strings now wrapped in t() — no hardcoded English.
+ * Finding #1 (R2): SyncProvider no longer registers duplicate online/offline listeners.
+ * OfflineIndicator owns the banner; SyncProvider owns only toast notifications.
+ */
 export function SyncProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    // Register listeners
-    /*
-    const unsubStart = SyncEngine.on('sync-start', () => {
-       toast.loading('Syncing offline data...', { id: 'sync-status' });
-    });
+  React.useEffect(() => {
+    const handleOnline = () => {
+      toast.success(t('sync.online', 'Back online — syncing changes...'), {
+        id: 'network-status',
+        duration: 3000,
+      });
+    };
+    const handleOffline = () => {
+      toast.warning(t('sync.offline', 'You are offline'), {
+        id: 'network-status',
+        duration: Infinity,
+      });
+    };
 
-    const unsubComplete = SyncEngine.on('sync-complete', (count: number) => {
-       toast.success(`Sync complete. Uploaded ${count} items.`, { id: 'sync-status', duration: 3000 });
-    });
-
-    const unsubFailed = SyncEngine.on('sync-failed', () => {
-       toast.error('Sync failed. Will retry automatically.', { id: 'sync-status', duration: 4000 });
-       // Keep the toast or dismiss? Error should stay visible for a bit.
-    });
-
-    const unsubOnline = SyncEngine.on('online', () => {
-       // Optional: explicit "back online" toast is handled by OfflineSyncProvider? 
-       // OfflineSyncProvider handles "You are back online".
-       // SyncProvider handles the *data* aspect.
-       // We can trigger processing here just in case, but SyncEngine handles its own listeners too.
-       // SyncEngine.processQueue(); // Already handled in SyncEngine constructor/listeners
-    });
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      unsubStart();
-      unsubComplete();
-      unsubFailed();
-      unsubOnline();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-    */
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      <OfflineIndicator />
+      {children}
+    </>
+  );
 }

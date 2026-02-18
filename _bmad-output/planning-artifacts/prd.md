@@ -354,7 +354,7 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 
 ### FR12: Real-Time Smart Grid (Smartsheet-Style)
 
-- **FR12.1**: **Live Collaboration**: Implement a custom "Smart Grid" using a headless table architecture (TanStack Table + Yjs).
+- **FR12.1**: **Live Collaboration**: Implement a custom "Live Table" using a DOM-based architecture (TanStack Table + Yjs).
   - Must support sub-second real-time sync of cell data via **Hocuspocus** WebSocket server.
   - Must support **User Presence** (Colored cursors/borders).
   - **Latency Handling**: Use Optimistic Updates for local edits; reconcile via Yjs CRDTs.
@@ -570,5 +570,5 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 
 ### Inclusivity & Localization
 
-- **NFR12 (Accessibility)**: The "Smart Sheet" Canvas component must include a **Semantic Shadow DOM** (Hidden HTML Table) to support Screen Readers (JAWS, NVDA).
+- **NFR1. **Accessibility (NFR12)\*\*: All UI components must use semantic HTML and include ARIA labels where necessary. The "Live Table" components must use standard HTML `<table>` elements with proper ARIA roles for screen reader compatibility.
 - **NFR13 (Localization)**: The platform must support **English (en-US)** and **Spanish (es-ES)** out of the box. Error messages and UI text must respect the user's `Accept-Language` header.

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react";
+import * as React from "react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,7 +12,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table";
+  Row,
+} from "@tanstack/react-table"
 
 import {
   Table,
@@ -21,17 +22,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  onRowClick?: (row: TData) => void;
-  // Optional: Pass these from parent if controlled state is needed
-  sorting?: SortingState;
-  onSortingChange?: (sorting: SortingState) => void;
-  columnVisibility?: VisibilityState;
-  onColumnVisibilityChange?: (visibility: VisibilityState) => void;
+  columns: ColumnDef<TData, TValue>[]
+  data: TData[]
+  onRowClick?: (row: TData) => void
+  sorting?: SortingState
+  onSortingChange?: (sorting: SortingState) => void
+  columnVisibility?: VisibilityState
+  onColumnVisibilityChange?: (visibility: VisibilityState) => void
+  rowClassName?: (row: TData) => string
 }
 
 export function DataTable<TData, TValue>({
@@ -42,18 +44,18 @@ export function DataTable<TData, TValue>({
   onSortingChange: controlledOnSortingChange,
   columnVisibility: controlledVisibility,
   onColumnVisibilityChange: controlledOnVisibilityChange,
+  rowClassName,
 }: DataTableProps<TData, TValue>) {
-  const [internalSorting, setInternalSorting] = React.useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
   const [internalColumnVisibility, setInternalColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>({})
 
-  const sorting = controlledSorting ?? internalSorting;
-  const onSortingChange =
-    controlledOnSortingChange ?? setInternalSorting;
+  const sorting = controlledSorting ?? internalSorting
+  const onSortingChange = controlledOnSortingChange ?? setInternalSorting
 
-  const columnVisibility = controlledVisibility ?? internalColumnVisibility;
+  const columnVisibility = controlledVisibility ?? internalColumnVisibility
   const onColumnVisibilityChange =
-    controlledOnVisibilityChange ?? setInternalColumnVisibility;
+    controlledOnVisibilityChange ?? setInternalColumnVisibility
 
   const table = useReactTable({
     data,
@@ -67,7 +69,7 @@ export function DataTable<TData, TValue>({
       sorting,
       columnVisibility,
     },
-  });
+  })
 
   return (
     <div className="rounded-md border">
@@ -77,7 +79,7 @@ export function DataTable<TData, TValue>({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 return (
-                  <TableHead key={header.id} className={header.column.getIsPinned() ? "sticky left-0 bg-background" : ""}>
+                  <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -85,7 +87,7 @@ export function DataTable<TData, TValue>({
                           header.getContext()
                         )}
                   </TableHead>
-                );
+                )
               })}
             </TableRow>
           ))}
@@ -97,10 +99,13 @@ export function DataTable<TData, TValue>({
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
                 onClick={() => onRowClick?.(row.original)}
-                className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                className={cn(
+                  onRowClick ? "cursor-pointer hover:bg-muted/50" : "",
+                  rowClassName?.(row.original)
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.getIsPinned() ? "sticky left-0 bg-background" : ""}>
+                  <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -108,7 +113,7 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell className="h-24 text-center">
+              <TableCell colSpan={columns.length} className="h-24 text-center">
                 No results.
               </TableCell>
             </TableRow>
@@ -116,5 +121,5 @@ export function DataTable<TData, TValue>({
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }

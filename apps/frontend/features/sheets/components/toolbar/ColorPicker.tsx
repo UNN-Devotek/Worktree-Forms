@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useSheet } from '../../providers/SheetProvider';
+import { t } from '@/lib/i18n';
 
 interface ColorPickerProps {
   className?: string;
@@ -74,14 +75,14 @@ export function ColorPicker({ className }: ColorPickerProps) {
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Text Color</p>
+          <p>{t('toolbar.text_color', 'Text Color')}</p>
         </TooltipContent>
       </Tooltip>
       <PopoverContent className="w-64" align="start">
         <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-2 block">
-              Custom Color
+              {t('toolbar.custom_color', 'Custom Color')}
             </label>
             <div className="flex gap-2">
               <Input
@@ -95,7 +96,10 @@ export function ColorPicker({ className }: ColorPickerProps) {
                 value={currentColor.toUpperCase()}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (/^#[0-9A-F]{0,6}$/i.test(value)) {
+                  // Finding #5 (R7): only accept complete 3- or 6-digit hex.
+                  // Partial values like '#F' are invalid CSS and would propagate
+                  // broken styles to all peers via Yjs.
+                  if (/^#([0-9A-F]{3}|[0-9A-F]{6})$/i.test(value)) {
                     handleColorChange(value);
                   }
                 }}
@@ -108,7 +112,7 @@ export function ColorPicker({ className }: ColorPickerProps) {
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-2 block">
-              Preset Colors
+              {t('toolbar.preset_colors', 'Preset Colors')}
             </label>
             <div className="grid grid-cols-8 gap-2">
               {PRESET_COLORS.map((color) => (

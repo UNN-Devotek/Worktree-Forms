@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSheet } from '../../providers/SheetProvider';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, GripVertical } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { t } from '@/lib/i18n';
 
 interface ColumnMapping {
   statusColumn: string | null;
@@ -68,8 +69,8 @@ function KanbanLane({ status, cards, onCardClick }: { status: string; cards: Kan
         <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
           <div className="flex-1 overflow-y-auto space-y-2">
             {cards.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                No cards
+              <div className="text-center py-8 text-muted-foreground text-sm" data-lane-status={status}>
+                {t('card.no_cards', 'No cards')}
               </div>
             ) : (
               cards.map(card => (
@@ -99,8 +100,9 @@ export function CardView() {
     })
   );
 
-  // Auto-detect status and label columns
-  useMemo(() => {
+  // Finding #1 (R8): useEffect instead of useMemo — setState is a side-effect.
+  useEffect(() => {
+    if (mapping.statusColumn) return; // already configured
     const statusCol = columns.find(col =>
       col.type === 'SELECT' ||
       /status|state|stage|category|phase/i.test(col.label)
@@ -117,7 +119,7 @@ export function CardView() {
         labelColumn: labelCol?.id || null,
       });
     }
-  }, [columns]);
+  }, [columns]); // eslint-disable-line react-hooks/exhaustive-deps -- guard prevents loop
 
   const { statusColumn, labelColumn } = mapping;
 
@@ -163,6 +165,7 @@ export function CardView() {
     }
   };
 
+  // Finding #6 (R8): handle drag to both cards AND empty lanes.
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveCard(null);
@@ -174,14 +177,24 @@ export function CardView() {
 
     // Find the card being dragged
     const allCards = Array.from(cardsByStatus.values()).flat();
-    const activeCard = allCards.find(c => c.id === activeCardId);
+    const draggedCard = allCards.find(c => c.id === activeCardId);
+
+    if (!draggedCard || !statusColumn) return;
+
+    // Check if dropped on another card
     const overCard = allCards.find(c => c.id === overCardId);
-
-    if (!activeCard) return;
-
-    // If dropped on a card in a different status, update the status
-    if (overCard && activeCard.status !== overCard.status) {
+    if (overCard && draggedCard.status !== overCard.status) {
       updateCell(activeCardId, statusColumn, overCard.status);
+      return;
+    }
+
+    // Check if dropped on an empty lane (the lane div has data-lane-status)
+    const overElement = document.querySelector(`[data-lane-status="${overCardId}"]`);
+    if (overElement) {
+      const laneStatus = overElement.getAttribute('data-lane-status');
+      if (laneStatus && laneStatus !== draggedCard.status) {
+        updateCell(activeCardId, statusColumn, laneStatus);
+      }
     }
   };
 
@@ -196,19 +209,19 @@ export function CardView() {
           <div className="flex items-start gap-3 mb-6">
             <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
             <div>
-              <h3 className="text-lg font-semibold mb-2">Configure Card View</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('card.configure_title', 'Configure Card View')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Map a status or category column to display tasks in a Kanban board.
+                {t('card.configure_desc', 'Map a status or category column to display tasks in a Kanban board.')}
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Status/Category Column</label>
+              <label className="text-sm font-medium mb-2 block">{t('card.status_column', 'Status/Category Column')}</label>
               <Select value={mapping.statusColumn || ''} onValueChange={(val) => setMapping({ ...mapping, statusColumn: val })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status column..." />
+                  <SelectValue placeholder={t('card.select_status', 'Select status column...')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map(col => (
@@ -219,10 +232,10 @@ export function CardView() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Label Column (Optional)</label>
+              <label className="text-sm font-medium mb-2 block">{t('card.label_column', 'Label Column (Optional)')}</label>
               <Select value={mapping.labelColumn || ''} onValueChange={(val) => setMapping({ ...mapping, labelColumn: val })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select label column..." />
+                  <SelectValue placeholder={t('card.select_label', 'Select label column...')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map(col => (
@@ -242,9 +255,9 @@ export function CardView() {
       <div className="h-full w-full flex items-center justify-center bg-muted/5">
         <div className="text-center p-8">
           <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
-          <h3 className="text-lg font-medium mb-2">No Cards Found</h3>
+          <h3 className="text-lg font-medium mb-2">{t('card.no_cards_found', 'No Cards Found')}</h3>
           <p className="text-sm text-muted-foreground">
-            Add some data to your sheet to see cards here.
+            {t('card.add_data_hint', 'Add some data to your sheet to see cards here.')}
           </p>
         </div>
       </div>

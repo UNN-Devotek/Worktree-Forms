@@ -117,7 +117,7 @@ app.use('/api/projects', projectRoutes); // Handles /api/projects/:id...
 // BUT some routes were mounted at root like /api/folders
 app.use('/api/folders', folderRoutes); 
 
-app.use('/api/forms', formRoutes); // This handles /api/forms AND /api/groups/:groupId/forms if internal logic supports it. 
+app.use('/api', formRoutes); 
 // Wait, the Form Router defines '/groups/:groupId/forms'. 
 // So `app.use('/api', formRoutes)`? 
 // No, the Form Router had `router.get('/', ...)` (which matches /api/forms) AND `router.get('/groups/:groupId/forms', ...)` 

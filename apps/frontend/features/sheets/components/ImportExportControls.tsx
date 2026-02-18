@@ -6,6 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Upload, Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { parseImportFile } from '@/lib/import-export.utils';
+import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
+
+// Finding #9 (R4): max import file size (10MB) to prevent browser tab crash
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ImportExportControlsProps {
   onImport: (data: any[]) => void;
@@ -26,14 +31,26 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Finding #9 (R4): file size validation
+    if (file.size > MAX_IMPORT_FILE_SIZE) {
+      toast.error(
+        t('import.file_too_large',
+          `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`)
+      );
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     try {
       setParsing(true);
       const { rows } = await parseImportFile(file);
       onImport(rows);
       setImportOpen(false);
+      toast.success(t('import.success', `Imported ${rows.length} rows successfully.`));
     } catch (error) {
       console.error('Import failed:', error);
-      alert('Failed to parse file');
+      // Finding #9 (R4): replaced alert() with toast
+      toast.error(t('import.failed', 'Failed to parse file. Please check the format and try again.'));
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -47,32 +64,36 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
             <Upload className="mr-2 h-4 w-4" />
-            Import
+            {t('import.button', 'Import')}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import Data</DialogTitle>
+            <DialogTitle>{t('import.dialog_title', 'Import Data')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg space-y-4">
             {parsing || isImporting ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">
-                   {parsing ? 'Parsing file...' : 'Importing data...'}
+                   {parsing
+                     ? t('import.parsing', 'Parsing file...')
+                     : t('import.importing', 'Importing data...')}
                 </p>
               </div>
             ) : (
               <>
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground" />
                 <div className="text-center">
-                  <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                  <p className="text-sm font-medium">
+                    {t('import.instructions', 'Click to upload or drag and drop')}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Supports .csv, .xlsx, .xls
+                    {t('import.supported_formats', 'Supports .csv, .xlsx, .xls (max 10MB)')}
                   </p>
                 </div>
                 <Button onClick={() => fileInputRef.current?.click()}>
-                  Select File
+                  {t('import.select_file', 'Select File')}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -80,9 +101,10 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
                   accept=".csv,.xlsx,.xls"
                   className="hidden"
                   onChange={handleFileChange}
+                  aria-label={t('import.file_input', 'Upload spreadsheet file')}
                 />
                 <p className="text-xs text-muted-foreground text-center max-w-[80%]">
-                  Note: Importing will replace/update cells based on row order.
+                  {t('import.note', 'Note: Importing will replace/update cells based on row order.')}
                 </p>
               </>
             )}
@@ -95,17 +117,17 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
-            Export
+            {t('export.button', 'Export')}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onExport('excel')}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export as Excel (.xlsx)
+            {t('export.excel', 'Export as Excel (.xlsx)')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onExport('csv')}>
             <FileText className="mr-2 h-4 w-4" />
-            Export as CSV
+            {t('export.csv', 'Export as CSV')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -12,7 +12,7 @@ So that I can analyze specific data points.
 
 1. **Given** I am viewing the "Daily Logs" form data
 2. **When** I toggle "Show only Failed Items"
-3. **Then** the grid updates instantly (using `<DataTable />` wrapper around TanStack Table) (Arch #3)
+3. **Then** the grid updates instantly (using `<DataTable />` wrapper around TanStack Table + Shadcn UI) (Arch #3)
 4. **And** I can save this view configuration for later (stored in `UserPreferences` DB table) (Lead Dev #7) (FR4.1, FR4.2)
 5. **And** I can toggle "Compact Mode" to see more rows (PM #5)
 6. **And** first columns are sticky and show a shadow cue when scrolling horizontally (QA #2)

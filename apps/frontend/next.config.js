@@ -2,6 +2,24 @@
 // Force restart
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        canvas: './empty-module.js',
+        'bahttext': false,
+        'bessel': false,
+        'jstat': false,
+        'chevrotain': false,
+      },
+    },
+    optimizePackageImports: [
+      '@radix-ui/react-icons',
+      'lucide-react',
+      'recharts',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+    ],
+  },
   async rewrites() {
     // When running in the unified container, the backend is on local loopback
     const backendPort = process.env.BACKEND_PORT || 5005;
@@ -63,7 +81,7 @@ const nextConfig = {
     
     return config;
   },
-  transpilePackages: ['react-pdf', 'pdfjs-dist', 'ag-grid-react', 'ag-grid-community'],
+  transpilePackages: ['react-pdf', 'pdfjs-dist'],
 };
 
 module.exports = nextConfig;

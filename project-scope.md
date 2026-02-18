@@ -94,12 +94,12 @@ WorkTree extends beyond just forms into a complete **Operations Platform** where
   - Drag-and-drop stop reordering.
 - **Technician View**: Mobile-friendly link for drivers with "Navigate" buttons (Google/Apple Maps).
 
-### 2.3 Smart Spreadsheets (Deep Integration)
+### 2.3 Live Data Tables (Deep Integration)
 
-- **Grid Interface**: "Smartsheet-like" view for project data.
+- **Grid Interface**: "Airtable-like" view for project data using lightweight DOM tables.
 - **Deep Integration**:
   - **Project Data**: Rows tied to sites/assets.
-  - **Form Sync**: Populate sheets from submissions or pre-fill forms from rows.
+  - **Form Sync**: Populate tables from submissions or pre-fill forms from rows.
   - **Route Action**: Select rows -> "Send to Route Builder".
 - **Capabilities**: Custom columns (Formula, User, Select), Inline editing.
 
@@ -158,7 +158,7 @@ WorkTree extends beyond just forms into a complete **Operations Platform** where
 ### Phase 2: Project Operations
 
 - [ ] Project Entity & Templates
-- [ ] Smart Spreadsheets
+- [ ] Live Data Tables
 - [ ] Route Planning Integration
 
 ### Phase 3: Advanced Features

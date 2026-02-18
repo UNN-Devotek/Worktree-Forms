@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GeneralSettings } from './GeneralSettings'
@@ -16,11 +16,40 @@ interface FormSettingsModalProps {
   open: boolean
   onClose: () => void
   groupId: number
+  groupSlug?: string
+  formId?: number
 }
 
-export function FormSettingsModal({ open, onClose, groupId }: FormSettingsModalProps) {
+import { getSheets, getFormProjectSlug } from '@/features/sheets/server/sheet-actions'
+
+export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId }: FormSettingsModalProps) {
   const { formSchema, updateFormSettings, updateFormTheme } = useFormBuilderStore()
   const [activeTab, setActiveTab] = useState('general')
+  const [sheets, setSheets] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchSheets = async () => {
+      let slug = groupSlug;
+      
+      // If no groupSlug (global builder), try to get it from formId
+      if (!slug && formId) {
+        slug = await getFormProjectSlug(formId) || undefined;
+      }
+
+      if (slug) {
+        try {
+          const sheets = await getSheets(slug);
+          setSheets(sheets);
+        } catch (error) {
+          console.error('Failed to fetch sheets:', error);
+        }
+      }
+    };
+
+    if (open) {
+      fetchSheets();
+    }
+  }, [open, groupSlug, formId])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -43,6 +72,7 @@ export function FormSettingsModal({ open, onClose, groupId }: FormSettingsModalP
             <GeneralSettings
               settings={formSchema?.settings || {}}
               onChange={updateFormSettings}
+              sheets={sheets}
             />
           </TabsContent>
 

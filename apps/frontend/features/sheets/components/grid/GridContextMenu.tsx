@@ -9,6 +9,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/context-menu';
 import { useSheet } from '../../providers/SheetProvider';
+import { t } from '@/lib/i18n';
 
 interface GridContextMenuProps {
   children: React.ReactNode;
@@ -24,15 +25,20 @@ export function GridContextMenu({ children, rowId }: GridContextMenuProps) {
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => addRow({ id: crypto.randomUUID() })}>
-          Insert Row Below
+        <ContextMenuItem onSelect={() => addRow({
+          id: crypto.randomUUID(),
+          title: t('sheet.new_task', 'New Task'),
+          status: t('sheet.planned', 'Planned'),
+          assignee: t('sheet.unassigned', 'Unassigned'),
+        }, rowId)}>
+          {t('context.insert_below', 'Insert Row Below')}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem 
           className="text-destructive focus:text-destructive"
           onSelect={() => deleteRow(rowId)}
         >
-          Delete Row
+          {t('context.delete_row', 'Delete Row')}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

@@ -83,14 +83,22 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
 // Create new form
 router.post('/groups/:groupId/forms', async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
-  const { title, description, form_type, form_json, is_published, is_active, folderId } = req.body;
+  const { title, description, form_type, form_json, is_published, is_active, folderId, groupSlug } = req.body;
 
   // Generate slug
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now();
 
-  console.log('Creating form:', { title, groupId, slug });
+  console.log('Creating form:', { title, groupId, slug, groupSlug });
 
   try {
+      let projectId: string | null = null;
+      if (groupSlug) {
+          const project = await prisma.project.findUnique({ where: { slug: groupSlug } });
+          if (project) {
+              projectId = project.id;
+          }
+      }
+
       const newForm = await prisma.form.create({
           data: {
               group_id: groupId,
@@ -101,7 +109,8 @@ router.post('/groups/:groupId/forms', async (req: Request, res: Response) => {
               form_schema: form_json || {}, 
               is_published: is_published || false,
               is_active: is_active ?? true,
-              folderId: folderId ? parseInt(folderId) : null
+              folderId: folderId ? parseInt(folderId) : null,
+              projectId: projectId
           }
       });
 
@@ -210,6 +219,7 @@ router.put('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
        if (updates.is_published !== undefined) dataToUpdate.is_published = updates.is_published;
        if (updates.is_active !== undefined) dataToUpdate.is_active = updates.is_active;
        if (updates.folderId !== undefined) dataToUpdate.folderId = updates.folderId ? parseInt(updates.folderId) : null;
+       if (updates.targetSheetId !== undefined) dataToUpdate.targetSheetId = updates.targetSheetId;
 
       const updatedForm = await prisma.form.update({
           where: { id: formId }, // Note: In real app, better ensure group_id matches too

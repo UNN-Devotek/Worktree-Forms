@@ -116,12 +116,12 @@ export class SheetIntegrationService {
     return new Promise((resolve, reject) => {
       const doc = new Y.Doc();
       const provider = new HocuspocusProvider({
-        url: 'ws://localhost:1234',
+        url: process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234',
         name: sheetId,
         document: doc,
         WebSocketPolyfill: ws,
         parameters: {
-          token: 'SYSTEM_TOKEN', // We need to handle system auth in onConnect
+          token: 'SYSTEM_TOKEN', 
         },
         onConnect: () => {
           console.log('Backend Yjs client connected');
@@ -139,11 +139,11 @@ export class SheetIntegrationService {
             resolve(true);
           }, 500);
         },
-        onConnectError: (err) => {
+        onConnectError: (err: any) => {
           console.error('Backend Yjs sync error:', err);
           reject(err);
         }
-      });
+      } as any);
     });
   }
 }

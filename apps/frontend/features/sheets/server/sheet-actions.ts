@@ -29,11 +29,11 @@ export async function createSheet(projectSlugOrId: string, title?: string) {
   try {
     // Check if it's a slug or ID
     let projectId = projectSlugOrId;
-    
+
     // Simple heuristic: CUIDs are usually shorter than slugs or follow a pattern.
     // Better: check if project exists with this slug.
     const project = await db.project.findFirst({
-      where: { 
+      where: {
         OR: [
           { id: projectSlugOrId },
           { slug: projectSlugOrId }
@@ -48,30 +48,49 @@ export async function createSheet(projectSlugOrId: string, title?: string) {
     // Initialize empty Yjs document
     const yjsDoc = new Y.Doc();
 
-    // Initialize default structure for RnC grid
+    // Initialize default structure
     const cellsMap = yjsDoc.getMap('cells');
+    const rowsMap = yjsDoc.getMap('rows');
+    const orderArray = yjsDoc.getArray('order');
     const columnsArray = yjsDoc.getArray('columns');
 
-    // Create default columns A-Z
-    const getColumnLabel = (index: number): string => {
-      let label = '';
-      let num = index;
-      while (num >= 0) {
-        label = String.fromCharCode(65 + (num % 26)) + label;
-        num = Math.floor(num / 26) - 1;
-      }
-      return label;
-    };
+    // Create default columns
+    const defaultColumns = [
+      { id: 'title', label: 'Task Name', type: 'TEXT' },
+      { id: 'status', label: 'Status', type: 'STATUS' },
+      { id: 'assignee', label: 'Assignee', type: 'CONTACT' },
+      { id: 'due_date', label: 'Due Date', type: 'DATE' },
+      { id: 'priority', label: 'Priority', type: 'TEXT' }
+    ];
 
-    for (let i = 0; i < 26; i++) {
-      columnsArray.push([{
-        id: getColumnLabel(i),
-        header: getColumnLabel(i),
-        width: 120,
-        hidden: false,
-        locked: false,
-      }]);
-    }
+    defaultColumns.forEach(col => {
+      columnsArray.push([col]);
+    });
+
+    // Create 5 default rows
+    const defaultRows = [
+      { id: 'row-1', title: 'Plan project kickoff', status: 'Planned', assignee: '', due_date: '', priority: 'High' },
+      { id: 'row-2', title: 'Research requirements', status: 'In Progress', assignee: '', due_date: '', priority: 'Medium' },
+      { id: 'row-3', title: 'Design mockups', status: 'Planned', assignee: '', due_date: '', priority: 'Medium' },
+      { id: 'row-4', title: 'Develop features', status: 'Planned', assignee: '', due_date: '', priority: 'High' },
+      { id: 'row-5', title: 'Test and deploy', status: 'Planned', assignee: '', due_date: '', priority: 'Low' }
+    ];
+
+    defaultRows.forEach(row => {
+      // Add row to rows map
+      rowsMap.set(row.id, row);
+      // Add to order array
+      orderArray.push([row.id]);
+
+      // Add cells for each column
+      defaultColumns.forEach(col => {
+        const cellKey = `${row.id}:${col.id}`;
+        cellsMap.set(cellKey, {
+          value: row[col.id as keyof typeof row],
+          type: col.type
+        });
+      });
+    });
 
     // Encode Yjs doc as binary
     const yjsState = Y.encodeStateAsUpdate(yjsDoc);
@@ -100,11 +119,13 @@ export async function createSheet(projectSlugOrId: string, title?: string) {
 // Better to resolve project id from slug if needed, or pass project ID if available.
 // Let's lookup project by slug first to be safe, or just accept projectId.
 export async function getSheets(projectSlug: string) {
+    console.log('[getSheets] Called with slug:', projectSlug);
     try {
         const project = await db.project.findUnique({
             where: { slug: projectSlug },
             select: { id: true }
         });
+        console.log('[getSheets] Found project:', project);
 
         if (!project) return [];
 
@@ -112,6 +133,7 @@ export async function getSheets(projectSlug: string) {
             where: { projectId: project.id },
             orderBy: { createdAt: 'desc' }
         });
+        console.log('[getSheets] Found sheets:', sheets.length);
 
         return sheets;
     } catch (error) {
@@ -189,17 +211,26 @@ export async function saveSheetData(sheetId: string, jsonData: any) {
        console.log('Sheet saved successfully:', sheetId);
        
        // Revalidate the sheet page to show new data on reload
-       // Path format: /project/[slug]/sheets/[sheetId]
-       // Since we don't have the slug here easily, we can invalidate the layout or all sheets pages
-       // OR we can pass the path if needed.
-       // For now, let's invalidate the generic path structure if Next.js supports it,
-       // or just invalidate the specific page if we can construct it.
-       // Actually, revalidatePath works on the route pattern.
        revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
        
        return true;
     } catch (error) {
         console.error('Failed to save sheet data:', error);
         return false;
+    }
+}
+
+export async function getFormProjectSlug(formId: number) {
+    try {
+        const form = await db.form.findUnique({
+            where: { id: formId },
+            include: { project: true }
+        });
+
+        if (!form || !form.project) return null;
+        return form.project.slug;
+    } catch (error) {
+        console.error('Failed to get form project slug:', error);
+        return null;
     }
 }

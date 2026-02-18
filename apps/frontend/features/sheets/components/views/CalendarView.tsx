@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSheet } from '../../providers/SheetProvider';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { t } from '@/lib/i18n';
 import { Card } from '@/components/ui/card';
 
 interface ColumnMapping {
@@ -22,8 +23,11 @@ export function CalendarView() {
     labelColumn: null,
   });
 
-  // Auto-detect date column on mount
-  useMemo(() => {
+  // Finding #3 (R7): useEffect instead of useMemo — setState is a side-effect.
+  // useMemo runs during render; calling setState inside it violates React rules
+  // and can cause infinite re-renders in Strict Mode.
+  useEffect(() => {
+    if (mapping.dateColumn) return;
     const dateCol = columns.find(col =>
       col.type === 'DATE' ||
       /date|due|deadline|scheduled/i.test(col.label)
@@ -40,7 +44,7 @@ export function CalendarView() {
         labelColumn: labelCol?.id || null,
       });
     }
-  }, [columns]);
+  }, [columns]); // eslint-disable-line react-hooks/exhaustive-deps -- guard prevents loop
 
   const { dateColumn, labelColumn } = mapping;
 
@@ -109,19 +113,19 @@ export function CalendarView() {
           <div className="flex items-start gap-3 mb-6">
             <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
             <div>
-              <h3 className="text-lg font-semibold mb-2">Configure Calendar View</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('calendar.configure_title', 'Configure Calendar View')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Map a date column to display tasks on a monthly calendar.
+                {t('calendar.configure_desc', 'Map a date column to display tasks on a monthly calendar.')}
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Date Column</label>
+              <label className="text-sm font-medium mb-2 block">{t('calendar.date_column', 'Date Column')}</label>
               <Select value={mapping.dateColumn || ''} onValueChange={(val) => setMapping({ ...mapping, dateColumn: val })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select date column..." />
+                  <SelectValue placeholder={t('calendar.select_date', 'Select date column...')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map(col => (
@@ -132,10 +136,10 @@ export function CalendarView() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Label Column (Optional)</label>
+              <label className="text-sm font-medium mb-2 block">{t('calendar.label_column', 'Label Column (Optional)')}</label>
               <Select value={mapping.labelColumn || ''} onValueChange={(val) => setMapping({ ...mapping, labelColumn: val })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select label column..." />
+                  <SelectValue placeholder={t('calendar.select_label', 'Select label column...')} />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map(col => (
@@ -173,28 +177,29 @@ export function CalendarView() {
                 {format(selectedDate, 'MMMM d, yyyy')}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {tasksOnSelectedDate.length} {tasksOnSelectedDate.length === 1 ? 'task' : 'tasks'}
+                {tasksOnSelectedDate.length} {tasksOnSelectedDate.length === 1 ? t('calendar.task_singular', 'task') : t('calendar.task_plural', 'tasks')}
               </p>
             </div>
 
             {tasksOnSelectedDate.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">No tasks scheduled</p>
+                <p className="text-sm">{t('calendar.no_tasks', 'No tasks scheduled')}</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {tasksOnSelectedDate.map((task) => (
-                  <div
+                {tasksOnSelectedDate.map((task: any) => (
+                  <button
+                    type="button"
                     key={task.id}
                     onClick={() => openDetailPanel(task.id)}
-                    className="p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                    className="w-full text-left p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
                   >
                     <div className="font-medium text-sm mb-1">{task.label}</div>
                     <div className="text-xs text-muted-foreground">
                       {format(task.date, 'h:mm a')}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

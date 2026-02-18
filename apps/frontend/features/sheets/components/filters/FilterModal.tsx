@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSheet } from '../../providers/SheetProvider';
+import { t } from '@/lib/i18n';
 import type { FilterRule, FilterOperator } from '../../types/cell-styles';
 
 const OPERATORS: { value: FilterOperator; label: string }[] = [
@@ -99,7 +100,7 @@ export function FilterModal({ className }: FilterModalProps) {
           className={cn("h-8 px-2 gap-1", className)}
         >
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs">Filter</span>
+          <span className="text-xs">{t('filter.filter', 'Filter')}</span>
           {activeCount > 0 && (
             <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
               {activeCount}
@@ -109,9 +110,9 @@ export function FilterModal({ className }: FilterModalProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Filter Data</DialogTitle>
+          <DialogTitle>{t('filter.title', 'Filter Data')}</DialogTitle>
           <DialogDescription>
-            Add filter rules to show only matching rows
+            {t('filter.description', 'Add filter rules to show only matching rows')}
           </DialogDescription>
         </DialogHeader>
 
@@ -119,8 +120,8 @@ export function FilterModal({ className }: FilterModalProps) {
           {localFilters.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No filters applied</p>
-              <p className="text-sm">Click "Add Filter" to get started</p>
+              <p>{t('filter.no_filters', 'No filters applied')}</p>
+              <p className="text-sm">{t('filter.add_hint', 'Click "Add Filter" to get started')}</p>
             </div>
           ) : (
             localFilters.map((filter, index) => (
@@ -203,15 +204,15 @@ export function FilterModal({ className }: FilterModalProps) {
             className="gap-1"
           >
             <Plus className="h-4 w-4" />
-            Add Filter
+            {t('filter.add_filter', 'Add Filter')}
           </Button>
           <div className="flex-1" />
           <Button variant="ghost" size="sm" onClick={handleClear}>
-            Clear All
+            {t('filter.clear_all', 'Clear All')}
           </Button>
           <Button size="sm" onClick={handleApply} className="gap-1">
             <Check className="h-4 w-4" />
-            Apply Filters
+            {t('filter.apply', 'Apply Filters')}
           </Button>
         </DialogFooter>
       </DialogContent>

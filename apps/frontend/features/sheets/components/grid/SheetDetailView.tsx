@@ -2,13 +2,10 @@
 
 import React from 'react';
 import { SheetShell } from '../shell/SheetShell';
-import { RnCGridWrapper } from '../canvas-grid/RnCGridWrapper';
+import { LiveTable } from '../LiveTable';
 import { SheetProvider, useSheet } from '../../providers/SheetProvider';
 import { RowDetailPanel } from '../panels/RowDetailPanel';
-import { GanttView } from '../views/GanttView';
-import { CalendarView } from '../views/CalendarView';
-import { CardView } from '../views/CardView';
-import { LayoutList, Calendar, Trello } from 'lucide-react';
+import { GanttView, CalendarView, CardView } from '../views';
 
 interface SheetDetailViewProps {
   sheetId: string;
@@ -26,7 +23,7 @@ export function SheetDetailView({ sheetId, title, token, user }: SheetDetailView
 }
 
 function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string }) {
-  const { activeView, doc, token, user } = useSheet();
+  const { activeView, doc } = useSheet();
 
   const renderView = () => {
     switch (activeView) {
@@ -37,7 +34,7 @@ function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string
       case 'CARD':
         return <CardView />;
       default:
-        if (!doc || !token || !user) {
+        if (!doc) {
           return (
             <div className="h-full w-full flex items-center justify-center">
               <div className="text-center">
@@ -47,7 +44,7 @@ function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string
             </div>
           );
         }
-        return <RnCGridWrapper sheetId={sheetId} token={token} user={user} />;
+        return <LiveTable documentId={sheetId} />;
     }
   };
 

@@ -53,7 +53,7 @@ export function ProjectTabs({ slug }: ProjectTabsProps) {
           </TabsTrigger>
           <TabsTrigger value="sheets" className="flex items-center gap-2">
             <Table className="h-4 w-4" />
-            <span>Spreadsheets</span>
+            <span>Tables</span>
           </TabsTrigger>
           <TabsTrigger value="route" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />

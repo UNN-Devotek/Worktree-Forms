@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { t } from '@/lib/i18n';
 
 export interface SheetSettings {
   defaultColumnWidth: number;
@@ -61,6 +62,15 @@ export function SettingsModal({
 }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<SheetSettings>(settings);
 
+  // Finding #7 (R7): sync localSettings when parent props change.
+  // useState only uses the initial value once — if the parent updates settings
+  // (e.g., via collaboration), the local copy would be stale without this.
+  useEffect(() => {
+    if (open) {
+      setLocalSettings(settings);
+    }
+  }, [open, settings]);
+
   const handleSave = () => {
     onSettingsChange(localSettings);
     onOpenChange(false);
@@ -75,16 +85,16 @@ export function SettingsModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Sheet Settings</DialogTitle>
+          <DialogTitle>{t('settings.title', 'Sheet Settings')}</DialogTitle>
           <DialogDescription>
-            Customize your sheet preferences. Changes will apply to the current sheet.
+            {t('settings.description', 'Customize your sheet preferences. Changes will apply to the current sheet.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Default Column Width */}
           <div className="space-y-2">
-            <Label htmlFor="columnWidth">Default Column Width</Label>
+            <Label htmlFor="columnWidth">{t('settings.column_width', 'Default Column Width')}</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="columnWidth"
@@ -100,10 +110,10 @@ export function SettingsModal({
                 }
                 className="w-24"
               />
-              <span className="text-sm text-muted-foreground">pixels</span>
+              <span className="text-sm text-muted-foreground">{t('settings.pixels', 'pixels')}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Width applied to new columns (60-500px)
+              {t('settings.width_hint', 'Width applied to new columns (60-500px)')}
             </p>
           </div>
 
@@ -111,7 +121,7 @@ export function SettingsModal({
 
           {/* Row Height */}
           <div className="space-y-2">
-            <Label htmlFor="rowHeight">Row Height</Label>
+            <Label htmlFor="rowHeight">{t('settings.row_height', 'Row Height')}</Label>
             <Select
               value={localSettings.rowHeight}
               onValueChange={(value: SheetSettings['rowHeight']) =>
@@ -130,7 +140,7 @@ export function SettingsModal({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Controls the vertical spacing of rows
+              {t('settings.row_height_hint', 'Controls the vertical spacing of rows')}
             </p>
           </div>
 
@@ -138,7 +148,7 @@ export function SettingsModal({
 
           {/* Auto-save Interval */}
           <div className="space-y-2">
-            <Label htmlFor="autoSave">Auto-save Interval</Label>
+            <Label htmlFor="autoSave">{t('settings.auto_save', 'Auto-save Interval')}</Label>
             <Select
               value={localSettings.autoSaveInterval}
               onValueChange={(value: SheetSettings['autoSaveInterval']) =>
@@ -157,7 +167,7 @@ export function SettingsModal({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              How often changes are automatically saved
+              {t('settings.auto_save_hint', 'How often changes are automatically saved')}
             </p>
           </div>
 
@@ -165,7 +175,7 @@ export function SettingsModal({
 
           {/* Theme Preference */}
           <div className="space-y-2">
-            <Label htmlFor="theme">Theme Preference</Label>
+            <Label htmlFor="theme">{t('settings.theme', 'Theme Preference')}</Label>
             <Select
               value={localSettings.theme}
               onValueChange={(value: SheetSettings['theme']) =>
@@ -184,16 +194,16 @@ export function SettingsModal({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Choose your preferred color scheme
+              {t('settings.theme_hint', 'Choose your preferred color scheme')}
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
+           <Button variant="outline" onClick={handleCancel}>
+            {t('common.cancel', 'Cancel')}
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave}>{t('common.save_changes', 'Save Changes')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

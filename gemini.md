@@ -88,8 +88,9 @@ Local development runs in Docker and connects to **external Dokploy services** f
 # 1. Ensure .env file exists with external Dokploy connections
 # (Get credentials from Dokploy environment settings)
 
-# 2. Start all services with Docker Compose
-docker-compose up -d
+# 2. Start all services with Docker Compose Watch
+# NOTE: Always use --watch in development for instant file sync
+docker compose up --watch
 
 # 3. Check logs for successful startup
 docker-compose logs -f app
@@ -145,8 +146,7 @@ docker-compose down
 **Rebuild After Code Changes:**
 
 ```bash
-docker-compose up -d --build
-docker-compose up -d --build
+docker compose up --watch --build
 docker-compose logs -f app
 
 > [!NOTE]
@@ -164,7 +164,7 @@ docker-compose exec app sh -c "cd apps/backend && npx prisma migrate deploy"
 
 ```bash
 docker-compose down -v
-docker-compose up -d --build
+docker compose up --watch --build
 ```
 
 ### Troubleshooting Local Development

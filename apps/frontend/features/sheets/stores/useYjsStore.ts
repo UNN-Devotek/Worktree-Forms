@@ -2,17 +2,16 @@
 
 import { create } from 'zustand';
 import * as Y from 'yjs';
-import { HocuspocusProvider } from '@hocuspocus/provider';
+import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
 interface YjsState {
   doc: Y.Doc | null;
-  provider: HocuspocusProvider | null;
+  provider: WebsocketProvider | null;
   persistence: IndexeddbPersistence | null;
   isConnected: boolean;
-  reconnectAttempts: number;
   users: any[];
-  connect: (sheetId: string, token: string, user: { name: string; color: string }) => void;
+  connect: (sheetId: string, token: string, user: { name: string; color: string; id?: string }) => void;
   disconnect: () => void;
 }
 
@@ -38,7 +37,6 @@ export const useYjsStore = create<YjsState>((set, get) => ({
   provider: null,
   persistence: null,
   isConnected: false,
-  reconnectAttempts: 0,
   users: [],
 
   connect: (sheetId, token, user) => {
@@ -53,44 +51,37 @@ export const useYjsStore = create<YjsState>((set, get) => ({
     const wsUrl = getWebSocketUrl();
     console.log('🔌 Connecting to WebSocket:', wsUrl);
 
-    const provider = new HocuspocusProvider({
-      url: wsUrl,
-      name: sheetId,
-      document: doc,
-      token, // Pass token for JWT authentication
+    // Finding #3 (R5): Use y-websocket's WebsocketProvider — matches the backend
+    // protocol (y-websocket-server.js), not HocuspocusProvider which speaks a
+    // different wire format.
+    // Finding #2 (R5): WebsocketProvider has built-in reconnect with backoff.
+    // No manual onDisconnect retry needed (the old code created an infinite loop
+    // because connect() calls disconnect() which triggers onDisconnect).
+    const provider = new WebsocketProvider(
+      wsUrl,
+      sheetId,
+      doc,
+      {
+        // Pass JWT token via URL params for y-websocket-server auth
+        params: { token },
+        // y-websocket handles reconnect automatically with exponential backoff
+        connect: true,
+      }
+    );
 
-      onConnect: () => {
-        console.log('✅ Connected to WebSocket');
-        set({ isConnected: true, reconnectAttempts: 0 });
-      },
+    provider.on('status', ({ status }: { status: string }) => {
+      console.log('📡 WebSocket status:', status);
+      set({ isConnected: status === 'connected' });
+    });
 
-      onDisconnect: ({ event }) => {
-        console.warn('❌ Disconnected from WebSocket', event);
-        set({ isConnected: false });
+    provider.on('sync', () => {
+      console.log('✅ Yjs document synced - data loaded');
+    });
 
-        // Exponential backoff retry
-        const attempts = get().reconnectAttempts;
-        const delay = Math.min(1000 * Math.pow(2, attempts), 30000); // Max 30s
-
-        console.log(`🔄 Retrying connection in ${delay}ms (attempt ${attempts + 1})`);
-
-        setTimeout(() => {
-          set({ reconnectAttempts: attempts + 1 });
-          get().connect(sheetId, token, user);
-        }, delay);
-      },
-
-      onSynced: () => {
-        console.log('✅ Yjs document synced - data loaded');
-      },
-
-      onStatus: ({ status }) => {
-        console.log('📡 WebSocket status:', status);
-      },
-
-      onAwarenessUpdate: ({ states }) => {
-        set({ users: Array.from(states.values()) });
-      },
+    // Awareness: track connected users
+    provider.awareness.on('change', () => {
+      const states = Array.from(provider.awareness.getStates().values());
+      set({ users: states });
     });
 
     // Set local user awareness
@@ -104,6 +95,6 @@ export const useYjsStore = create<YjsState>((set, get) => ({
     if (provider) provider.destroy();
     if (persistence) persistence.destroy();
     if (doc) doc.destroy();
-    set({ doc: null, provider: null, persistence: null, isConnected: false });
+    set({ doc: null, provider: null, persistence: null, isConnected: false, users: [] });
   },
 }));

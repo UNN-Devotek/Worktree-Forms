@@ -121,6 +121,8 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
         open={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         groupId={groupId}
+        groupSlug={groupSlug}
+        formId={formId}
       />
 
       {/* Preview Modal */}

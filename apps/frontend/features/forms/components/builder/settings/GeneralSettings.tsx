@@ -10,9 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 interface GeneralSettingsProps {
   settings: any
   onChange: (settings: any) => void
+  sheets?: any[]
 }
 
-export function GeneralSettings({ settings, onChange }: GeneralSettingsProps) {
+export function GeneralSettings({ settings, onChange, sheets = [] }: GeneralSettingsProps) {
   const handleUpdate = (key: string, value: any) => {
     onChange({
       ...settings,
@@ -145,6 +146,28 @@ export function GeneralSettings({ settings, onChange }: GeneralSettingsProps) {
               placeholder="Thank you for your submission!"
               rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="targetSheet">Output to Sheet</Label>
+            <p className="text-sm text-muted-foreground">
+              Automatically append submissions to a specific sheet
+            </p>
+            <Select
+              value={settings.targetSheetId || ''}
+              onValueChange={(value) => handleUpdate('targetSheetId', value)}
+            >
+              <SelectTrigger id="targetSheet">
+                <SelectValue placeholder="Select a sheet..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (Don't sync)</SelectItem>
+                {sheets?.map((sheet) => (
+                  <SelectItem key={sheet.id} value={sheet.id}>
+                    {sheet.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

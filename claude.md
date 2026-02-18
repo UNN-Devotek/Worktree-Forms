@@ -70,8 +70,9 @@ npm run lint
 # 1. Ensure .env file exists with external connections
 # (Database and MinIO hosted on Dokploy)
 
-# 2. Start the application with Docker Compose
-docker-compose up -d
+# 2. Start the application with Docker Compose Watch
+# NOTE: Always use --watch in development for instant file sync without polling overhead
+docker compose up --watch
 
 # 3. Check logs for successful startup
 docker-compose logs -f app
@@ -135,11 +136,11 @@ docker-compose down -v
 ### Rebuilding After Code Changes
 
 ```bash
-# Rebuild and restart
-docker-compose up -d --build
+# Rebuild and restart with Watch
+docker compose up --watch --build
 
 # View logs during rebuild
-docker-compose up -d --build
+docker compose up --watch --build
 docker-compose logs -f app
 
 > [!NOTE]
@@ -193,7 +194,7 @@ netstat -ano | findstr :5100
 ```bash
 # Stop everything, remove volumes, rebuild
 docker-compose down -v
-docker-compose up -d --build
+docker compose up --watch --build
 ```
 
 ---

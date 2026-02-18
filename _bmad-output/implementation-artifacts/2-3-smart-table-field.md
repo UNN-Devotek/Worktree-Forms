@@ -1,7 +1,7 @@
 # Story 2.3: Smart Table Field (Repeater)
 
 **Epic:** 2: Visual Form Builder & Schema Engine
-**Status:** In Progress
+**Status:** Ready for Dev
 **Priority:** High
 
 ## User Story
@@ -29,5 +29,5 @@ So that technicians can enter multiple rows of data (e.g., parts used).
   - `allowDelete`: boolean
   - `prefilledRows`: Array of values.
 - **UI:**
-  - Desktop: Table layout.
+  - Desktop: **Shadcn Table** layout.
   - Mobile: Card list layout (Stack).

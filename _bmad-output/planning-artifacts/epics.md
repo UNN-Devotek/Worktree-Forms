@@ -165,7 +165,7 @@ FR22.4: Epic 7 - Blocker Logic
 
 Applies to **ALL** Epics and User Stories generated from this document:
 
-1.  **Accessibility (NFR12)**: All UI components must use semantic HTML and include ARIA labels where necessary. Smart Sheet components must implement the Semantic Shadow DOM for screen reader compatibility.
+1.  **Accessibility (NFR12)**: All UI components must use semantic HTML and include ARIA labels where necessary. The "Live Table" components must use standard HTML `<table>` elements with proper ARIA roles for screen reader compatibility.
 2.  **Localization (NFR13)**: All user-facing text must be wrapped in translation keys (e.g., `t('key')`). Hardcoded strings are strictly prohibited.
 3.  **Mobile Responsiveness**: All views must be verified on mobile breakpoints. Complex tables must degrade to "Card Views" on small screens.
 4.  **Error Handling**: All Server Actions must return standardized error objects. UI must display toast notifications for errors.
@@ -173,8 +173,6 @@ Applies to **ALL** Epics and User Stories generated from this document:
 
 6.  **Offline Safety**: All mutations must check for connection status. If offline, mutations must be queued in the Sync Engine (RepliCache).
 7.  **Visual Feedback**: All Action Buttons must show a visible Loading Spinner/State during `isPending` to prevent "Rage Clicks" (UX #1).
-
-
 
 ## Epic 1: Core Project Foundation & Identity
 
@@ -588,12 +586,13 @@ So that I can assign work efficiently.
 
 ## Epic 6: Live Smart Grid & Collaboration
 
-**Goal:** Implement a custom, high-performance "Smart Grid" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
+**Goal:** Implement a custom, high-performance "Live Table" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
 **Value:** The office team can manage complex project schedules and trackers with hierarchy, rich data types, and real-time concurrency.
 **Key Database Entities:** `Sheet`, `SheetColumn` (Definitions), `SheetRow` (Data + Metadata), `YjsDocument` (Binary State).
 **FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5.
 
 #### Story 6.1: High-Performance Data Viewing
+
 As a User,
 I want to view sheets with 10,000+ rows without lag,
 So that I can manage large projects efficiently.
@@ -602,10 +601,11 @@ So that I can manage large projects efficiently.
 **Given** a dataset of 10k rows
 **When** I scroll rapidly
 **Then** the UI maintains 60fps (using virtualized rendering)
-**And** DOM nodes are recycled to manage memory
-**And** accessibility is maintained via proper ARIA roles (NFR12).
+**And** DOM nodes are recycled to manage memory (using @tanstack/react-virtual)
+**And** accessibility is maintained via standard HTML table structure (NFR12).
 
 #### Story 6.2: Real-Time Sync (Yjs Integration)
+
 As a User,
 I want to see my colleague's changes instantly,
 So that we don't work on stale data.
@@ -618,6 +618,7 @@ So that we don't work on stale data.
 **And** the state is managed via `Y.Map` (Rows) and `Y.Array` (Order) to ensure eventual consistency.
 
 #### Story 6.3: Rich Column Types
+
 As a Planner,
 I want to set columns to specific types like "Status" or "Person",
 So that data entry is standardized.
@@ -630,6 +631,7 @@ So that data entry is standardized.
 **And** "User" columns render Avatars and support searching Project Members.
 
 #### Story 6.4: Row Hierarchy & Grouping
+
 As a Project Manager,
 I want to indent rows to create sub-tasks,
 So that I can organize the schedule visually.
@@ -642,6 +644,7 @@ So that I can organize the schedule visually.
 **And** `SUM(CHILDREN())` formulas respect this hierarchy.
 
 #### Story 6.5: Formula Engine Integration
+
 As a Power User,
 I want to use formulas to calculate costs,
 So that I don't need a calculator.
@@ -653,6 +656,7 @@ So that I don't need a calculator.
 **And** handles circular dependency errors gracefully (Red triangle in cell).
 
 #### Story 6.6: Row Detail Panel
+
 As a User,
 I want to attach a file to a specific row,
 So that the invoice is linked to the line item.
@@ -660,9 +664,10 @@ So that the invoice is linked to the line item.
 **Acceptance Criteria:**
 **Given** I click the "Open" icon on a row
 **Then** a Side Panel slides out
-**And** I can upload files, post a chat comment, or view the Audit History for *that specific row*.
+**And** I can upload files, post a chat comment, or view the Audit History for _that specific row_.
 
 #### Story 6.7: Project Team Chat
+
 As a Team Member,
 I want to discuss project issues in a dedicated channel,
 So that communication is centralized.
@@ -675,6 +680,7 @@ So that communication is centralized.
 **And** notifications respect "Office Hours" settings (PM #7) (UI Map 15.0).
 
 #### Story 6.8: Notification & Subscription Preferences
+
 As a User,
 I want to configure which events trigger email or push notifications,
 So that I am not overwhelmed by spam.
@@ -686,6 +692,7 @@ So that I am not overwhelmed by spam.
 **And** standard "Smart Links" in notifications deep-link directly to the item (FR7.5).
 
 #### Story 6.9: Form-to-Sheet Integration
+
 As a Manager,
 I want form submissions to automatically populate a specific sheet,
 So that I have a live tracker of field data.
@@ -698,6 +705,7 @@ So that I have a live tracker of field data.
 **And** Photos/Attachments are rendered as "Thumbnail" cells.
 
 #### Story 6.10: Sheet-to-Route Integration
+
 As a Dispatcher,
 I want to build a route by selecting rows from a master sheet,
 So that I don't have to re-enter addresses.
@@ -710,6 +718,7 @@ So that I don't have to re-enter addresses.
 **And** modifying the address in the Sheet updates the Route Stop coordinates.
 
 #### Story 6.11: View Persistence & Privacy
+
 As a User,
 I want to save my filters and share them via URL,
 So that I can show my team exactly what I'm looking at.
@@ -721,6 +730,7 @@ So that I can show my team exactly what I'm looking at.
 **And** I can share the URL with a colleague to replicate the view.
 
 #### Story 6.12: Governance & Permissions
+
 As an Admin,
 I want to lock the "Budget" column,
 So that Editors cannot change approved costs.
@@ -733,6 +743,7 @@ So that Editors cannot change approved costs.
 **And** the API rejects edits to that column from non-Admins (FR12.7).
 
 #### Story 6.13: Offline Resilience
+
 As a Technician,
 I want to edit the sheet while offline,
 So that I can work in the basement.

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useYjsStore } from '../stores/useYjsStore';
 import { HyperFormula } from 'hyperformula';
 import type { CellStyleConfig, FilterRule } from '../types/cell-styles';
@@ -8,10 +8,7 @@ import { DEFAULT_CELL_STYLE } from '../types/cell-styles';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
-interface FocusedCell {
-  rowId: string;
-  columnId: string;
-}
+
 
 interface SheetContextType {
   data: any[];
@@ -28,8 +25,10 @@ interface SheetContextType {
   openDetailPanel: (rowId: string) => void;
   closeDetailPanel: () => void;
   updateCell: (rowId: string, columnId: string, value: any) => void;
+  updateCells: (updates: Array<{ rowId: string; columnId: string; value: any }>) => void;
   addColumn: (column: any) => void;
-  addRow: (row: any) => void;
+
+  addRow: (row: any, afterRowId?: string) => void;
   deleteRow: (rowId: string) => void;
   indentRow: (rowId: string) => void;
   outdentRow: (rowId: string) => void;
@@ -42,9 +41,15 @@ interface SheetContextType {
   setActiveFilters: (filters: FilterRule[]) => void;
   sortRows: (columnId: string, direction: 'asc' | 'desc') => void;
   isConnected: boolean;
-  doc: any; // Yjs document for spreadsheet grid
+  /**
+   * Finding #9 (R9): Raw Yjs document — exposed for read-only observers
+   * (ActionInbox, ChatPanel, RowDetailPanel). Prefer `updateCell` / `updateCells`
+   * for writes — direct `doc.transact()` bypasses history tracking.
+   */
+  doc: any;
   token: string; // JWT token for WebSocket auth
-  user: { name: string; color: string }; // User info for collaboration
+  user: { name: string; color: string; id?: string }; // User info for collaboration
+  sheetId: string; // Sheet identifier for per-sheet persistence (e.g. Gantt mapping)
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -63,7 +68,7 @@ export function SheetProvider({
 }: { 
   sheetId: string; 
   token: string; 
-  user: { name: string; color: string };
+  user: { name: string; color: string; id?: string };
   children: React.ReactNode 
 }) {
   const router = useRouter();
@@ -78,17 +83,19 @@ export function SheetProvider({
   const [focusedCell, setFocusedCell] = useState<{ rowId: string, columnId: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowId: string, columnId: string, initialValue?: string } | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
-  const [cellStyles, setCellStyles] = useState<Map<string, CellStyleConfig>>(new Map());
+  // Finding #7 (R5): cellStyles local state removed — getCellStyle reads from Yjs `cells` map directly.
+  // applyCellStyle kept for local-only style previews before committing to Yjs.
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
 
-  const openDetailPanel = (rowId: string) => {
+  // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
+  const openDetailPanel = useCallback((rowId: string) => {
     setSelectedRowId(rowId);
     setIsDetailPanelOpen(true);
-  };
+  }, []);
 
-  const closeDetailPanel = () => {
+  const closeDetailPanel = useCallback(() => {
     setIsDetailPanelOpen(false);
-  };
+  }, []);
 
   // View Persistence - use local state to prevent remounts
   const [activeView, setActiveViewState] = useState<string>('GRID');
@@ -101,15 +108,17 @@ export function SheetProvider({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Finding #4 (R5): debounce via ref — previous timer is cleared on each call.
+  // The old version returned a cleanup fn that nobody captured, leaking timeouts.
+  const viewTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const setActiveView = useCallback((view: string) => {
     setActiveViewState(view);
-    // Debounced URL update to prevent rapid history pollution
-    const timer = setTimeout(() => {
+    if (viewTimerRef.current) clearTimeout(viewTimerRef.current);
+    viewTimerRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       params.set('view', view);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }, 300);
-    return () => clearTimeout(timer);
   }, [pathname, searchParams, router]);
 
   // Hyperformula Engine
@@ -117,10 +126,22 @@ export function SheetProvider({
     licenseKey: 'gpl-v3',
   }), []);
 
+  // Finding #2 (R3): depend on primitives, not the user object reference.
+  // If parent creates user inline (e.g. user={{ name, color }}), a new object ref fires
+  // connect() on every parent render — infinite WebSocket reconnects.
+  const userName = user.name;
+  const userColor = user.color;
+  const userId = user.id;
   useEffect(() => {
-    connect(sheetId, token, user);
+    connect(sheetId, token, { name: userName, color: userColor, id: userId });
     return () => disconnect();
-  }, [sheetId, token, user]);
+  }, [sheetId, token, userName, userColor, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Finding #3 (R3): raw data state — Yjs observer ONLY updates raw data.
+  // Filter logic is applied in a separate useMemo so activeFilters changes
+  // don't cause observer teardown/re-registration (which creates a gap where
+  // Yjs updates can be silently dropped).
+  const [rawData, setRawData] = useState<{ rows: any[]; cols: any[] }>({ rows: [], cols: [] });
 
   useEffect(() => {
     if (!doc) return;
@@ -133,50 +154,12 @@ export function SheetProvider({
       const order = yOrder.toArray() as string[];
       const allRows = order.map(id => yRows.get(id) as any).filter(Boolean);
       const cols = yColumns.toArray() as any[];
-      
-      // Update Hyperformula with new data
-      const sheetValues = allRows.map(row => {
-        return cols.map(col => row[col.id]);
-      });
-
-      if (hf.getSheetId('Sheet1') === undefined) {
-        hf.addSheet('Sheet1');
-      }
-      hf.setSheetContent(hf.getSheetId('Sheet1')!, sheetValues);
-
-      // Build tree and flatten for virtualization
-      const flattened: any[] = [];
-      const buildFlatList = (parentId: string | null = null, depth = 0) => {
-        order.forEach(id => {
-          const row = yRows.get(id) as any;
-          if (row && row.parentId === parentId) {
-            const hasChildren = allRows.some(r => r.parentId === id);
-            const isExpanded = expandedRows.has(id);
-            
-            flattened.push({ 
-              ...row, 
-              depth, 
-              hasChildren, 
-              isExpanded 
-            });
-
-            if (hasChildren && isExpanded) {
-              buildFlatList(id, depth + 1);
-            }
-          }
-        });
-      };
-
-      buildFlatList(null, 0);
-      setData(flattened);
-      setColumns(cols);
+      setRawData({ rows: allRows, cols });
     };
 
     yRows.observeDeep(updateState);
     yOrder.observe(updateState);
     yColumns.observe(updateState);
-
-    // Initial load
     updateState();
 
     return () => {
@@ -184,9 +167,98 @@ export function SheetProvider({
       yOrder.unobserve(updateState);
       yColumns.unobserve(updateState);
     };
-  }, [doc, expandedRows.size, hf]); // Use .size to prevent re-render when Set ref changes
+  }, [doc]); // Finding #3: no activeFilters here — observer is stable
 
-  const getCellResult = (rowId: string, columnId: string) => {
+  // Finding #3: filter + flatten applied as useMemo — no observer churn on filter change
+  useEffect(() => {
+    const { rows: allRows, cols } = rawData;
+    const order = allRows.map(r => r.id);
+
+    // Apply filters
+    const filteredRows = allRows.filter(row => {
+      if (activeFilters.length === 0) return true;
+      // Finding #6 (R7): respect the enabled flag — disabled filters are skipped.
+      return activeFilters.every(filter => {
+        if (!filter.enabled) return true;
+        const value = row[filter.columnId];
+        const stringValue = value != null ? String(value).toLowerCase() : '';
+        const filterValue = String(filter.value).toLowerCase();
+        switch (filter.operator) {
+          case 'contains': return stringValue.includes(filterValue);
+          case 'not_contains': return !stringValue.includes(filterValue);
+          case 'equals': return stringValue === filterValue;
+          case 'not_equals': return stringValue !== filterValue;
+          case 'starts_with': return stringValue.startsWith(filterValue);
+          case 'ends_with': return stringValue.endsWith(filterValue);
+          case 'is_blank': return !value;
+          case 'is_not_blank': return !!value;
+          case 'greater_than': {
+            const a = Number(value), b = Number(filter.value);
+            return !isNaN(a) && !isNaN(b) ? a > b : stringValue > filterValue;
+          }
+          case 'less_than': {
+            const a = Number(value), b = Number(filter.value);
+            return !isNaN(a) && !isNaN(b) ? a < b : stringValue < filterValue;
+          }
+          case 'greater_or_equal': {
+            const a = Number(value), b = Number(filter.value);
+            return !isNaN(a) && !isNaN(b) ? a >= b : stringValue >= filterValue;
+          }
+          case 'less_or_equal': {
+            const a = Number(value), b = Number(filter.value);
+            return !isNaN(a) && !isNaN(b) ? a <= b : stringValue <= filterValue;
+          }
+          default: return true;
+        }
+      });
+    });
+
+    // Update Hyperformula
+    const sheetValues = filteredRows.map(row => cols.map(col => row[col.id]));
+    if (hf.getSheetId('Sheet1') === undefined) hf.addSheet('Sheet1');
+    hf.setSheetContent(hf.getSheetId('Sheet1')!, sheetValues);
+
+    // Finding #8 (R5): Build tree and flatten with O(n) Map lookups
+    // Previously used allRows.find() inside forEach = O(n²).
+    const flattened: any[] = [];
+    const rowMap = new Map(allRows.map(r => [r.id, r]));
+    // Pre-compute children sets for O(1) lookup
+    const childrenOf = new Map<string | null, string[]>();
+    for (const id of order) {
+      const row = rowMap.get(id);
+      if (!row) continue;
+      const pid = row.parentId ?? null;
+      if (!childrenOf.has(pid)) childrenOf.set(pid, []);
+      childrenOf.get(pid)!.push(id);
+    }
+
+    const buildFlatList = (parentId: string | null = null, depth = 0) => {
+      if (activeFilters.length > 0) {
+        if (parentId === null) {
+          filteredRows.forEach(row =>
+            flattened.push({ ...row, depth: 0, hasChildren: false, isExpanded: false })
+          );
+        }
+        return;
+      }
+      const children = childrenOf.get(parentId) ?? [];
+      for (const id of children) {
+        const row = rowMap.get(id);
+        if (!row) continue;
+        const hasChildren = childrenOf.has(id) && (childrenOf.get(id)!.length > 0);
+        const isExpanded = expandedRows.has(id);
+        flattened.push({ ...row, depth, hasChildren, isExpanded });
+        if (hasChildren && isExpanded) buildFlatList(id, depth + 1);
+      }
+    };
+
+    buildFlatList(null, 0);
+    setData(flattened);
+    setColumns(cols);
+  }, [rawData, activeFilters, expandedRows, hf]);
+
+  // Finding #3 (R9): wrapped in useCallback for stable context reference
+  const getCellResult = useCallback((rowId: string, columnId: string) => {
     if (!doc) return null;
     const yOrder = doc.getArray('order');
     const yColumns = doc.getArray('columns');
@@ -199,47 +271,132 @@ export function SheetProvider({
     const cellValue = hf.getCellValue({ sheet: hf.getSheetId('Sheet1')!, row: rowIndex, col: colIndex });
     if (cellValue instanceof Error) return '#ERROR!';
     return cellValue;
-  };
+  }, [doc, hf]);
 
-  const updateCell = (rowId: string, columnId: string, value: any) => {
+  // Finding #10: memoized column label lookup — avoids O(n) scan on every cell edit
+  const columnLabelMap = useMemo(
+    () => new Map(columns.map((c: any) => [c.id, c.label])),
+    [columns]
+  );
+
+  // Finding #3: useCallback so consumers don't re-render on every SheetProvider render
+  const updateCell = useCallback((rowId: string, columnId: string, value: any) => {
     if (!doc) return;
     const yRows = doc.getMap('rows');
     const row = yRows.get(rowId) as any;
     if (row) {
-      yRows.set(rowId, { ...row, [columnId]: value });
-    }
-  };
+      const oldValue = row[columnId];
+      if (oldValue === value) return;
 
-  const addColumn = (column: any) => {
+      const columnLabel = columnLabelMap.get(columnId) ?? columnId;
+
+      doc.transact(() => {
+        yRows.set(rowId, { ...row, [columnId]: value });
+        const historyArr = doc.getArray(`row-${rowId}-history`);
+        historyArr.push([{
+          id: crypto.randomUUID(),
+          columnId,
+          columnLabel,
+          oldValue: oldValue ?? null,
+          newValue: value,
+          changedBy: user.name,
+          timestamp: Date.now(),
+        }]);
+      });
+    }
+  }, [doc, columnLabelMap, user.name]);
+
+  // Finding #4: batch update — single Yjs transaction, single history entry per row
+  const updateCells = useCallback((updates: Array<{ rowId: string; columnId: string; value: any }>) => {
+    if (!doc) return;
+    const yRows = doc.getMap('rows');
+    doc.transact(() => {
+      // Group updates by rowId so we write one history entry per row
+      const byRow = new Map<string, Array<{ columnId: string; value: any; oldValue: any; columnLabel: string }>>();
+      for (const { rowId, columnId, value } of updates) {
+        const row = yRows.get(rowId) as any;
+        if (!row) continue;
+        const oldValue = row[columnId];
+        if (oldValue === value) continue;
+        if (!byRow.has(rowId)) byRow.set(rowId, []);
+        byRow.get(rowId)!.push({
+          columnId,
+          value,
+          oldValue: oldValue ?? null,
+          columnLabel: columnLabelMap.get(columnId) ?? columnId,
+        });
+      }
+      for (const [rowId, cols] of byRow) {
+        const row = yRows.get(rowId) as any;
+        const updated = { ...row };
+        for (const { columnId, value } of cols) {
+          updated[columnId] = value;
+        }
+        yRows.set(rowId, updated);
+        // Finding #10: one history entry PER COLUMN for human-readable per-field granularity
+        const historyArr = doc.getArray(`row-${rowId}-history`);
+        const now = Date.now();
+        historyArr.push(
+          cols.map((c) => ({
+            id: crypto.randomUUID(),
+            columnId: c.columnId,
+            columnLabel: c.columnLabel,
+            oldValue: c.oldValue,
+            newValue: c.value,
+            changedBy: user.name,
+            timestamp: now,
+          }))
+        );
+      }
+    });
+  }, [doc, columnLabelMap, user.name]);
+
+  // Finding #6 (R5): useCallback for stable identity
+  const addColumn = useCallback((column: any) => {
     if (!doc) return;
     const yColumns = doc.getArray('columns');
     yColumns.push([column]);
-  };
+  }, [doc]);
 
-  const addRow = (row: any) => {
+  // Finding #13 (R3): addRow wrapped in doc.transact() — atomic mutation.
+  // Finding #10 (R7): useCallback + optional afterRowId for context-menu "insert below".
+  const addRow = useCallback((row: any, afterRowId?: string) => {
     if (!doc) return;
     const yRows = doc.getMap('rows');
     const yOrder = doc.getArray('order');
-    yRows.set(row.id, { ...row, parentId: null });
-    yOrder.push([row.id]);
-  };
+    doc.transact(() => {
+      yRows.set(row.id, { ...row, parentId: row.parentId ?? null });
+      if (afterRowId) {
+        const order = yOrder.toArray() as string[];
+        const idx = order.indexOf(afterRowId);
+        if (idx > -1) {
+          yOrder.insert(idx + 1, [row.id]);
+        } else {
+          yOrder.push([row.id]);
+        }
+      } else {
+        yOrder.push([row.id]);
+      }
+    });
+  }, [doc]);
 
-  const deleteRow = (rowId: string) => {
+  // Finding #1 (R5): wrap in transact so peers never see an order entry
+  // pointing at a deleted row. Finding #6: useCallback for stable identity.
+  const deleteRow = useCallback((rowId: string) => {
     if (!doc) return;
     const yRows = doc.getMap('rows');
     const yOrder = doc.getArray('order');
-    
-    // Remove from rows map
-    yRows.delete(rowId);
-    
-    // Remove from order array
-    const index = yOrder.toArray().indexOf(rowId);
-    if (index > -1) {
-      yOrder.delete(index, 1);
-    }
-  };
+    doc.transact(() => {
+      yRows.delete(rowId);
+      const index = yOrder.toArray().indexOf(rowId);
+      if (index > -1) {
+        yOrder.delete(index, 1);
+      }
+    });
+  }, [doc]);
 
-  const indentRow = (rowId: string) => {
+  // Finding #5 (R5): wrap in transact. Finding #6: useCallback.
+  const indentRow = useCallback((rowId: string) => {
     if (!doc) return;
     const yRows = doc.getMap('rows');
     const yOrder = doc.getArray('order');
@@ -249,66 +406,87 @@ export function SheetProvider({
     if (index > 0) {
       const currentRow = yRows.get(rowId) as any;
       const prevRowId = order[index - 1];
-      
-      yRows.set(rowId, { ...currentRow, parentId: prevRowId });
+      doc.transact(() => {
+        yRows.set(rowId, { ...currentRow, parentId: prevRowId });
+      });
       setExpandedRows(prev => {
         const next = new Set(prev);
         next.add(prevRowId);
         return next;
       });
     }
-  };
+  }, [doc]);
 
-  const outdentRow = (rowId: string) => {
+  // Finding #5 (R5): wrap in transact. Finding #6: useCallback.
+  const outdentRow = useCallback((rowId: string) => {
     if (!doc) return;
     const yRows = doc.getMap('rows');
     const row = yRows.get(rowId) as any;
     
     if (row?.parentId) {
       const parentRow = yRows.get(row.parentId) as any;
-      yRows.set(rowId, { ...row, parentId: parentRow?.parentId || null });
+      doc.transact(() => {
+        yRows.set(rowId, { ...row, parentId: parentRow?.parentId || null });
+      });
     }
-  };
+  }, [doc]);
 
-  const toggleExpand = (rowId: string) => {
+  // Finding #4 (R9): wrapped in useCallback for stable context reference
+  const toggleExpand = useCallback((rowId: string) => {
     setExpandedRows(prev => {
       const next = new Set(prev);
       if (next.has(rowId)) next.delete(rowId);
       else next.add(rowId);
       return next;
     });
-  };
+  }, []);
 
   // Cell style helpers
   const getCellStyleKey = (rowId: string, columnId: string) => `${rowId}:${columnId}`;
-  
+
+  // Finding #7 (R5): getCellStyle now reads from the Yjs `cells` map, not local state.
+  // This way styles set by one collaborator (via toggleCellStyle) are visible to all.
   const getCellStyle = useCallback((rowId: string, columnId: string): CellStyleConfig => {
+    if (!doc) return DEFAULT_CELL_STYLE;
+    const cellsMap = doc.getMap('cells');
     const key = getCellStyleKey(rowId, columnId);
-    return cellStyles.get(key) || DEFAULT_CELL_STYLE;
-  }, [cellStyles]);
+    const cell = cellsMap.get(key) as any;
+    return cell?.style ? { ...DEFAULT_CELL_STYLE, ...cell.style } : DEFAULT_CELL_STYLE;
+  }, [doc]);
   
+  // Finding #7 (R5): applyCellStyle now writes to Yjs, consistent with getCellStyle above.
   const applyCellStyle = useCallback((rowId: string, columnId: string, style: Partial<CellStyleConfig>) => {
-    setCellStyles(prev => {
-      const next = new Map(prev);
-      const key = getCellStyleKey(rowId, columnId);
-      const existing = next.get(key) || { ...DEFAULT_CELL_STYLE };
-      next.set(key, { ...existing, ...style });
-      return next;
+    if (!doc) return;
+    const cellsMap = doc.getMap('cells');
+    const key = getCellStyleKey(rowId, columnId);
+    doc.transact(() => {
+      const cell = cellsMap.get(key) as any;
+      const existing = cell?.style || {};
+      cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
     });
-  }, []);
+  }, [doc]);
+
+  // Finding #1 (R9): Map toolbar keys to CellStyleConfig property names.
+  // Previously wrote `{ bold: true }` but getCellStyle reads `fontWeight`.
+  const STYLE_KEY_MAP: Record<'bold' | 'italic' | 'strike', { prop: keyof CellStyleConfig; on: string; off: string }> = {
+    bold:   { prop: 'fontWeight',      on: 'bold',         off: 'normal' },
+    italic: { prop: 'fontStyle',       on: 'italic',       off: 'normal' },
+    strike: { prop: 'textDecoration',  on: 'line-through', off: 'none'   },
+  };
 
   const toggleCellStyle = useCallback((styleKey: 'bold' | 'italic' | 'strike') => {
     if (!doc || !focusedCell) return;
 
+    const { prop, on, off } = STYLE_KEY_MAP[styleKey];
     const cellKey = `${focusedCell.rowId}:${focusedCell.columnId}`;
     const cellsMap = doc.getMap('cells');
     const current = cellsMap.get(cellKey) as any;
     const currentStyle = current?.style || {};
-    const nextValue = !currentStyle[styleKey];
+    const isActive = currentStyle[prop] === on;
 
     doc.transact(() => {
       const cell = cellsMap.get(cellKey) as any;
-      const newStyle = { ...(cell?.style || {}), [styleKey]: nextValue };
+      const newStyle = { ...(cell?.style || {}), [prop]: isActive ? off : on };
       if (cell) {
         cellsMap.set(cellKey, { ...cell, style: newStyle });
       } else {
@@ -317,6 +495,9 @@ export function SheetProvider({
     });
   }, [doc, focusedCell]);
 
+  // Finding #9 (R3): sortRows now preserves hierarchy.
+  // Previously it sorted the flat order array, breaking parent-child grouping.
+  // Now it sorts only within each parent group recursively.
   const sortRows = useCallback((columnId: string, direction: 'asc' | 'desc') => {
     if (!doc) return;
 
@@ -324,51 +505,46 @@ export function SheetProvider({
     const yOrder = doc.getArray('order');
     const currentOrder = yOrder.toArray() as string[];
 
-    // Get all rows with their values for the sort column
-    const rowsWithValues = currentOrder.map(rowId => {
-      const row = yRows.get(rowId) as any;
-      return {
-        id: rowId,
-        value: row?.[columnId] || '',
-        row
-      };
-    });
-
-    // Sort based on column value
-    rowsWithValues.sort((a, b) => {
-      const aVal = a.value;
-      const bVal = b.value;
-
-      // Handle null/undefined values
+    const compareValues = (aVal: any, bVal: any): number => {
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return direction === 'asc' ? 1 : -1;
       if (bVal == null) return direction === 'asc' ? -1 : 1;
-
-      // Numeric comparison if both are numbers
       const aNum = Number(aVal);
       const bNum = Number(bVal);
       if (!isNaN(aNum) && !isNaN(bNum)) {
         return direction === 'asc' ? aNum - bNum : bNum - aNum;
       }
-
-      // String comparison
       const aStr = String(aVal).toLowerCase();
       const bStr = String(bVal).toLowerCase();
+      return direction === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+    };
 
-      if (direction === 'asc') {
-        return aStr.localeCompare(bStr);
-      } else {
-        return bStr.localeCompare(aStr);
+    // Build sorted order preserving hierarchy: sort siblings within each parent group
+    const buildSortedOrder = (parentId: string | null): string[] => {
+      const siblings = currentOrder
+        .filter(id => {
+          const row = yRows.get(id) as any;
+          return row && (row.parentId ?? null) === parentId;
+        })
+        .sort((a, b) => {
+          const rowA = yRows.get(a) as any;
+          const rowB = yRows.get(b) as any;
+          return compareValues(rowA?.[columnId], rowB?.[columnId]);
+        });
+
+      const result: string[] = [];
+      for (const id of siblings) {
+        result.push(id);
+        // Recursively append children in their sorted order
+        result.push(...buildSortedOrder(id));
       }
-    });
+      return result;
+    };
 
-    // Update the order array in Yjs
+    const sortedIds = buildSortedOrder(null);
+
     doc.transact(() => {
-      // Clear the current order
       yOrder.delete(0, yOrder.length);
-
-      // Insert sorted row IDs
-      const sortedIds = rowsWithValues.map(item => item.id);
       yOrder.push(sortedIds);
     });
   }, [doc]);
@@ -389,6 +565,7 @@ export function SheetProvider({
         openDetailPanel,
         closeDetailPanel,
         updateCell,
+        updateCells,
         addColumn,
         addRow,
         deleteRow,
@@ -405,7 +582,8 @@ export function SheetProvider({
         isConnected,
         doc,
         token,
-        user
+        user,
+        sheetId,
       }}>
 
         {children}

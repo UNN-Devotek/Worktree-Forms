@@ -18,8 +18,8 @@ services:
       # File watching for WSL2/Docker
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-      # Reduce memory for Next.js
-      NODE_OPTIONS: "--max-old-space-size=1536"
+      # Node.js memory for Next.js + backend
+      NODE_OPTIONS: "--max-old-space-size=4096"
       # Backend Config
       PORT: ${PORT:-3005}
       BACKEND_PORT: ${BACKEND_PORT:-5005}
@@ -68,14 +68,31 @@ services:
         condition: service_started
       minio:
         condition: service_started
-    # Reduced resource limits
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend
+          target: /app/apps/frontend
+          ignore:
+            - node_modules/
+            - .next/
+        - action: sync
+          path: ./apps/backend/src
+          target: /app/apps/backend/src
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: apps/frontend/package.json
+        - action: rebuild
+          path: apps/backend/package.json
     deploy:
       resources:
         limits:
-          memory: 3G
-          cpus: '2'
+          memory: 6G
+          cpus: '4'
         reservations:
-          memory: 1G
+          memory: 2G
+          cpus: '2'
 
   ws-server:
     build:

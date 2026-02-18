@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Share2, Copy, Check, Link } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { t } from '@/lib/i18n';
 
 interface ShareModalProps {
   children?: React.ReactNode;
@@ -33,6 +34,8 @@ export function ShareModal({ children }: ShareModalProps) {
   const [permission, setPermission] = useState<Permission>('view');
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  // Finding #8 (R7): store timer in ref so we can clean it on unmount.
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Get the current URL for sharing
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -46,8 +49,9 @@ export function ShareModal({ children }: ShareModalProps) {
         description: 'Share link has been copied to clipboard.',
       });
 
-      // Reset copied state after 2 seconds
-      setTimeout(() => setCopied(false), 2000);
+      // Reset copied state after 2 seconds — store ref for cleanup.
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast({
         title: 'Failed to copy',
@@ -56,6 +60,13 @@ export function ShareModal({ children }: ShareModalProps) {
       });
     }
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -71,17 +82,17 @@ export function ShareModal({ children }: ShareModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Share Sheet
+            {t('share.title', 'Share Sheet')}
           </DialogTitle>
           <DialogDescription>
-            Anyone with the link can access this sheet based on the permission level.
+            {t('share.description', 'Anyone with the link can access this sheet based on the permission level.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Permission Selector */}
           <div className="space-y-2">
-            <Label htmlFor="permission">Permission Level</Label>
+            <Label htmlFor="permission">{t('share.permission', 'Permission Level')}</Label>
             <Select value={permission} onValueChange={(value) => setPermission(value as Permission)}>
               <SelectTrigger id="permission">
                 <SelectValue />
@@ -106,13 +117,13 @@ export function ShareModal({ children }: ShareModalProps) {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Note: Permission controls are currently for UI only. Full implementation coming soon.
+              {t('share.note', 'Note: Permission controls are currently for UI only. Full implementation coming soon.')}
             </p>
           </div>
 
           {/* Shareable Link */}
           <div className="space-y-2">
-            <Label htmlFor="share-link">Shareable Link</Label>
+            <Label htmlFor="share-link">{t('share.link_label', 'Shareable Link')}</Label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -147,7 +158,7 @@ export function ShareModal({ children }: ShareModalProps) {
                 <div className="h-2 w-2 rounded-full bg-blue-500" />
               </div>
               <div className="space-y-1 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">Sharing Tips</p>
+                <p className="font-medium text-foreground">{t('share.tips_title', 'Sharing Tips')}</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   <li>Share this link with your team members</li>
                   <li>Permission level affects what they can do</li>
@@ -161,11 +172,11 @@ export function ShareModal({ children }: ShareModalProps) {
         {/* Footer Actions */}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Close
+            {t('common.close', 'Close')}
           </Button>
           <Button onClick={handleCopyLink}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy Link
+            {t('share.copy_link', 'Copy Link')}
           </Button>
         </div>
       </DialogContent>

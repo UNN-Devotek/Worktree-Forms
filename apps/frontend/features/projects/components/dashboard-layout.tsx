@@ -29,11 +29,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <span className="font-semibold text-lg ml-2">Worktree</span>
         </div>
 
-        {/* Scrollable Page Content */}
-        <div className={cn(
-            "flex-1",
+        {/* Scrollable Page Content — key triggers fade-in on route change */}
+        <div
+          key={pathname}
+          className={cn(
+            "flex-1 animate-fade-in",
             isSheetPage ? "p-0 overflow-hidden" : "p-4 md:p-8 overflow-y-auto"
-        )}>
+          )}
+        >
             {children}
         </div>
       </main>

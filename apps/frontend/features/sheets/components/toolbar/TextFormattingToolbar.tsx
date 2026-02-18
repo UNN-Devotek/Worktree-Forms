@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bold, Italic, Underline, Strikethrough } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useSheet } from '../../providers/SheetProvider';
+import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
 
 interface TextFormattingToolbarProps {
   className?: string;
@@ -23,33 +25,70 @@ export function TextFormattingToolbar({ className }: TextFormattingToolbarProps)
   const isUnderline = currentStyle?.textDecoration === 'underline';
   const isStrikethrough = currentStyle?.textDecoration === 'line-through';
   
-  const handleToggleBold = () => {
+  // Finding #2 (R7): wrapped in useCallback with proper deps so the keyboard
+  // shortcut useEffect always captures the latest handler identity.
+  const handleToggleBold = useCallback(() => {
     if (!focusedCell) return;
     applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
       fontWeight: isBold ? 'normal' : 'bold',
     });
-  };
-  
-  const handleToggleItalic = () => {
+    toast.success(isBold ? t('toolbar.bold_removed', 'Bold removed') : t('toolbar.bold_applied', 'Bold applied'));
+  }, [focusedCell, isBold, applyCellStyle]);
+
+  const handleToggleItalic = useCallback(() => {
     if (!focusedCell) return;
     applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
       fontStyle: isItalic ? 'normal' : 'italic',
     });
-  };
-  
-  const handleToggleUnderline = () => {
+    toast.success(isItalic ? t('toolbar.italic_removed', 'Italic removed') : t('toolbar.italic_applied', 'Italic applied'));
+  }, [focusedCell, isItalic, applyCellStyle]);
+
+  const handleToggleUnderline = useCallback(() => {
     if (!focusedCell) return;
     applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
       textDecoration: isUnderline ? 'none' : 'underline',
     });
-  };
-  
-  const handleToggleStrikethrough = () => {
+    toast.success(isUnderline ? t('toolbar.underline_removed', 'Underline removed') : t('toolbar.underline_applied', 'Underline applied'));
+  }, [focusedCell, isUnderline, applyCellStyle]);
+
+  const handleToggleStrikethrough = useCallback(() => {
     if (!focusedCell) return;
     applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
       textDecoration: isStrikethrough ? 'none' : 'line-through',
     });
-  };
+    toast.success(isStrikethrough ? t('toolbar.strike_removed', 'Strikethrough removed') : t('toolbar.strike_applied', 'Strikethrough applied'));
+  }, [focusedCell, isStrikethrough, applyCellStyle]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        switch(e.key.toLowerCase()) {
+          case 'b':
+            e.preventDefault();
+            handleToggleBold();
+            break;
+          case 'i':
+            e.preventDefault();
+            handleToggleItalic();
+            break;
+          case 'u':
+            e.preventDefault();
+            handleToggleUnderline();
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleToggleBold, handleToggleItalic, handleToggleUnderline]);
   
   const isDisabled = !focusedCell;
   
@@ -71,7 +110,7 @@ export function TextFormattingToolbar({ className }: TextFormattingToolbarProps)
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Bold (Ctrl+B)</p>
+          <p>{t('toolbar.bold_shortcut', 'Bold (Ctrl+B)')}</p>
         </TooltipContent>
       </Tooltip>
       
@@ -91,7 +130,7 @@ export function TextFormattingToolbar({ className }: TextFormattingToolbarProps)
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Italic (Ctrl+I)</p>
+          <p>{t('toolbar.italic_shortcut', 'Italic (Ctrl+I)')}</p>
         </TooltipContent>
       </Tooltip>
       
@@ -111,7 +150,7 @@ export function TextFormattingToolbar({ className }: TextFormattingToolbarProps)
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Underline (Ctrl+U)</p>
+          <p>{t('toolbar.underline_shortcut', 'Underline (Ctrl+U)')}</p>
         </TooltipContent>
       </Tooltip>
       
@@ -131,7 +170,7 @@ export function TextFormattingToolbar({ className }: TextFormattingToolbarProps)
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Strikethrough</p>
+          <p>{t('toolbar.strikethrough', 'Strikethrough')}</p>
         </TooltipContent>
       </Tooltip>
     </div>

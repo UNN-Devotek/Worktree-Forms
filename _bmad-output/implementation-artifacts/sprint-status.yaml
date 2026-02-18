@@ -51,7 +51,7 @@ development_status:
   epic-2: backlog
   2-1-drag-and-drop-form-builder: backlog
   2-2-field-validation-logic: backlog
-  2-3-smart-table-field: done
+  2-3-smart-table-field: ready-for-dev
   2-4-form-schema-versioning: done
   2-5-restore-blame-form-history: done
   2-6-retroactive-renaming: done
@@ -76,28 +76,29 @@ development_status:
   # Epic 5: Smart Grid & Mission Control
   epic-5: in-progress
   5-1-project-dashboard-configuration: done
-  5-2-data-grid-custom-columns: done
+  5-2-data-grid-custom-columns: ready-for-dev
   5-3-lightbox-media-zip: done
   5-4-finops-quotas-alerts: done
   5-5-map-dispatcher-interface: backlog
   epic-5-retrospective: optional
 
   # Epic 6: Live Smart Grid & Collaboration
+  # Epic 6: Live Smart Grid & Collaboration
   epic-6: in-progress
-  6-1-high-performance-data-viewing: done
-  6-2-real-time-sync-yjs-integration: done
-  6-3-row-assignment: done # Updated from _bmad
-  6-4-project-team-chat: done # Updated from _bmad
-  6-5-notification-subscription-preferences: done # Updated from _bmad
-  6-6-rich-column-types: done # Legacy 6-3
-  6-7-row-hierarchy-grouping: done # Legacy 6-4
-  6-8-formula-engine-integration: done # Legacy 6-5
-  6-9-row-detail-panel: done # Legacy 6-6
-  6-10-form-to-sheet-integration: done # Legacy 6-9
-  6-11-sheet-to-route-integration: done # Legacy 6-10
-  6-12-view-persistence-privacy: done # Legacy 6-11
-  6-13-governance-permissions: done # Legacy 6-12
-  6-14-offline-resilience: done # Legacy 6-13
+  6-1-high-performance-data-viewing: ready-for-dev
+  6-2-real-time-sync-yjs-integration: ready-for-dev
+  6-3-row-assignment: ready-for-dev # Updated from _bmad
+  6-4-project-team-chat: ready-for-dev # Updated from _bmad
+  6-5-notification-subscription-preferences: ready-for-dev # Updated from _bmad
+  6-6-rich-column-types: ready-for-dev # Legacy 6-3
+  6-7-row-hierarchy-grouping: ready-for-dev # Legacy 6-4
+  6-8-formula-engine-integration: ready-for-dev # Legacy 6-5
+  6-9-row-detail-panel: ready-for-dev # Legacy 6-6
+  6-10-form-to-sheet-integration: ready-for-dev # Legacy 6-9
+  6-11-sheet-to-route-integration: ready-for-dev # Legacy 6-10
+  6-12-view-persistence-privacy: ready-for-dev # Legacy 6-11
+  6-13-governance-permissions: ready-for-dev # Legacy 6-12
+  6-14-offline-resilience: ready-for-dev # Legacy 6-13
   epic-6-retrospective: optional
 
   # Epic 7: Document Control & Field Tools

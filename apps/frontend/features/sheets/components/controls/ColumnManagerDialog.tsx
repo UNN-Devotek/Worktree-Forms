@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { useSheet } from '../../providers/SheetProvider';
 import { Plus } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 export function ColumnManagerDialog() {
   const { addColumn } = useSheet();
@@ -28,11 +29,13 @@ export function ColumnManagerDialog() {
   const [type, setType] = useState('TEXT');
 
   const handleAdd = () => {
-    if (!name) return;
+    if (!name.trim()) return;
     
+    // Finding #4 (R8): use crypto.randomUUID to prevent collisions.
+    // Two columns named "Due Date" no longer overwrite each other.
     addColumn({
-      id: name.toLowerCase().replace(/\s+/g, '_'),
-      header: name,
+      id: `col_${crypto.randomUUID().slice(0, 8)}`,
+      header: name.trim(),
       type: type,
       size: 150,
     });
@@ -47,43 +50,43 @@ export function ColumnManagerDialog() {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-1">
           <Plus className="h-4 w-4" />
-          <span>Add Column</span>
+          <span>{t('column.add', 'Add Column')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Column</DialogTitle>
+          <DialogTitle>{t('column.dialog_title', 'Add New Column')}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Column Name</Label>
+            <Label htmlFor="name">{t('column.name_label', 'Column Name')}</Label>
             <Input 
               id="name" 
               value={name} 
               onChange={(e) => setName(e.target.value)} 
-              placeholder="e.g. Estimated Cost"
+              placeholder={t('column.name_placeholder', 'e.g. Estimated Cost')}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="type">Column Type</Label>
+            <Label htmlFor="type">{t('column.type_label', 'Column Type')}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="TEXT">Text</SelectItem>
-                <SelectItem value="NUMBER">Number</SelectItem>
-                <SelectItem value="STATUS">Status (Badge)</SelectItem>
-                <SelectItem value="CONTACT">Contact (User)</SelectItem>
-                <SelectItem value="DATE">Date Picker</SelectItem>
-                <SelectItem value="CHECKBOX">Checkbox</SelectItem>
+                <SelectItem value="TEXT">{t('column.type_text', 'Text')}</SelectItem>
+                <SelectItem value="NUMBER">{t('column.type_number', 'Number')}</SelectItem>
+                <SelectItem value="STATUS">{t('column.type_status', 'Status (Badge)')}</SelectItem>
+                <SelectItem value="CONTACT">{t('column.type_contact', 'Contact (User)')}</SelectItem>
+                <SelectItem value="DATE">{t('column.type_date', 'Date Picker')}</SelectItem>
+                <SelectItem value="CHECKBOX">{t('column.type_checkbox', 'Checkbox')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdd}>Add Column</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleAdd}>{t('column.add', 'Add Column')}</Button>
         </div>
       </DialogContent>
     </Dialog>

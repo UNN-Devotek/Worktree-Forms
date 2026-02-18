@@ -191,7 +191,11 @@ body {
 @layer base {
   * {
     @apply border-border;
-    outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+  @supports (outline-color: color-mix(in oklch, red 50%, transparent)) {
+    * {
+      outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+    }
   }
   body {
     @apply bg-background text-foreground;
@@ -282,15 +286,17 @@ body {
   }
 
   /* Sidebar scrollbar styling - matches sidebar background and auto-hides */
-  [data-sidebar="content"] {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.3s ease;
-  }
+  @supports (scrollbar-width: thin) {
+    [data-sidebar="content"] {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s ease;
+    }
 
-  [data-sidebar="content"]:hover,
-  [data-sidebar="content"]:focus-within {
-    scrollbar-color: var(--sidebar-border) var(--sidebar);
+    [data-sidebar="content"]:hover,
+    [data-sidebar="content"]:focus-within {
+      scrollbar-color: var(--sidebar-border) var(--sidebar);
+    }
   }
 
   [data-sidebar="content"]::-webkit-scrollbar {
@@ -325,18 +331,20 @@ body {
   }
 
   /* News Editor scrollbar styling - matches sidebar pattern */
-  .news-editor-content,
-  .news-editor-side-panel {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.3s ease;
-  }
+  @supports (scrollbar-width: thin) {
+    .news-editor-content,
+    .news-editor-side-panel {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s ease;
+    }
 
-  .news-editor-content:hover,
-  .news-editor-content:focus-within,
-  .news-editor-side-panel:hover,
-  .news-editor-side-panel:focus-within {
-    scrollbar-color: var(--border) var(--background);
+    .news-editor-content:hover,
+    .news-editor-content:focus-within,
+    .news-editor-side-panel:hover,
+    .news-editor-side-panel:focus-within {
+      scrollbar-color: var(--border) var(--background);
+    }
   }
 
   .news-editor-content::-webkit-scrollbar,
@@ -380,15 +388,17 @@ body {
   }
 
   /* Page scrollbar styling - disappearing scrollbar for entire page */
-  .page-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.3s ease;
-  }
+  @supports (scrollbar-width: thin) {
+    .page-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s ease;
+    }
 
-  .page-scrollbar:hover,
-  .page-scrollbar:focus-within {
-    scrollbar-color: var(--border) var(--background);
+    .page-scrollbar:hover,
+    .page-scrollbar:focus-within {
+      scrollbar-color: var(--border) var(--background);
+    }
   }
 
   .page-scrollbar::-webkit-scrollbar {
@@ -455,6 +465,12 @@ body {
   }
 }
 
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -485,8 +501,8 @@ html {
 body {
   @apply bg-background text-foreground;
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   line-height: 1.5;
   letter-spacing: -0.011em;
 }
@@ -516,4 +532,78 @@ select {
   .force-sidebar-visible {
     display: flex !important;
   }
+}
+/* React Calendar Custom Styles */
+.react-calendar {
+  width: 100% !important;
+  border: none !important;
+  font-family: inherit !important;
+}
+
+.react-calendar__navigation {
+  margin-bottom: 1rem !important;
+}
+
+.react-calendar__navigation button {
+  @apply text-foreground hover:bg-muted rounded-lg transition-colors;
+  min-width: 44px !important;
+  background: none !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  @apply bg-muted;
+}
+
+.react-calendar__navigation button:disabled {
+  @apply text-muted-foreground;
+}
+
+.react-calendar__month-view__weekdays {
+  @apply text-muted-foreground text-sm;
+  font-weight: 600 !important;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 0.5rem !important;
+  text-align: center;
+}
+
+.react-calendar__tile {
+  @apply rounded-lg hover:bg-muted transition-colors;
+  padding: 0.75rem !important;
+  background: none !important;
+  text-align: center;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  @apply bg-muted;
+}
+
+.react-calendar__tile--now {
+  @apply bg-accent text-accent-foreground;
+}
+
+.react-calendar__tile--active {
+  @apply bg-primary text-primary-foreground;
+}
+
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+  @apply bg-primary;
+  opacity: 0.9;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  @apply text-muted-foreground;
+  opacity: 0.5;
+}
+
+.react-calendar__year-view .react-calendar__tile,
+.react-calendar__decade-view .react-calendar__tile,
+.react-calendar__century-view .react-calendar__tile {
+  padding: 1rem !important;
 }
