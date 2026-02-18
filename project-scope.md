@@ -148,17 +148,17 @@ WorkTree extends beyond just forms into a complete **Operations Platform** where
 
 ## 4. Implementation Roadmap
 
-### Phase 1: The Form Builder (Current Focus)
+### Phase 1: The Form Builder (Largely Complete)
 
-- [ ] Form Landing Page (6 Tabs)
-- [ ] Advanced Field Types (File, Sig, Logic)
-- [ ] Admin Panel & File Browser Polish
+- [x] Form Landing Page (6 Tabs)
+- [x] Advanced Field Types (File, Sig, Logic)
+- [/] Admin Panel & File Browser Polish
 - [ ] Webhook Integrations
 
-### Phase 2: Project Operations
+### Phase 2: Project Operations (In Progress)
 
-- [ ] Project Entity & Templates
-- [ ] Live Data Tables
+- [x] Project Entity & Templates
+- [/] Live Data Tables (Sheets feature — Yjs + TanStack Table + HyperFormula)
 - [ ] Route Planning Integration
 
 ### Phase 3: Advanced Features

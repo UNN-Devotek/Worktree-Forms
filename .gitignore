@@ -5,6 +5,9 @@ node_modules/
 venv/
 env/
 
+# Logs
+*.log
+
 # Testing
 /coverage
 .nyc_output
