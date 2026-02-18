@@ -5,11 +5,10 @@ const nextConfig = {
   experimental: {
     turbo: {
       resolveAlias: {
+        // canvas is a native addon — redirect to empty stub so imports don't fail
         canvas: './empty-module.js',
-        'bahttext': false,
-        'bessel': false,
-        'jstat': false,
-        'chevrotain': false,
+        // bahttext, bessel, jstat, chevrotain are real npm packages;
+        // Turbopack resolves them natively — no alias needed (unlike webpack)
       },
     },
     optimizePackageImports: [
