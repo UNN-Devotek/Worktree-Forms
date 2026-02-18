@@ -15,9 +15,6 @@ services:
       NODE_ENV: development
       ENABLE_DEV_LOGIN: "true"
       NEXT_PUBLIC_ENABLE_DEV_LOGIN: "true"
-      # File watching for WSL2/Docker
-      WATCHPACK_POLLING: "true"
-      CHOKIDAR_USEPOLLING: "true"
       # Node.js memory for Next.js + backend
       NODE_OPTIONS: "--max-old-space-size=4096"
       # Backend Config
@@ -50,11 +47,8 @@ services:
       - "${PORT:-3005}:3005"
       - "${BACKEND_PORT:-5005}:5005"
     volumes:
-      # Mount only source code directories (not root)
-      - ./apps:/app/apps:delegated
-      - ./packages:/app/packages:delegated
       - ./.env:/app/.env:ro
-      # Named volumes for node_modules to prevent sync overhead
+      # Named volumes keep node_modules on the fast container filesystem
       - root_node_modules:/app/node_modules
       - frontend_node_modules:/app/apps/frontend/node_modules
       - backend_node_modules:/app/apps/backend/node_modules
@@ -111,8 +105,6 @@ services:
     ports:
       - "1234:1234"
     volumes:
-      - ./apps/backend:/app/apps/backend:delegated
-      - ./packages:/app/packages:delegated
       - root_node_modules:/app/node_modules
       - backend_node_modules:/app/apps/backend/node_modules
     networks:
