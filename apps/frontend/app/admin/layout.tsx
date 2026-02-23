@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DashboardLayout } from "@/features/projects/components/dashboard-layout";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default function AdminLayout({
   children,
@@ -51,7 +52,9 @@ export default function AdminLayout({
             </div>
 
             <div className="flex-1 overflow-auto">
-                {children}
+                <ErrorBoundary>
+                    {children}
+                </ErrorBoundary>
             </div>
         </div>
     </DashboardLayout>

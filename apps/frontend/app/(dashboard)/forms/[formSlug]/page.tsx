@@ -30,10 +30,13 @@ export default function FormLandingPage() {
   const formSlug = params.formSlug as string
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchForm = async () => {
       try {
         const response = await apiClient<ApiResponse<GroupForm>>(
-          `/api/forms?slug=${encodeURIComponent(formSlug)}`
+          `/api/forms?slug=${encodeURIComponent(formSlug)}`,
+          { signal: controller.signal }
         )
         if (response.success && response.data) {
           setForm(response.data)
@@ -42,6 +45,7 @@ export default function FormLandingPage() {
           router.push('/forms')
         }
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
         const message = error instanceof Error ? error.message : 'Failed to load form'
         console.error('Error fetching form:', error)
         toast({ title: 'Error loading form', description: message, variant: 'destructive' })
@@ -49,7 +53,9 @@ export default function FormLandingPage() {
         setLoading(false)
       }
     }
+
     if (formSlug) fetchForm()
+    return () => controller.abort()
   }, [formSlug, router, toast])
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>
