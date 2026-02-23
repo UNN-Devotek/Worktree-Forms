@@ -11,7 +11,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSheet } from '../../providers/SheetProvider';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Paperclip, History, LayoutGrid, Send, Upload, FileIcon, Clock } from 'lucide-react';
+import {
+  MessageSquare, Paperclip, History, LayoutGrid, Send, Upload, FileIcon, Clock,
+  Type, Hash, Calendar, CheckSquare, User, Link2, Mail, AlignLeft, ToggleLeft,
+  Star, Tag, Phone, DollarSign, Percent, List, Gauge,
+} from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -62,6 +66,36 @@ interface HistoryEntry {
   newValue: any;
   changedBy: string;
   timestamp: number;
+}
+
+// ─── Column type → icon mapping ───────────────────────────────────────────────
+
+function ColumnTypeIcon({ type, className }: { type?: string; className?: string }) {
+  const cls = className ?? 'h-3.5 w-3.5 shrink-0';
+  switch ((type ?? '').toUpperCase()) {
+    case 'NUMBER':    return <Hash          className={cls} />;
+    case 'DATE':      return <Calendar      className={cls} />;
+    case 'CHECKBOX':  return <CheckSquare   className={cls} />;
+    case 'CONTACT':
+    case 'USER':      return <User          className={cls} />;
+    case 'URL':       return <Link2         className={cls} />;
+    case 'EMAIL':     return <Mail          className={cls} />;
+    case 'LONGTEXT':
+    case 'TEXTAREA':  return <AlignLeft     className={cls} />;
+    case 'BOOLEAN':
+    case 'TOGGLE':    return <ToggleLeft    className={cls} />;
+    case 'RATING':    return <Star          className={cls} />;
+    case 'STATUS':
+    case 'SELECT':    return <Tag           className={cls} />;
+    case 'PHONE':     return <Phone         className={cls} />;
+    case 'CURRENCY':  return <DollarSign    className={cls} />;
+    case 'PERCENT':   return <Percent       className={cls} />;
+    case 'DROPDOWN':
+    case 'MULTISELECT': return <List        className={cls} />;
+    case 'PROGRESS':  return <Gauge         className={cls} />;
+    case 'TEXT':
+    default:          return <Type          className={cls} />;
+  }
 }
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
@@ -153,7 +187,8 @@ export function RowDetailPanel() {
                 <div className="p-6 space-y-6">
                   {columns.map(col => (
                     <div key={col.id} className="space-y-2">
-                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <Label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <ColumnTypeIcon type={col.type} />
                         {col.label}
                       </Label>
                       <Input
