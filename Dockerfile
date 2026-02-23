@@ -50,7 +50,7 @@ RUN npm run build -w apps/frontend
 # ==========================================
 FROM node:20-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl wget
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
@@ -80,6 +80,9 @@ USER appuser
 
 # Expose ports
 EXPOSE 3005 5005
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:${BACKEND_PORT:-5005}/api/health || exit 1
 
 # Start both services
 # Copy startup script
