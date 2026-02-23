@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { WebhookService } from '../services/webhook.service.js';
 import { EmailIngestionService } from '../services/email-ingestion.service.js';
+import { isAllowedWebhookUrl } from '../utils/url-validator.js';
 
 const router = Router();
 
@@ -16,6 +17,13 @@ router.post('/', async (req: Request, res: Response) => {
 
     if (!url || !events || !Array.isArray(events)) {
       return res.status(400).json({ error: 'Missing url or events array' });
+    }
+
+    if (!isAllowedWebhookUrl(url)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid webhook URL. Must be a publicly accessible HTTP(S) URL.'
+      });
     }
 
     const { webhook, secret } = await WebhookService.registerWebhook(userId, url, events, projectId);
