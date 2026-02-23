@@ -211,6 +211,7 @@ model FormVersion {
   submissions Submission[]
 
   @@unique([form_id, version])
+  @@index([form_id])
 }
 
 model Submission {
