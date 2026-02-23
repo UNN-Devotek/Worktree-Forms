@@ -57,6 +57,7 @@ interface SheetContextType {
   token: string; // JWT token for WebSocket auth
   user: { name: string; color: string; id?: string }; // User info for collaboration
   sheetId: string; // Sheet identifier for per-sheet persistence (e.g. Gantt mapping)
+  collaborators: Array<{ name: string; color: string; id?: string; focusedCell: { rowId: string; columnId: string } | null }>;
 
   // Row operations
   insertRowAbove: (rowId: string) => void;
@@ -111,7 +112,7 @@ export function SheetProvider({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
-  const { doc, connect, disconnect, isConnected } = useYjsStore();
+  const { doc, connect, disconnect, isConnected, provider, users } = useYjsStore();
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<any[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -178,6 +179,30 @@ export function SheetProvider({
     connect(sheetId, token, { name: userName, color: userColor, id: userId });
     return () => disconnect();
   }, [sheetId, token, userName, userColor, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Broadcast our focused cell to collaborators via Yjs awareness
+  useEffect(() => {
+    if (!provider) return;
+    provider.awareness.setLocalStateField('focusedCell', focusedCell);
+  }, [provider, focusedCell]);
+
+  // Derive remote collaborators from Yjs awareness states (exclude local user)
+  const localUserId = userId;
+  const collaborators = useMemo(() => {
+    return users
+      .filter((state: any) => {
+        const u = state.user;
+        if (!u) return false;
+        if (localUserId && u.id && u.id === localUserId) return false;
+        return true;
+      })
+      .map((state: any) => ({
+        name: state.user.name ?? 'Unknown',
+        color: state.user.color ?? '#888888',
+        id: state.user.id,
+        focusedCell: state.focusedCell ?? null,
+      }));
+  }, [users, localUserId]);
 
   // Finding #3 (R3): raw data state — Yjs observer ONLY updates raw data.
   // Filter logic is applied in a separate useMemo so activeFilters changes
@@ -903,6 +928,7 @@ export function SheetProvider({
         token,
         user,
         sheetId,
+        collaborators,
         // Row operations
         insertRowAbove,
         duplicateRow,

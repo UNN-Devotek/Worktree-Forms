@@ -69,9 +69,23 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     setSelectedColumnId,
     selectedFormattingRowId,
     setSelectedFormattingRowId,
+    collaborators,
   } = useSheet()
 
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Build an O(1) lookup map: "rowId:columnId" -> list of collaborators focused there
+  const collaboratorCellMap = useMemo(() => {
+    const map = new Map<string, Array<{ name: string; color: string }>>()
+    for (const collab of collaborators) {
+      if (collab.focusedCell) {
+        const key = `${collab.focusedCell.rowId}:${collab.focusedCell.columnId}`
+        if (!map.has(key)) map.set(key, [])
+        map.get(key)!.push({ name: collab.name, color: collab.color })
+      }
+    }
+    return map
+  }, [collaborators])
 
   const handleCellFocus = useCallback((rowId: string, columnId: string) => {
     if (blurTimerRef.current) {
@@ -337,6 +351,24 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        {/* Collaborator presence indicator */}
+                                        {(() => {
+                                          const cellKey = `${row.original.id}:${cell.column.id}`
+                                          const collabs = collaboratorCellMap.get(cellKey)
+                                          if (!collabs || collabs.length === 0) return null
+                                          return (
+                                            <div className="absolute top-0 right-0 flex pointer-events-none">
+                                              {collabs.slice(0, 3).map((c, i) => (
+                                                <div
+                                                  key={i}
+                                                  className="w-2 h-2 rounded-full border border-white -ml-0.5"
+                                                  style={{ backgroundColor: c.color, zIndex: 10 - i }}
+                                                  title={c.name}
+                                                />
+                                              ))}
+                                            </div>
+                                          )
+                                        })()}
                                     </div>
                                 )
                             })}
