@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
+import { generateFlattenedPDF } from '../services/pdf-export.service.js';
 import { MigrationService } from '../services/migration-service.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
 import { auditMiddleware } from '../middleware/audit.middleware.js';
@@ -717,6 +718,41 @@ router.post('/:id/import', async (req: Request, res: Response) => {
         console.error('Import Error:', error);
         res.status(500).json({ error: 'Failed to import data' });
     }
+});
+
+// GET /api/forms/:formId/submissions/:submissionId/export-pdf
+router.get('/forms/:formId/submissions/:submissionId/export-pdf', async (req: Request, res: Response) => {
+  try {
+    const formId = parseInt(req.params.formId);
+    const submissionId = parseInt(req.params.submissionId);
+
+    const form = await prisma.form.findUnique({
+      where: { id: formId },
+      include: { overlay: true },
+    });
+
+    if (!form?.overlay) {
+      return res.status(404).json({ success: false, error: 'No PDF overlay configured for this form' });
+    }
+
+    const submission = await prisma.submission.findUnique({
+      where: { id: submissionId },
+    });
+
+    if (!submission) {
+      return res.status(404).json({ success: false, error: 'Submission not found' });
+    }
+
+    const overlay = form.overlay as { pdfUrl: string; fields: Array<{ fieldId: string; x: number; y: number; page: number }> };
+    const pdfBuffer = await generateFlattenedPDF(overlay, submission.data as Record<string, unknown>);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="submission-${submissionId}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('PDF Export Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to export PDF' });
+  }
 });
 
 export default router;

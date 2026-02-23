@@ -35,6 +35,7 @@ import helpRoutes from './routes/help.routes.js';
 import shareRoutes from './routes/share.routes.js';
 import prefRoutes from './routes/preferences.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import complianceRoutes from './routes/compliance.routes.js';
 
 dotenv.config();
 
@@ -97,6 +98,7 @@ app.use([
   '/api/upload',
   '/api/ai',
   '/api/preferences',
+  '/api/compliance',
 ], authenticate);
 
 // Context Middleware (RLS Support) — must run AFTER authenticate so req.user is populated
@@ -177,6 +179,7 @@ app.use('/api/keys', keyRoutes);
 app.use('/api/help', helpRoutes);
 app.use('/api/preferences', prefRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api', complianceRoutes);          // /api/projects/:id/compliance
 
 // Error Handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

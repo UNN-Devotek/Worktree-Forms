@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 
@@ -30,6 +30,10 @@ if (MINIO_HOST && MINIO_HOST !== 'undefined' && MINIO_HOST !== '') {
   console.log(`📦 Using Default MinIO Endpoint: ${endpoint}`);
 }
 
+if (!process.env.MINIO_ACCESS_KEY || !process.env.MINIO_SECRET_KEY) {
+  console.warn('⚠️  MINIO_ACCESS_KEY or MINIO_SECRET_KEY not set. Storage operations will fail.');
+}
+
 console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`);
 
 // S3Client configuration
@@ -40,8 +44,8 @@ export const s3Client = new S3Client({
   region: process.env.MINIO_REGION || 'us-east-1',
   endpoint: endpoint,
   credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
+    accessKeyId: process.env.MINIO_ACCESS_KEY || '',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || '',
   },
   forcePathStyle: true, // Needed for MinIO
   requestHandler: new NodeHttpHandler({
@@ -56,8 +60,8 @@ const publicS3Client = (!useExternalEndpoint && MINIO_PUBLIC_URL) ? new S3Client
   region: process.env.MINIO_REGION || 'us-east-1',
   endpoint: MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`,
   credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'dlb2prui0do1gmry',
+    accessKeyId: process.env.MINIO_ACCESS_KEY || '',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || '',
   },
   forcePathStyle: true,
   requestHandler: new NodeHttpHandler({
@@ -138,7 +142,30 @@ export class StorageService {
       Bucket: BUCKET_NAME,
       Key: key,
     });
-    
+
+    await s3Client.send(command);
+  }
+
+  /** Download an object from MinIO and return its content as a Buffer */
+  static async getObject(key: string): Promise<Buffer> {
+    const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const response = await s3Client.send(command);
+    const stream = response.Body as NodeJS.ReadableStream;
+    return new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
+  }
+
+  /** Copy an object within the same bucket (used for file renaming) */
+  static async copyObject(sourceKey: string, destKey: string): Promise<void> {
+    const command = new CopyObjectCommand({
+      Bucket: BUCKET_NAME,
+      CopySource: `${BUCKET_NAME}/${sourceKey}`,
+      Key: destKey,
+    });
     await s3Client.send(command);
   }
 }

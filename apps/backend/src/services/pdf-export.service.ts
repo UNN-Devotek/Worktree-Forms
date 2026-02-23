@@ -1,9 +1,8 @@
 
-import { PrismaClient } from '@prisma/client';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import axios from 'axios';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db.js';
+import { StorageService } from '../storage.js';
 
 export class PdfExportService {
   async exportSubmissionToPdf(submissionId: number): Promise<Uint8Array> {
@@ -107,4 +106,37 @@ export class PdfExportService {
     // form.flatten(); // Only needed if we used AcroFields. We drew projected text.
     return await pdfDoc.save();
   }
+}
+
+/**
+ * Generate a flattened PDF using a FormPDFOverlay configuration.
+ * Downloads the background PDF from MinIO, overlays submission data, returns buffer.
+ */
+export async function generateFlattenedPDF(
+  overlayConfig: { pdfUrl: string; fields: Array<{ fieldId: string; x: number; y: number; page: number }> },
+  submissionData: Record<string, unknown>,
+): Promise<Buffer> {
+  const pdfBytes = await StorageService.getObject(overlayConfig.pdfUrl);
+  const doc = await PDFDocument.load(pdfBytes);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+
+  for (const field of overlayConfig.fields) {
+    const page = doc.getPage(field.page - 1);
+    let value = submissionData[field.fieldId];
+    let text: string;
+    if (value === true) text = 'Yes';
+    else if (value === false) text = 'No';
+    else if (Array.isArray(value)) text = (value as unknown[]).join(', ');
+    else text = String(value ?? '');
+
+    page.drawText(text, {
+      x: field.x,
+      y: field.y,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  }
+
+  return Buffer.from(await doc.save());
 }

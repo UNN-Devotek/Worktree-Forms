@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signIn": "Entrar",
+    "register": "Registrarse"
+  },
+  "forms": {
+    "save": "Guardar",
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "required": "Este campo es obligatorio",
+    "loading": "Cargando...",
+    "noData": "No hay datos disponibles"
+  },
+  "projects": {
+    "create": "Crear proyecto",
+    "delete": "Eliminar proyecto",
+    "settings": "Configuración del proyecto"
+  },
+  "offline": {
+    "banner": "Estás sin conexión",
+    "syncing": "Sincronizando cambios...",
+    "synced": "Todos los cambios guardados"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar"
+  }
+}
