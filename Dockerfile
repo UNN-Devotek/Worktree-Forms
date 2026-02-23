@@ -83,7 +83,7 @@ EXPOSE 3005 5005
 
 # Start both services
 # Copy startup script
-COPY start.sh .
+COPY --chown=appuser:nodejs start.sh .
 RUN chmod +x start.sh
 
 # Start application
