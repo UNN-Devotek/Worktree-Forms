@@ -32,6 +32,11 @@ router.get('/access/:token', async (req: Request, res: Response) => {
                  const signedUrl = await StorageService.getDownloadUrl(spec.objectKey);
                  resourceData = { ...spec, signedUrl, type: 'SPEC' }; // Reuse SPEC type for frontend viewer
             }
+        } else if (publicToken.resourceType === 'SHEET') {
+            const sheet = await prisma.sheet.findUnique({ where: { id: publicToken.resourceId } });
+            if (sheet) {
+                resourceData = { id: sheet.id, title: sheet.title, type: 'SHEET' };
+            }
         }
 
         if (!resourceData) {

@@ -19,9 +19,10 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Share2, Copy, Check, Link } from 'lucide-react';
+import { Share2, Copy, Check, Link, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { t } from '@/lib/i18n';
+import { useSheet } from '../../providers/SheetProvider';
 
 interface ShareModalProps {
   children?: React.ReactNode;
@@ -33,16 +34,53 @@ export function ShareModal({ children }: ShareModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [permission, setPermission] = useState<Permission>('view');
   const [copied, setCopied] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  // Finding #8 (R7): store timer in ref so we can clean it on unmount.
+  const { sheetId } = useSheet();
+
+  // Store timer in ref so we can clean it on unmount.
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Get the current URL for sharing
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // When the dialog opens, call the backend to generate a real share token.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setIsGenerating(true);
+    setError(null);
+
+    fetch('/api/share/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        resourceType: 'SHEET',
+        resourceId: sheetId,
+        expiresInDays: null, // no expiry by default
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setShareLink(data.data.link);
+        } else {
+          setError(data.error || 'Failed to generate link');
+          // Fallback to current URL
+          setShareLink(typeof window !== 'undefined' ? window.location.href : '');
+        }
+      })
+      .catch(() => {
+        setError('Failed to generate share link');
+        setShareLink(typeof window !== 'undefined' ? window.location.href : '');
+      })
+      .finally(() => setIsGenerating(false));
+  }, [isOpen, sheetId]);
 
   const handleCopyLink = async () => {
+    if (!shareLink) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareLink);
       setCopied(true);
       toast({
         title: 'Link copied!',
@@ -52,7 +90,7 @@ export function ShareModal({ children }: ShareModalProps) {
       // Reset copied state after 2 seconds — store ref for cleanup.
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard.',
@@ -116,9 +154,6 @@ export function ShareModal({ children }: ShareModalProps) {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              {t('share.note', 'Note: Permission controls are currently for UI only. Full implementation coming soon.')}
-            </p>
           </div>
 
           {/* Shareable Link */}
@@ -126,10 +161,14 @@ export function ShareModal({ children }: ShareModalProps) {
             <Label htmlFor="share-link">{t('share.link_label', 'Shareable Link')}</Label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {isGenerating ? (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                )}
                 <Input
                   id="share-link"
-                  value={shareUrl}
+                  value={isGenerating ? 'Generating link...' : shareLink}
                   readOnly
                   className="pl-9 pr-3 text-sm"
                 />
@@ -140,6 +179,7 @@ export function ShareModal({ children }: ShareModalProps) {
                 size="icon"
                 className="shrink-0"
                 onClick={handleCopyLink}
+                disabled={isGenerating || !shareLink}
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-green-600" />
@@ -149,6 +189,9 @@ export function ShareModal({ children }: ShareModalProps) {
                 <span className="sr-only">Copy link</span>
               </Button>
             </div>
+            {error && (
+              <p className="text-xs text-destructive">{error} — showing current page URL as fallback.</p>
+            )}
           </div>
 
           {/* Info Box */}
@@ -163,6 +206,7 @@ export function ShareModal({ children }: ShareModalProps) {
                   <li>Share this link with your team members</li>
                   <li>Permission level affects what they can do</li>
                   <li>Changes are synced in real-time</li>
+                  <li>Link is valid until revoked</li>
                 </ul>
               </div>
             </div>
@@ -174,8 +218,12 @@ export function ShareModal({ children }: ShareModalProps) {
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             {t('common.close', 'Close')}
           </Button>
-          <Button onClick={handleCopyLink}>
-            <Copy className="mr-2 h-4 w-4" />
+          <Button onClick={handleCopyLink} disabled={isGenerating || !shareLink}>
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Copy className="mr-2 h-4 w-4" />
+            )}
             {t('share.copy_link', 'Copy Link')}
           </Button>
         </div>

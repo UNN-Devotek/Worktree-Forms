@@ -36,6 +36,7 @@ import shareRoutes from './routes/share.routes.js';
 import prefRoutes from './routes/preferences.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
+import filesRoutes from './routes/files.routes.js';
 
 dotenv.config();
 
@@ -96,6 +97,7 @@ app.use([
   '/api/webhooks',
   '/api/help',
   '/api/upload',
+  '/api/files',
   '/api/ai',
   '/api/preferences',
   '/api/compliance',
@@ -179,6 +181,7 @@ app.use('/api/keys', keyRoutes);
 app.use('/api/help', helpRoutes);
 app.use('/api/preferences', prefRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/files', filesRoutes);         // POST /api/files/upload (sheet row attachments)
 app.use('/api', complianceRoutes);          // /api/projects/:id/compliance
 
 // Error Handler

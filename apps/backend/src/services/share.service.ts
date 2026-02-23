@@ -11,7 +11,7 @@ export class ShareService {
     return randomBytes(12).toString('hex');
   }
 
-  static async createPublicLink(userId: string, resourceType: 'FORM' | 'SPEC' | 'BLUEPRINT', resourceId: string, expiresInDays: number | null = null) {
+  static async createPublicLink(userId: string, resourceType: 'FORM' | 'SPEC' | 'BLUEPRINT' | 'SHEET', resourceId: string, expiresInDays: number | null = null) {
     const token = this.generateTokenString();
     
     let expiresAt: Date | null = null;
