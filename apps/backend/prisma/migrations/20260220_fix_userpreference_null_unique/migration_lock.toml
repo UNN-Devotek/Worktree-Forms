@@ -1,0 +1,4 @@
+# This migration must be applied manually or via prisma migrate resolve --applied
+# because it replaces a Prisma-managed unique index with partial unique indexes
+# that Prisma does not natively support.
+provider = "postgresql"

@@ -46,6 +46,8 @@ model User {
   helpArticles          HelpArticle[]
   helpArticleVersions   HelpArticleVersion[]
   chatMessages          ChatMessage[]
+  complianceRecords     ComplianceRecord[]
+  aiConversations       AiConversation[]
 }
 
 model Account {
@@ -110,10 +112,12 @@ model Project {
   rfis             Rfi[]
   specifications   Specification[]
   scheduleTasks    ScheduleTask[]
-  vectorEmbeddings VectorEmbedding[]
-  webhooks         Webhook[]
-  helpArticles     HelpArticle[]
-  chatChannels     ChatChannel[]
+  vectorEmbeddings       VectorEmbedding[]
+  webhooks               Webhook[]
+  helpArticles           HelpArticle[]
+  chatChannels           ChatChannel[]
+  complianceRequirements ComplianceRequirement[]
+  aiConversations        AiConversation[]
 }
 
 model ProjectMember {
@@ -143,8 +147,10 @@ model ScheduleTask {
   updatedAt DateTime @updatedAt
 
   // Relations
-  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignedTo User?   @relation("AssignedScheduleTasks", fields: [assignedToId], references: [id])
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo   User?                @relation("AssignedScheduleTasks", fields: [assignedToId], references: [id])
+  dependencies ScheduleDependency[] @relation("DependencyPredecessor")
+  dependents   ScheduleDependency[] @relation("DependencySuccessor")
 }
 
 model Folder {
@@ -187,6 +193,7 @@ model Form {
   submissions Submission[]
   versions    FormVersion[]
   routeStops  RouteStop[]
+  overlay     FormPDFOverlay?
 }
 
 model FormVersion {
@@ -265,7 +272,7 @@ model Invitation {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   inviter User    @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, email])
+  @@index([projectId, email])  // Allow multiple invitations per email (revoke then re-invite)
   @@index([token])
 }
 
@@ -382,6 +389,8 @@ model SheetRow {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([sheetId, rank])  // Fast ordered queries within a sheet
 }
 
 model SheetSnapshot {
@@ -585,4 +594,85 @@ model ChatMessage {
   updatedAt DateTime @updatedAt
 
   @@index([channelId])
+}
+
+// ==========================================
+// NEW MODELS (adversarial review additions)
+// ==========================================
+
+model ComplianceRequirement {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String // e.g. "Upload Insurance Certificate"
+  type      String @default("FILE_UPLOAD") // FILE_UPLOAD | SIGNATURE | TEXT
+  required  Boolean @default(true)
+  order     Int     @default(0)
+  createdAt DateTime @default(now())
+
+  records ComplianceRecord[]
+}
+
+model ComplianceRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requirementId String
+  requirement   ComplianceRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  status        String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  fileUrl       String?
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, requirementId])
+}
+
+model AiConversation {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Json // Array of { role, content, timestamp }
+  context   Json? // Current page context snapshot
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, userId])
+}
+
+model FormPDFOverlay {
+  id        String @id @default(cuid())
+  formId    Int    @unique
+  form      Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  pdfUrl    String // MinIO key for the background PDF
+  fields    Json // Array of { fieldId, x, y, width, height, page } at 72 DPI
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EntityLink {
+  id         String @id @default(cuid())
+  sourceType String // RFI | SHEET_ROW | SCHEDULE_TASK
+  sourceId   String
+  targetType String // SHEET_REGION | SPEC_SECTION | SCHEDULE_TASK
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@index([sourceType, sourceId])
+  @@index([targetType, targetId])
+}
+
+model ScheduleDependency {
+  id            String       @id @default(cuid())
+  predecessorId String
+  predecessor   ScheduleTask @relation("DependencyPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successorId   String
+  successor     ScheduleTask @relation("DependencySuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+  type          String @default("FS") // FS=Finish-to-Start, SS, FF, SF
+  lagDays       Int    @default(0)
+
+  @@unique([predecessorId, successorId])
 }
