@@ -498,16 +498,45 @@ router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: R
           include: { project: true }
       });
 
-      if (form?.project) {
+      if (!form) {
+          return res.status(404).json({ success: false, error: 'Form not found' });
+      }
+
+      if (form.project) {
           const SUBMISSION_LIMITS: Record<string, number> = {
               'FREE': 100,
               'PRO': 10000,
               'ENTERPRISE': 1000000
           };
           const limit = SUBMISSION_LIMITS[form.project.plan] || SUBMISSION_LIMITS['FREE'];
-          
+
           if ((form.project.submissionCount || 0) >= limit) {
               return res.status(403).json({ success: false, error: 'Submission quota exceeded. Please upgrade.' });
+          }
+      }
+
+      // 2. Required Field Validation
+      const submissionData = data.response_data ?? data;
+      if (typeof submissionData === 'object' && submissionData !== null) {
+          const schema = form.form_schema as any;
+          const pages: any[] = Array.isArray(schema?.pages) ? schema.pages : [];
+          for (const page of pages) {
+              const sections: any[] = Array.isArray(page?.sections) ? page.sections : [];
+              for (const section of sections) {
+                  const fields: any[] = Array.isArray(section?.fields) ? section.fields : [];
+                  for (const field of fields) {
+                      if (field.required === true) {
+                          const fieldKey: string = field.name ?? field.id;
+                          const value = (submissionData as Record<string, unknown>)[fieldKey];
+                          if (value === undefined || value === null || value === '') {
+                              return res.status(400).json({
+                                  success: false,
+                                  error: `Required field "${field.label ?? fieldKey}" is missing`
+                              });
+                          }
+                      }
+                  }
+              }
           }
       }
 
@@ -570,16 +599,45 @@ router.post('/:formId/submissions', async (req: Request, res: Response) => {
             include: { project: true }
         });
 
-        if (form?.project) {
+        if (!form) {
+            return res.status(404).json({ success: false, error: 'Form not found' });
+        }
+
+        if (form.project) {
             const SUBMISSION_LIMITS: Record<string, number> = {
                 'FREE': 100,
                 'PRO': 10000,
                 'ENTERPRISE': 1000000
             };
             const limit = SUBMISSION_LIMITS[form.project.plan] || SUBMISSION_LIMITS['FREE'];
-            
+
             if ((form.project.submissionCount || 0) >= limit) {
                 return res.status(403).json({ success: false, error: 'Submission quota exceeded' });
+            }
+        }
+
+        // Required Field Validation
+        const submissionData = data.response_data ?? data;
+        if (typeof submissionData === 'object' && submissionData !== null) {
+            const schema = form.form_schema as any;
+            const pages: any[] = Array.isArray(schema?.pages) ? schema.pages : [];
+            for (const page of pages) {
+                const sections: any[] = Array.isArray(page?.sections) ? page.sections : [];
+                for (const section of sections) {
+                    const fields: any[] = Array.isArray(section?.fields) ? section.fields : [];
+                    for (const field of fields) {
+                        if (field.required === true) {
+                            const fieldKey: string = field.name ?? field.id;
+                            const value = (submissionData as Record<string, unknown>)[fieldKey];
+                            if (value === undefined || value === null || value === '') {
+                                return res.status(400).json({
+                                    success: false,
+                                    error: `Required field "${field.label ?? fieldKey}" is missing`
+                                });
+                            }
+                        }
+                    }
+                }
             }
         }
 
