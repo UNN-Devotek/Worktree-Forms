@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 import { getSecurityMiddleware } from '../middleware/security.js';
+import { parsePaginationParam } from '../utils/query.js';
 
 const router = Router();
 
@@ -125,8 +126,8 @@ router.get('/projects/:id/metrics', getSecurityMiddleware(), async (req: Request
 router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const take = Math.min(parseInt(req.query.take as string) || 20, 100);
-        const skip = parseInt(req.query.skip as string) || 0;
+        const take = parsePaginationParam(req.query.take, 20, 100);
+        const skip = parsePaginationParam(req.query.skip, 0, 100000);
 
          // 1. Get Forms for Project
          const forms = await prisma.form.findMany({

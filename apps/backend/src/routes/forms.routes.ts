@@ -11,6 +11,7 @@ import { StorageService } from '../storage.js';
 import archiver from 'archiver';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../storage.js';
+import { parsePaginationParam } from '../utils/query.js';
 
 const createFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -46,8 +47,8 @@ router.get('/forms', async (req: Request, res: Response) => {
       return res.json({ success: true, data: form });
     }
 
-    const take = Math.min(parseInt(req.query.take as string) || 50, 200);
-    const skip = parseInt(req.query.skip as string) || 0;
+    const take = parsePaginationParam(req.query.take, 50, 200);
+    const skip = parsePaginationParam(req.query.skip, 0, 100000);
     const [forms, total] = await prisma.$transaction([
       prisma.form.findMany({ take, skip }),
       prisma.form.count()
@@ -69,8 +70,8 @@ router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Invalid group ID' });
   }
   try {
-      const take = Math.min(parseInt(req.query.take as string) || 50, 200);
-      const skip = parseInt(req.query.skip as string) || 0;
+      const take = parsePaginationParam(req.query.take, 50, 200);
+      const skip = parsePaginationParam(req.query.skip, 0, 100000);
       const [forms, total] = await prisma.$transaction([
         prisma.form.findMany({ where: { group_id: groupId }, take, skip }),
         prisma.form.count({ where: { group_id: groupId } })
@@ -680,8 +681,8 @@ router.get('/:formId/submissions', async (req: Request, res: Response) => {
   if (isNaN(formId)) {
     return res.status(400).json({ success: false, error: 'Invalid form ID' });
   }
-  const take = Math.min(parseInt(req.query.take as string) || 20, 100);
-  const skip = parseInt(req.query.skip as string) || 0;
+  const take = parsePaginationParam(req.query.take, 20, 100);
+  const skip = parsePaginationParam(req.query.skip, 0, 100000);
 
   const userId = (req as any).user.id;
 

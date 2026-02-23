@@ -37,6 +37,39 @@ export function auditMiddleware(action: string) {
   };
 }
 
+/**
+ * Security event middleware — records 401/403 responses to the AuditLog table.
+ * Apply on routes where authentication or authorization failures should be tracked.
+ * Usage: router.post('/resource', auditSecurityEvent('resource.access'), handler)
+ */
+export function auditSecurityEvent(action: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res);
+
+    (res as any).json = function(body: unknown) {
+      const result = originalJson(body);
+
+      if (res.statusCode === 401 || res.statusCode === 403) {
+        const userId = (req as any).user?.id ?? 'anonymous';
+        prisma.auditLog.create({
+          data: {
+            userId,
+            action: `${action}:${res.statusCode}`,
+            resource: req.path,
+            details: JSON.stringify({ method: req.method, status: res.statusCode, ip: req.ip }),
+            ipAddress: req.ip || req.socket?.remoteAddress,
+            userAgent: req.headers['user-agent'],
+          }
+        }).catch((err: Error) => console.error('Security audit log failed:', err.message));
+      }
+
+      return result;
+    };
+
+    next();
+  };
+}
+
 function sanitizeBody(body: unknown): unknown {
   if (!body || typeof body !== 'object') return {};
   const sanitized = { ...(body as Record<string, unknown>) };

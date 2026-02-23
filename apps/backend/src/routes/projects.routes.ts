@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
 import { auditMiddleware } from '../middleware/audit.middleware.js';
+import { parsePaginationParam } from '../utils/query.js';
 
 const router = Router();
 
@@ -22,8 +23,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 router.get('/', async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     try {
-        const take = Math.min(parseInt(req.query.take as string) || 50, 200);
-        const skip = parseInt(req.query.skip as string) || 0;
+        const take = parsePaginationParam(req.query.take, 50, 200);
+        const skip = parsePaginationParam(req.query.skip, 0, 100000);
         const where = {
             OR: [
                 { createdById: userId },

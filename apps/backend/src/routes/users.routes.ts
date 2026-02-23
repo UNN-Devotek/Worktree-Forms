@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 import { ComplianceService } from '../services/compliance.service.js';
+import { parsePaginationParam } from '../utils/query.js';
 
 const router = Router();
 
@@ -15,8 +16,8 @@ router.get('/', async (req: Request, res: Response) => {
     return res.status(403).json({ success: false, error: 'Admin access required' });
   }
   try {
-    const take = Math.min(parseInt(req.query.take as string) || 100, 500);
-    const skip = parseInt(req.query.skip as string) || 0;
+    const take = parsePaginationParam(req.query.take, 100, 500);
+    const skip = parsePaginationParam(req.query.skip, 0, 100000);
     const [users, total] = await prisma.$transaction([
       prisma.user.findMany({ take, skip }),
       prisma.user.count()
