@@ -178,7 +178,7 @@ router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req
                   form_schema: form_json || {},
                   is_published: is_published || false,
                   is_active: is_active ?? true,
-                  folderId: folderId ? parseInt(folderId) : null,
+                  folderId: folderId ? parseInt(String(folderId)) : null,
                   projectId: projectId
               }
           });

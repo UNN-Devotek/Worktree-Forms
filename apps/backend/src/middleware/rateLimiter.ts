@@ -35,7 +35,7 @@ async function getStore() {
     _store = await buildStore();
     _storeInitialized = true;
   }
-  return _store as Parameters<typeof rateLimit>[0]['store'];
+  return _store as any;
 }
 
 function makeRateLimiter(opts: Parameters<typeof rateLimit>[0]) {

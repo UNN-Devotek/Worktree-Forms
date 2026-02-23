@@ -67,7 +67,7 @@ const server = new Server({
 
 const WS_PORT = Number(process.env.WS_PORT) || 1234;
 
-server.on('error', (err: NodeJS.ErrnoException) => {
+(server as any).on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ WebSocket port ${WS_PORT} is already in use. Exiting.`);
     process.exit(1);
