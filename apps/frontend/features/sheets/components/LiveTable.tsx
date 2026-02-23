@@ -55,6 +55,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     focusedCell,
     setFocusedCell,
     getCellStyle,
+    getCellResult,
     updateColumnWidth,
     deleteRow,
     addRow,
@@ -98,12 +99,16 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
             header: col.label || col.id,
             size: col.width || 120,
             cell: ({ row, getValue }: any) => {
-                const initialValue = getValue()
+                const rawValue = getValue()
+                const displayValue = typeof rawValue === 'string' && rawValue.startsWith('=')
+                    ? getCellResult(row.original.id, col.id)
+                    : rawValue
                 return (
                     <EditableCell
                         rowId={row.original.id}
                         columnId={col.id}
-                        initialValue={initialValue}
+                        initialValue={rawValue}
+                        displayValue={displayValue}
                         onChange={(val) => updateCell(row.original.id, col.id, val)}
                         columnType={col.type}
                         onFocus={handleCellFocus}
@@ -114,7 +119,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
             }
         }))
     },
-    [columns, updateCell, handleCellFocus, handleCellBlur, getCellStyle]
+    [columns, updateCell, handleCellFocus, handleCellBlur, getCellStyle, getCellResult]
   )
 
   const table = useReactTable({
@@ -429,6 +434,8 @@ interface EditableCellProps {
   rowId: string
   columnId: string
   initialValue: any
+  /** When provided, shown while not editing (e.g. computed formula result). While editing, initialValue (the raw formula) is used. */
+  displayValue?: any
   onChange: (val: any) => void
   columnType?: string
   onFocus: (rowId: string, columnId: string) => void
@@ -440,6 +447,7 @@ function EditableCell({
   rowId,
   columnId,
   initialValue,
+  displayValue,
   onChange,
   columnType,
   onFocus,
@@ -447,6 +455,7 @@ function EditableCell({
   getCellStyle,
 }: EditableCellProps) {
     const [value, setValue] = React.useState(initialValue)
+    const [isEditing, setIsEditing] = React.useState(false)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     React.useEffect(() => {
@@ -454,6 +463,7 @@ function EditableCell({
     }, [initialValue])
 
     const handleBlur = () => {
+        setIsEditing(false)
         if (value !== initialValue) {
             onChange(value)
         }
@@ -530,6 +540,11 @@ function EditableCell({
         )
     }
 
+    // Determine what to display when the cell is not being edited.
+    // If a displayValue is provided (e.g. a computed formula result), show that;
+    // otherwise fall back to the raw value.
+    const renderedDisplay = isEditing ? undefined : (displayValue !== undefined ? displayValue : value)
+
     // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
     if (cellStyle.wrap) {
         return (
@@ -538,10 +553,10 @@ function EditableCell({
                 aria-label={t('grid.edit_cell', 'Edit cell value')}
                 className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 resize-none overflow-hidden leading-normal"
                 style={{ ...inputStyle, minHeight: '24px' }}
-                value={value ?? ''}
+                value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
                 rows={1}
                 onChange={e => setValue(e.target.value)}
-                onFocus={() => onFocus(rowId, columnId)}
+                onFocus={() => { setIsEditing(true); onFocus(rowId, columnId) }}
                 onBlur={handleBlur}
             />
         )
@@ -552,9 +567,9 @@ function EditableCell({
             aria-label={t('grid.edit_cell', 'Edit cell value')}
             className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
             style={inputStyle}
-            value={value ?? ''}
+            value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
             onChange={e => setValue(e.target.value)}
-            onFocus={() => onFocus(rowId, columnId)}
+            onFocus={() => { setIsEditing(true); onFocus(rowId, columnId) }}
             onBlur={handleBlur}
         />
     )

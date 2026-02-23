@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Plus,
@@ -186,6 +187,13 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
   };
 
   const handleImport = useCallback((rows: any[]) => {
+    if (rows.length === 0) return;
+
+    // Detect unmatched headers using the first imported row's keys as the header list
+    const importedHeaders = Object.keys(rows[0]);
+    const columnLabels = new Set(columns.map((col: any) => col.label || col.id));
+    const unmatchedHeaders = importedHeaders.filter(h => !columnLabels.has(h));
+
     for (const importedRow of rows) {
       const newRow: any = { id: crypto.randomUUID(), parentId: null };
       for (const col of columns) {
@@ -196,6 +204,13 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
       }
       addRow(newRow);
     }
+
+    if (unmatchedHeaders.length > 0) {
+      toast.warning(
+        `${unmatchedHeaders.length} column(s) from the import file didn't match any sheet column and were skipped: ${unmatchedHeaders.slice(0, 5).join(', ')}${unmatchedHeaders.length > 5 ? '...' : ''}`
+      );
+    }
+
     setSelectedColumnId(null);
     setSelectedFormattingRowId(null);
   }, [columns, addRow, setSelectedColumnId, setSelectedFormattingRowId]);
