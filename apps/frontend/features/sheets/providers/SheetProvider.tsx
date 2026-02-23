@@ -76,6 +76,7 @@ interface SheetContextType {
   renameColumn: (columnId: string, newLabel: string) => void;
   hideColumn: (columnId: string) => void;
   unhideAllColumns: () => void;
+  updateColumnWidth: (columnId: string, width: number) => void;
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -790,6 +791,19 @@ export function SheetProvider({
     });
   }, [doc]);
 
+  const updateColumnWidth = useCallback((columnId: string, width: number) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string; label: string; type: string; width?: number; hidden?: boolean }>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    if (idx === -1) return;
+    doc.transact(() => {
+      const col = cols[idx];
+      yColumns.delete(idx, 1);
+      yColumns.insert(idx, [{ ...col, width: Math.max(40, Math.round(width)) }]);
+    });
+  }, [doc]);
+
     return (
       <SheetContext.Provider value={{
         data,
@@ -842,6 +856,7 @@ export function SheetProvider({
         renameColumn,
         hideColumn,
         unhideAllColumns,
+        updateColumnWidth,
       }}>
 
         {children}

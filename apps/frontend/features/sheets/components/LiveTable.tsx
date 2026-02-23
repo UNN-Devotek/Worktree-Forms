@@ -32,6 +32,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     focusedCell,
     setFocusedCell,
     getCellStyle,
+    updateColumnWidth,
   } = useSheet()
 
   // Delay clearing focusedCell so toolbar button clicks register before blur fires
@@ -83,6 +84,16 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     data,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
+    columnResizeMode: 'onChange',
+    onColumnSizingChange: (updater) => {
+      // Persist final sizes to Yjs when resizing ends
+      const sizing = typeof updater === 'function'
+        ? updater(table.getState().columnSizing)
+        : updater
+      Object.entries(sizing).forEach(([colId, width]) => {
+        updateColumnWidth(colId, width as number)
+      })
+    },
   })
 
   // Virtualization
@@ -104,7 +115,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                     {headerGroup.headers.map((header) => (
                         <ColumnContextMenu key={header.id} columnId={header.column.id}>
                             <div
-                                 className="h-10 px-4 flex items-center font-medium text-muted-foreground border-r"
+                                 className="relative h-10 px-4 flex items-center font-medium text-muted-foreground border-r select-none"
                                  style={{ width: header.getSize() }}>
                                 {header.isPlaceholder
                                     ? null
@@ -112,6 +123,17 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                         header.column.columnDef.header,
                                         header.getContext()
                                     )}
+                                {/* Resize handle */}
+                                <div
+                                    onMouseDown={header.getResizeHandler()}
+                                    onTouchStart={header.getResizeHandler()}
+                                    className={cn(
+                                        "absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none",
+                                        "hover:bg-primary/60 active:bg-primary",
+                                        "transition-colors",
+                                        header.column.getIsResizing() && "bg-primary"
+                                    )}
+                                />
                             </div>
                         </ColumnContextMenu>
                     ))}
