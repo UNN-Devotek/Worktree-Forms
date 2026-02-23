@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { apiRequest, API_ENDPOINTS } from '@/lib/api';
 
 interface User {
   id: string;
@@ -73,15 +74,30 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   }, [router, toast]);
 
-  const handleReLogin = (e: React.FormEvent) => {
+  const handleReLogin = async (e: React.FormEvent) => {
       e.preventDefault();
-      // Mock Auth Check (Reuse from Login Page logic)
-      if (email === 'admin@worktree.pro' && password === 'admin123') {
-          // Success
+      setAuthError('');
+      try {
+          const response = await apiRequest<{ success: boolean; data?: { token?: string; accessToken?: string; user?: User } }>(
+              API_ENDPOINTS.auth.login,
+              {
+                  method: 'POST',
+                  body: JSON.stringify({ email, password }),
+              }
+          );
+          if (response.success && response.data) {
+              const token = response.data.accessToken ?? response.data.token;
+              if (token) {
+                  localStorage.setItem('access_token', token);
+              }
+              if (response.data.user) {
+                  localStorage.setItem('user', JSON.stringify(response.data.user));
+                  setUser(response.data.user);
+              }
+          }
           resetTimer();
-          // Ideally refresh token here if using real backend
-      } else {
-          setAuthError('Invalid credentials.');
+      } catch {
+          setAuthError('Invalid credentials. Please try again.');
       }
   };
 
