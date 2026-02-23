@@ -33,12 +33,20 @@ export function FormSubmitView({ form }: FormSubmitViewProps) {
     )
   }
 
+  if (!form.group_id) {
+    return (
+      <div className="p-4">
+        <p className="text-sm text-destructive">Form configuration error: no group specified.</p>
+      </div>
+    )
+  }
+
   return (
       <div className="max-w-4xl mx-auto py-6">
          <FormRenderer
            formSchema={form.form_schema}
            formId={form.id}
-           groupId={1} // TODO: Pass actual group ID when available in context or props, defaulting to 1 as per page.tsx
+           groupId={form.group_id}
            onSuccess={handleSuccess}
          />
       </div>
