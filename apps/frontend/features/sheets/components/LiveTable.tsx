@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef, useCallback } from "react"
+import React, { useMemo, useRef, useCallback, useEffect } from "react"
 import { t } from "@/lib/i18n"
 import {
   ColumnDef,
@@ -12,11 +12,31 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { useSheet } from "../providers/SheetProvider"
 import { cn } from "@/lib/utils"
 import { CellContextMenu, ColumnContextMenu } from "./grid/GridContextMenu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  MoreHorizontal,
+  Trash2,
+  CopyPlus,
+  ArrowUp,
+  ArrowDown,
+  Scissors,
+  Copy,
+  ClipboardPaste,
+  Eraser,
+  MessageSquare,
+} from "lucide-react"
 
-
+// Fixed width of the row-meta column (number + actions)
+const ROW_META_WIDTH = 64
 
 interface LiveTableProps {
-  documentId?: string // Optional now since provider has it
+  documentId?: string
   containerClassName?: string
 }
 
@@ -33,9 +53,16 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     setFocusedCell,
     getCellStyle,
     updateColumnWidth,
+    deleteRow,
+    addRow,
+    insertRowAbove,
+    duplicateRow,
+    clearRowCells,
+    copyRow,
+    cutRow,
+    pasteRowAfter,
   } = useSheet()
 
-  // Delay clearing focusedCell so toolbar button clicks register before blur fires
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleCellFocus = useCallback((rowId: string, columnId: string) => {
@@ -86,7 +113,6 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: 'onChange',
     onColumnSizingChange: (updater) => {
-      // Persist final sizes to Yjs when resizing ends
       const sizing = typeof updater === 'function'
         ? updater(table.getState().columnSizing)
         : updater
@@ -96,7 +122,6 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     },
   })
 
-  // Virtualization
   const parentRef = useRef<HTMLDivElement>(null)
 
   const rowVirtualizer = useVirtualizer({
@@ -109,7 +134,12 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
   return (
     <div ref={parentRef} className={cn("h-full w-full overflow-auto border rounded-md relative", containerClassName)}>
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-background border-b grid w-full">
+        <div className="sticky top-0 z-10 bg-background border-b w-full flex">
+            {/* Row meta header (number + actions col) */}
+            <div
+                className="flex-none h-10 border-r bg-background"
+                style={{ width: ROW_META_WIDTH }}
+            />
             {table.getHeaderGroups().map((headerGroup) => (
                 <div key={headerGroup.id} className="flex">
                     {headerGroup.headers.map((header) => (
@@ -144,15 +174,13 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
         {/* Virtualized Body */}
         <div
             className="relative w-full"
-            style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-            }}
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
         >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const row = table.getRowModel().rows[virtualRow.index]
                 if (!row) return null
 
-                const isRowCut = isCut && copiedRow?.id === row.original.id;
+                const isRowCut = isCut && copiedRow?.id === row.original.id
 
                 return (
                     <CellContextMenu key={row.id} rowId={row.original.id}>
@@ -160,17 +188,42 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                             data-index={virtualRow.index}
                             ref={(node) => rowVirtualizer.measureElement(node)}
                             className={cn(
-                                "flex absolute w-full border-b items-center cursor-pointer transition-colors",
+                                "flex absolute w-full border-b items-stretch cursor-pointer transition-colors group",
                                 "hover:bg-muted/50",
                                 row.original.id === selectedRowId && "bg-muted border-l-2 border-l-primary",
                                 isRowCut && "opacity-50 border-dashed"
                             )}
                             style={{
                                 transform: `translateY(${virtualRow.start}px)`,
-                                height: `${virtualRow.size}px`
+                                minHeight: `${virtualRow.size}px`,
                             }}
                             onClick={() => openDetailPanel(row.original.id)}
                         >
+                            {/* Row meta: number + actions */}
+                            <div
+                                className="flex-none border-r flex items-center justify-between px-1.5 min-h-[40px] gap-1 bg-background/50"
+                                style={{ width: ROW_META_WIDTH }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <span className="text-xs text-muted-foreground tabular-nums select-none w-5 text-right shrink-0">
+                                    {virtualRow.index + 1}
+                                </span>
+                                <RowActionsMenu
+                                    rowId={row.original.id}
+                                    copiedRow={copiedRow}
+                                    onCut={() => cutRow(row.original.id)}
+                                    onCopy={() => copyRow(row.original.id)}
+                                    onPaste={() => pasteRowAfter(row.original.id)}
+                                    onClear={() => clearRowCells(row.original.id)}
+                                    onInsertAbove={() => insertRowAbove(row.original.id)}
+                                    onInsertBelow={() => addRow({ id: crypto.randomUUID(), parentId: null }, row.original.id)}
+                                    onDelete={() => deleteRow(row.original.id)}
+                                    onDuplicate={() => duplicateRow(row.original.id)}
+                                    onComment={() => openDetailPanel(row.original.id)}
+                                />
+                            </div>
+
+                            {/* Data cells */}
                             {row.getVisibleCells().map((cell) => {
                                 const colId = cell.column.id
                                 const isFocused =
@@ -181,7 +234,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                     <div
                                         key={cell.id}
                                         className={cn(
-                                            "px-2 border-r h-full flex items-center relative",
+                                            "px-2 border-r flex items-center relative min-h-[40px]",
                                             isFocused && "outline outline-2 outline-primary outline-offset-[-1px] z-10"
                                         )}
                                         style={{ width: cell.column.getSize() }}
@@ -199,6 +252,87 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Row actions dropdown
+// ---------------------------------------------------------------------------
+
+interface RowActionsMenuProps {
+  rowId: string
+  copiedRow: any
+  onCut: () => void
+  onCopy: () => void
+  onPaste: () => void
+  onClear: () => void
+  onInsertAbove: () => void
+  onInsertBelow: () => void
+  onDelete: () => void
+  onDuplicate: () => void
+  onComment: () => void
+}
+
+function RowActionsMenu({
+  copiedRow,
+  onCut, onCopy, onPaste, onClear,
+  onInsertAbove, onInsertBelow, onDelete, onDuplicate, onComment,
+}: RowActionsMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "h-6 w-6 rounded flex items-center justify-center",
+            "opacity-0 group-hover:opacity-100 transition-opacity",
+            "hover:bg-muted text-muted-foreground hover:text-foreground",
+          )}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Row actions"
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        <DropdownMenuItem onSelect={onCut}>
+          <Scissors className="mr-2 h-4 w-4" /> Cut
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onCopy}>
+          <Copy className="mr-2 h-4 w-4" /> Copy
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onPaste} disabled={copiedRow === null}>
+          <ClipboardPaste className="mr-2 h-4 w-4" /> Paste
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onClear}>
+          <Eraser className="mr-2 h-4 w-4" /> Clear Contents
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onInsertAbove}>
+          <ArrowUp className="mr-2 h-4 w-4" /> Insert Row Above
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onInsertBelow}>
+          <ArrowDown className="mr-2 h-4 w-4" /> Insert Row Below
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDuplicate}>
+          <CopyPlus className="mr-2 h-4 w-4" /> Duplicate Row
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onComment}>
+          <MessageSquare className="mr-2 h-4 w-4" /> Add Comment...
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onSelect={onDelete}
+        >
+          <Trash2 className="mr-2 h-4 w-4" /> Delete Row
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditableCell
+// ---------------------------------------------------------------------------
 
 interface EditableCellProps {
   rowId: string
@@ -222,8 +356,8 @@ function EditableCell({
   getCellStyle,
 }: EditableCellProps) {
     const [value, setValue] = React.useState(initialValue)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-    // Sync from props if external change
     React.useEffect(() => {
         setValue(initialValue)
     }, [initialValue])
@@ -245,8 +379,15 @@ function EditableCell({
         textAlign: cellStyle.textAlign || 'left',
         color: cellStyle.color || undefined,
         backgroundColor: cellStyle.backgroundColor || undefined,
-        whiteSpace: cellStyle.wrap ? 'pre-wrap' : undefined,
     }
+
+    // Auto-resize textarea when value or wrap state changes
+    useEffect(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.style.height = 'auto'
+        el.style.height = `${el.scrollHeight}px`
+    }, [value, cellStyle.wrap])
 
     if (columnType === 'CHECKBOX') {
         return (
@@ -270,7 +411,7 @@ function EditableCell({
             <input
                 type="number"
                 aria-label={t('grid.edit_number', 'Edit number value')}
-                className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 text-right"
+                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 text-right"
                 style={inputStyle}
                 value={value ?? ''}
                 onChange={e => setValue(e.target.value === '' ? '' : Number(e.target.value))}
@@ -285,7 +426,7 @@ function EditableCell({
             <input
                 type="date"
                 aria-label={t('grid.edit_date', 'Edit date value')}
-                className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
+                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
                 style={inputStyle}
                 value={value ?? ''}
                 onChange={e => {
@@ -298,10 +439,27 @@ function EditableCell({
         )
     }
 
+    // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
+    if (cellStyle.wrap) {
+        return (
+            <textarea
+                ref={textareaRef}
+                aria-label={t('grid.edit_cell', 'Edit cell value')}
+                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 resize-none overflow-hidden leading-normal"
+                style={{ ...inputStyle, minHeight: '24px' }}
+                value={value ?? ''}
+                rows={1}
+                onChange={e => setValue(e.target.value)}
+                onFocus={() => onFocus(rowId, columnId)}
+                onBlur={handleBlur}
+            />
+        )
+    }
+
     return (
         <input
             aria-label={t('grid.edit_cell', 'Edit cell value')}
-            className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
+            className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
             style={inputStyle}
             value={value ?? ''}
             onChange={e => setValue(e.target.value)}
