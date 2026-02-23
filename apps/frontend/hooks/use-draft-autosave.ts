@@ -1,23 +1,29 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 const DRAFT_KEY_PREFIX = 'form_draft_'
+const AUTOSAVE_DEBOUNCE_MS = 500
 
 export function useDraftAutosave(formId: number, enabled: boolean = false) {
   const draftKey = `${DRAFT_KEY_PREFIX}${formId}`
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const saveDraft = useCallback((data: any) => {
     if (!enabled) return
 
-    try {
-      localStorage.setItem(draftKey, JSON.stringify({
-        data,
-        savedAt: new Date().toISOString()
-      }))
-    } catch (err) {
-      console.error('Failed to save draft:', err)
-    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          data,
+          savedAt: new Date().toISOString()
+        }))
+      } catch (err) {
+        console.error('Failed to save draft:', err)
+      }
+      saveTimeoutRef.current = null
+    }, AUTOSAVE_DEBOUNCE_MS)
   }, [draftKey, enabled])
 
   const loadDraft = useCallback(() => {
@@ -71,6 +77,13 @@ export function useDraftAutosave(formId: number, enabled: boolean = false) {
       clearDraft()
     }
   }, [enabled, getDraftAge, clearDraft])
+
+  // Clear pending debounced save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [])
 
   return {
     saveDraft,
