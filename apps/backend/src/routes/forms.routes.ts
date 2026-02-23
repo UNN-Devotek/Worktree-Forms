@@ -7,6 +7,7 @@ import { generateFlattenedPDF } from '../services/pdf-export.service.js';
 import { MigrationService } from '../services/migration-service.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
 import { auditMiddleware } from '../middleware/audit.middleware.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { StorageService } from '../storage.js';
 import archiver from 'archiver';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -216,7 +217,7 @@ router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req
 });
 
 // Update form
-router.put('/groups/:groupId/forms/:formId', async (req: Request, res: Response) => {
+router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
   const formId = parseInt(req.params.formId);
   const updates = req.body;
