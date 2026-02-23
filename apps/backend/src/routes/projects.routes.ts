@@ -201,10 +201,10 @@ router.patch('/:id/sheets/:sheetId/rows/:rowId', async (req: Request, res: Respo
     if (updatedColumnIds.length > 0) {
       const lockedColumns = await prisma.sheetColumn.findMany({
         where: { id: { in: updatedColumnIds }, sheetId, locked: true },
-        select: { id: true, name: true },
+        select: { id: true, header: true },
       });
       if (lockedColumns.length > 0 && userRole !== 'ADMIN' && userRole !== 'OWNER') {
-        const names = lockedColumns.map((c) => c.name).join(', ');
+        const names = lockedColumns.map((c) => c.header).join(', ');
         return res.status(403).json({
           success: false,
           error: `Column(s) locked: ${names}`,
@@ -212,9 +212,12 @@ router.patch('/:id/sheets/:sheetId/rows/:rowId', async (req: Request, res: Respo
       }
     }
 
+    const existing = await prisma.sheetRow.findUnique({ where: { id: rowId }, select: { data: true } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Row not found' });
+
     const row = await prisma.sheetRow.update({
       where: { id: rowId },
-      data: { data: { ...(await prisma.sheetRow.findUnique({ where: { id: rowId }, select: { data: true } }))?.data as object ?? {}, ...cellUpdates } },
+      data: { data: { ...(existing.data as object ?? {}), ...cellUpdates } },
     });
 
     res.json({ success: true, data: row });

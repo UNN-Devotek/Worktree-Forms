@@ -34,9 +34,18 @@ const upload = multer({
 // FORM ENDPOINTS
 // ==========================================
 
-// Get all forms
+// Get all forms (or single form by slug when ?slug= is provided)
 router.get('/forms', async (req: Request, res: Response) => {
   try {
+    const slug = req.query.slug as string | undefined;
+
+    // Slug lookup — return single form
+    if (slug) {
+      const form = await prisma.form.findFirst({ where: { slug } });
+      if (!form) return res.status(404).json({ success: false, error: 'Form not found' });
+      return res.json({ success: true, data: form });
+    }
+
     const take = Math.min(parseInt(req.query.take as string) || 50, 200);
     const skip = parseInt(req.query.skip as string) || 0;
     const [forms, total] = await prisma.$transaction([
