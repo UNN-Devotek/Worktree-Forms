@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
+import { authenticate } from '../middleware/authenticate.js';
 
 const router = Router();
 
@@ -13,11 +14,21 @@ const createFolderSchema = z.object({
 // FOLDER ENDPOINTS
 // ==========================================
 
-// Get folders
-router.get('/', async (req: Request, res: Response) => {
+// Get folders — scoped to projects the authenticated user is a member of
+router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).user.id;
+
+    // Collect project IDs the user belongs to
+    const userProjects = await prisma.projectMember.findMany({
+      where: { userId },
+      select: { projectId: true },
+    });
+    const projectIds = userProjects.map((p: { projectId: string }) => p.projectId);
+
     const folders = await prisma.folder.findMany({
-        orderBy: { createdAt: 'desc' }
+      where: { projectId: { in: projectIds } },
+      orderBy: { createdAt: 'desc' },
     });
     res.json({ success: true, data: { folders } });
   } catch (error) {

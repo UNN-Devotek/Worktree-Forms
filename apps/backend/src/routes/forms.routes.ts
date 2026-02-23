@@ -221,6 +221,25 @@ router.put('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
   const updates = req.body;
 
   try {
+        // Ownership check: verify the form belongs to a project the user is a member of
+        const existingForm = await prisma.form.findUnique({
+          where: { id: formId },
+          include: {
+            project: {
+              include: {
+                members: { where: { userId: (req as any).user?.id } }
+              }
+            }
+          }
+        });
+        if (!existingForm) {
+          return res.status(404).json({ success: false, error: 'Form not found' });
+        }
+        const isAdmin = (req as any).user?.systemRole === 'ADMIN';
+        if (existingForm.project && !isAdmin && existingForm.project.members.length === 0) {
+          return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         // [VERSIONING] Check for schema changes
         if (updates.form_json) {
             const currentForm = await prisma.form.findUnique({ where: { id: formId } });
