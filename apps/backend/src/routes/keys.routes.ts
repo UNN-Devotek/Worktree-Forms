@@ -10,7 +10,7 @@ const router = Router();
 // Generate New API Key (Auth Required)
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin'; // Mock auth
+    const userId = (req as any).user.id;
     const { note, scope } = req.body;
 
     const { rawKey, apiKey } = await ApiKeyService.generateKey(userId, note, scope);
@@ -27,14 +27,14 @@ router.post('/', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('API Key Generation Error:', error);
-    res.status(500).json({ error: 'Failed to generate API key' });
+    res.status(500).json({ success: false, error: 'Failed to generate API key' });
   }
 });
 
 // List API Keys (Auth Required)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const keys = await ApiKeyService.listKeys(userId);
 
     // Mask the keyHash for security
@@ -47,24 +47,24 @@ router.get('/', async (req: Request, res: Response) => {
       keyPreview: 'sk_••••••••'
     }));
 
-    res.json(masked);
+    res.json({ success: true, data: masked });
   } catch (error) {
     console.error('API Key List Error:', error);
-    res.status(500).json({ error: 'Failed to list keys' });
+    res.status(500).json({ success: false, error: 'Failed to list keys' });
   }
 });
 
 // Revoke API Key (Auth Required)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const { id } = req.params;
 
     await ApiKeyService.revokeKey(id, userId);
     res.json({ success: true, message: 'Key revoked' });
   } catch (error) {
     console.error('API Key Revoke Error:', error);
-    res.status(500).json({ error: 'Failed to revoke key' });
+    res.status(500).json({ success: false, error: 'Failed to revoke key' });
   }
 });
 

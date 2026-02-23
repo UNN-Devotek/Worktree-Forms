@@ -9,6 +9,9 @@ import { StorageService } from './storage.js';
 import { validateEnvironment } from './utils/validate-env.js';
 import { getSecurityMiddleware } from './middleware/security.js';
 import { rateLimitTiers } from './middleware/rateLimiter.js';
+import { contextMiddleware } from './middleware/context.middleware.js';
+import { csrfMiddleware } from './middleware/csrf.middleware.js';
+import { authenticate } from './middleware/authenticate.js';
 
 // Route Imports
 import authRoutes from './routes/auth.routes.js';
@@ -31,10 +34,9 @@ import uploadRoutes from './routes/upload.routes.js';
 
 dotenv.config();
 
-// BigInt serialization shim
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
+// Safe BigInt serialization without mutating global prototype
+const bigIntReplacer = (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? value.toString() : value;
 
 // Validate environment before starting server
 validateEnvironment();
@@ -46,17 +48,55 @@ const parsedPort = match ? parseInt(match[0], 10) : 5005;
 const PORT = (parsedPort > 0 && parsedPort < 65536) ? parsedPort : 5005;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3005', 'http://localhost:3100', 'http://localhost:3000'];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+app.use(csrfMiddleware);
 app.use(getSecurityMiddleware()); // Security headers (Helmet)
 app.use('/api', rateLimitTiers.api); // General API rate limiting
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => originalJson(JSON.parse(JSON.stringify(body, bigIntReplacer)));
+  next();
+});
 
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
+
+// Authenticate protected routes (sets req.user before contextMiddleware reads it)
+app.use([
+  '/api/projects',
+  '/api/users',
+  '/api/folders',
+  '/api/forms',
+  '/api/groups',
+  '/api/rfi',
+  '/api/specs',
+  '/api/schedule',
+  '/api/dashboard',
+  '/api/keys',
+  '/api/webhooks',
+  '/api/help',
+  '/api/upload',
+  '/api/ai',
+  '/api/preferences',
+], authenticate);
+
+// Context Middleware (RLS Support) — must run AFTER authenticate so req.user is populated
+app.use(contextMiddleware);
 
 // Health check endpoint
 app.get('/api/health', async (req: Request, res: Response) => {
@@ -134,102 +174,6 @@ app.use('/api', formRoutes);
 // Let's create `appRoutes` that mounts them?
 // Or just mount them at specific paths.
 // If I mount `formRoutes` at `/api`, then `router.get('/forms')` works.
-// BUT `formRoutes` defined `router.get('/')`.
-// So `formRoutes` expects to be mounted at `/api/forms`.
-// What about the `/api/groups/:groupId/forms`?
-// That was inside `formRoutes` as `router.get('/groups/:groupId/forms')`.
-// So if I mount at `/api/forms`, that becomes `/api/forms/groups/...`.
-// This breaks the original API contract `/api/groups/...`.
-// FIX: I will mount `formRoutes` at `/api` and change `router.get('/')` inside it to `router.get('/forms')`.
-// Wait, I can't edit `formRoutes` now (it's written).
-// Let's review `formRoutes`.
-// `router.get('/', ...)` -> List all forms.
-// `router.get('/groups/:groupId/forms', ...)` -> List group forms.
-// So if I mount at `/api`, then `/api/` maps to `List all forms`? NO. `/api` is API Info.
-// Conflict.
-// I should have split them better.
-// Strategy: Mount `formRoutes` at `/api`.
-// It has `router.get('/', ...)` -> `/api/`. Conflict with API Info.
-// I need to patch `formRoutes` OR `index.ts`.
-// I will patch `index.ts` to use a detailed mount strategy or a temporary `apiRouter`.
-
-const apiRouter = express.Router();
-
-// Mount resources to apiRouter
-apiRouter.use('/auth', authRoutes);
-apiRouter.use('/users', userRoutes);
-apiRouter.use('/projects', projectRoutes); // /api/projects...
-apiRouter.use('/folders', folderRoutes);
-
-// Forms is tricky because of the root '/' in `formRoutes`.
-// I'll mount it at `/api`. 
-// BUT `formRoutes` has `router.get('/')`.
-// I will modify `routes/forms.routes.ts` quickly to prefix paths?
-// OR: Just mount it at `/api/forms` and expect requests to change?
-// No, must preserve backwards compatibility.
-// The code had `/api/forms` AND `/api/groups/...`.
-// I will just use `app.use('/api', formRoutes)`?
-// Then `router.get('/')` becomes `/api/`. That overrides API Info.
-// Okay, I will edit `forms.routes.ts` to have explicit paths `/forms`, `/groups/...`.
-// Better: Relaunch `forms.routes.ts` overwriting it with explicit paths.
-// Same for others if needed.
-
-// Check `projectRoutes`:
-// `router.get('/')` -> `/api/projects` (if mounted at /projects).
-// `router.post('/:projectId/upload')` -> `/api/projects/:projectId/upload`.
-// `projectRoutes` is fine if mounted at `/api/projects`.
-
-// Check `formRoutes` again.
-// `router.get('/')` -> `/api/forms`?
-// `router.get('/groups/:groupId/forms')` -> `/api/groups...`?
-// If I mount at `/api`:
-// `router.get('/')` -> `/api` (Bad).
-// `router.get('/groups/:groupId/forms')` -> `/api/groups/...` (Good).
-
-// Correct Plan:
-// Update `forms.routes.ts`: Change `/` to `/forms`.
-// Update `mobile.routes.ts`: remove `/api` prefix (it's relative to router).
-// `mobile.routes.ts`: `router.get('/projects/:projectId/routes/my-daily')`.
-// If mounted at `/api`, works.
-
-// I will re-write `forms.routes.ts`, `mobile.routes.ts`, `rfi.routes.ts`, `spec.routes.ts`, `schedule.routes.ts` to ensure strict paths relative to `/api`.
-// Then mount all of them at `/api`.
-
-// `authRoutes`: `/login` -> Mount at `/api/auth`.
-// `usersRoutes`: `/` -> Mount at `/api/users`.
-// `projectRoutes`: `/` -> Mount at `/api/projects`.
-// `folderRoutes`: `/` -> Mount at `/api/folders`.
-// `aiRoutes`: `/chat` -> Mount at `/api/ai`.
-// `webhookRoutes`: `/` -> Mount at `/api/webhooks`.
-// `keyRoutes`: `/` -> Mount at `/api/keys`.
-// `helpRoutes`: `/articles` -> Mount at `/api/help`.
-// `shareRoutes`: `/access` -> Mount at `/api/public` (Wait, it was `/api/public/access`). 
-//   In `share.routes.ts`, I defined `/access/:token`. 
-//   So mount `shareRoutes` at `/api/public`.
-
-// The "Messy" ones are: Forms, RFI, Specs, Schedule, Mobile.
-// They used `/api/projects/:id/...`.
-// I will rewrite them to be mounted at `/api` and include the full path `projects/:id/...`.
-
-// Or better, I group them under `projectRoutes`?
-// No, separation of concerns.
-
-// I will proceed to UPDATE `forms.routes.ts` to facilitate mounting at `/api`.
-// Change `router.get('/')` to `router.get('/forms')`.
-// Keep `router.get('/groups/:groupId/forms')`.
-// Keep `router.post('/:formId/submissions')`. (Alias: `/api/:formId/submissions`? No, original was `/api/forms/:formId/submissions`? Or just `/api/:formId/...`?)
-// Original: `app.post('/api/forms/:formId/submissions', ...)`
-// In `forms.routes.ts` I wrote `router.post('/:formId/submissions')`.
-// If mounted at `/api`, that becomes `/api/:formId/submissions`.
-// Wait, `:formId` would capture `auth`, `users` etc if defined early? No, regex.
-// `/forms` matches literal.
-// `/api/forms/:formId/submissions` -> `router.post('/forms/:formId/submissions')`.
-
-// OKAY. I'll rewrite `forms.routes.ts` to use explicit `/forms` prefix where needed and mount at `/api`.
-
-app.use('/api', formRoutes); 
-app.use('/api', rfiRoutes); // /projects/:id/rfis
-app.use('/api', specRoutes); // /projects/:id/specs
 app.use('/api', scheduleRoutes); // /projects/:id/schedule
 app.use('/api', mobileRoutes); // /projects/:id/routes...
 
@@ -251,11 +195,18 @@ app.use('/api/upload', uploadRoutes); // /api/upload
 
 // Error Handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
+  const requestId = req.headers['x-request-id'] as string || 'no-id';
+  console.error('Unhandled Error:', {
+    method: req.method,
+    path: req.path,
+    requestId,
+    error: err.message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+  });
   res.status(500).json({
     success: false,
     error: 'Internal Server Error',
-    message: err.message,
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message,
   });
 });
 
@@ -270,12 +221,14 @@ async function initializeStorage() {
 
 // Start server
 const HOST = '0.0.0.0';
-app.listen(PORT as number, HOST, () => {
-  console.log(`\n🚀 Worktree API running on port ${PORT} bound to ${HOST}`);
-  console.log(`📚 API Docs: /api/docs`);
-  console.log(`✅ Health Check: /api/health\n`);
-  
-  initializeStorage();
-});
+async function startServer() {
+  await initializeStorage();
+  app.listen(PORT as number, HOST, () => {
+    console.log(`\n🚀 Worktree API running on port ${PORT} bound to ${HOST}`);
+    console.log(`📚 API Docs: /api/docs`);
+    console.log(`✅ Health Check: /api/health\n`);
+  });
+}
+startServer();
 
 export default app;

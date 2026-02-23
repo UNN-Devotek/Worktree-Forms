@@ -9,7 +9,7 @@ const router = Router();
 
 router.post('/articles', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const { title, content, category, projectId } = req.body;
     const article = await HelpArticleService.createArticle(userId, { title, content, category, projectId });
     res.json({ success: true, article });
@@ -48,7 +48,7 @@ router.get('/articles/:slug', async (req: Request, res: Response) => {
 
 router.put('/articles/:id', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const { id } = req.params;
     const { title, content, category, changelog } = req.body;
     const article = await HelpArticleService.updateArticle(id, userId, { title, content, category, changelog });

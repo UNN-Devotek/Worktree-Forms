@@ -1,6 +1,19 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../db.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
+import { auditMiddleware } from '../middleware/audit.middleware.js';
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+});
 
 const router = Router();
 
@@ -9,45 +22,32 @@ const router = Router();
 // ==========================================
 
 router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'Invalid input: email and password are required' });
+  }
+  const { email, password } = parsed.data;
 
-  // For demo simplicity, we still allow the hardcoded admin, 
-  // OR check the DB. 
-  // Real implementation would use bcrypt to compare passwords.
-  
   try {
     if (process.env.ENABLE_DEV_LOGIN === 'true') {
       const user = await prisma.user.findUnique({ where: { email } });
 
       // Allow login if user exists (Dev/Test mode - Passwordless)
       if (user) {
+        const token = jwt.sign(
+          { sub: user.id, email: user.email, systemRole: (user as any).systemRole ?? 'MEMBER' },
+          process.env.JWT_SECRET!,
+          { expiresIn: (process.env.JWT_EXPIRE || '15m') as jwt.SignOptions['expiresIn'] },
+        );
         return res.json({
           success: true,
           data: {
-            token: `mock-jwt-token-for-${user.id}`, // In real app, sign JWT here
+            token,
             user: {
               id: user.id,
               email: user.email,
               name: user.name,
-              // role removed from schema, mapping systemRole to role for compatibility
-              role: (user as any).systemRole || 'viewer',
-            },
-          },
-          message: 'Login successful',
-        });
-      }
-
-      // Fallback for the hardcoded admin if not in DB yet (or just rely on seed)
-      if (email === 'admin@worktree.pro' && password === 'admin123') {
-        return res.json({
-          success: true,
-          data: {
-            token: `demo-token`,
-            user: {
-              id: '1',
-              email: 'admin@worktree.pro',
-              name: 'Admin User',
-              role: 'admin', // Mapped for frontend compatibility
+              role: (user as any).systemRole || 'MEMBER',
             },
           },
           message: 'Login successful',
@@ -59,20 +59,20 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
       success: false,
       error: 'Invalid credentials',
     });
-  } catch (error) {
+  } catch (error: unknown) {
     res.status(500).json({ success: false, error: 'Auth failed' });
   }
 });
 
-router.post('/register', rateLimitTiers.auth, async (req: Request, res: Response) => {
-  const { email, name } = req.body;
-
-  if (!email || !name) {
+router.post('/register', rateLimitTiers.auth, auditMiddleware('user.register'), async (req: Request, res: Response) => {
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: email, name',
+      error: 'Missing required fields: email (valid email), name (non-empty)',
     });
   }
+  const { email, name } = parsed.data;
 
   try {
     const newUser = await prisma.user.create({
@@ -96,7 +96,7 @@ router.post('/register', rateLimitTiers.auth, async (req: Request, res: Response
       },
       message: 'Registration successful',
     });
-  } catch (error) {
+  } catch (error: unknown) {
      console.error('Registration Error:', error);
      res.status(400).json({ success: false, error: `Registration failed: ${error instanceof Error ? error.message : String(error)}` });
   }

@@ -1,13 +1,27 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { prisma } from '../db.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
 import { MigrationService } from '../services/migration-service.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
+import { auditMiddleware } from '../middleware/audit.middleware.js';
 import { StorageService } from '../storage.js';
 import archiver from 'archiver';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../storage.js';
+
+const createFormSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  form_type: z.string().optional(),
+  form_json: z.record(z.unknown()).optional(),
+  is_published: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+  folderId: z.union([z.string(), z.number()]).optional().nullable(),
+  groupSlug: z.string().optional(),
+  userId: z.string().optional().nullable(),
+});
 
 const router = Router();
 const upload = multer({
@@ -22,10 +36,16 @@ const upload = multer({
 // Get all forms
 router.get('/forms', async (req: Request, res: Response) => {
   try {
-    const forms = await prisma.form.findMany();
+    const take = Math.min(parseInt(req.query.take as string) || 50, 200);
+    const skip = parseInt(req.query.skip as string) || 0;
+    const [forms, total] = await prisma.$transaction([
+      prisma.form.findMany({ take, skip }),
+      prisma.form.count()
+    ]);
     res.json({
         success: true,
-        data: forms 
+        data: forms,
+        meta: { total, take, skip }
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch forms' });
@@ -35,11 +55,20 @@ router.get('/forms', async (req: Request, res: Response) => {
 // Get all forms for a group
 router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
+  if (isNaN(groupId)) {
+    return res.status(400).json({ success: false, error: 'Invalid group ID' });
+  }
   try {
-      const forms = await prisma.form.findMany({ where: { group_id: groupId } });
+      const take = Math.min(parseInt(req.query.take as string) || 50, 200);
+      const skip = parseInt(req.query.skip as string) || 0;
+      const [forms, total] = await prisma.$transaction([
+        prisma.form.findMany({ where: { group_id: groupId }, take, skip }),
+        prisma.form.count({ where: { group_id: groupId } })
+      ]);
       res.json({
         success: true,
-        data: { forms }
+        data: { forms },
+        meta: { total, take, skip }
       });
   } catch (error) {
        res.status(500).json({ success: false, error: 'Failed to fetch forms' });
@@ -50,6 +79,9 @@ router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
 router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
   const formId = parseInt(req.params.formId);
+  if (isNaN(groupId) || isNaN(formId)) {
+    return res.status(400).json({ success: false, error: 'Invalid group ID or form ID' });
+  }
 
   try {
       const form = await prisma.form.findFirst({
@@ -58,6 +90,24 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
       
       if (!form) {
         return res.status(404).json({ success: false, error: 'Form not found' });
+      }
+
+      // Ownership check: if the form belongs to a project, verify the caller has access
+      if (form.projectId) {
+          const userId = (req as any).user.id;
+          const project = await prisma.project.findFirst({
+              where: {
+                  id: form.projectId,
+                  OR: [
+                      { createdById: userId },
+                      { members: { some: { userId } } }
+                  ]
+              },
+              select: { id: true }
+          });
+          if (!project) {
+              return res.status(403).json({ success: false, error: 'Access denied' });
+          }
       }
 
       // [VERSIONING] Get latest version ID for frontend to bind to
@@ -81,14 +131,22 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
 });
 
 // Create new form
-router.post('/groups/:groupId/forms', async (req: Request, res: Response) => {
+router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req: Request, res: Response) => {
   const groupId = parseInt(req.params.groupId);
-  const { title, description, form_type, form_json, is_published, is_active, folderId, groupSlug } = req.body;
+  if (isNaN(groupId)) {
+    return res.status(400).json({ success: false, error: 'Invalid group ID' });
+  }
 
-  // Generate slug
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now();
+  const parsed = createFormSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
+  }
 
-  console.log('Creating form:', { title, groupId, slug, groupSlug });
+  const { title, description, form_type, form_json, is_published, is_active, folderId, groupSlug } = parsed.data;
+
+  // Generate slug with base36 timestamp + random suffix to avoid collisions
+  const slugBase = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = `${slugBase}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
   try {
       let projectId: string | null = null;
@@ -99,54 +157,49 @@ router.post('/groups/:groupId/forms', async (req: Request, res: Response) => {
           }
       }
 
-      const newForm = await prisma.form.create({
-          data: {
-              group_id: groupId,
-              slug,
-              title,
-              description,
-              form_type,
-              form_schema: form_json || {}, 
-              is_published: is_published || false,
-              is_active: is_active ?? true,
-              folderId: folderId ? parseInt(folderId) : null,
-              projectId: projectId
-          }
-      });
+      const { newForm } = await prisma.$transaction(async (tx) => {
+          const createdForm = await tx.form.create({
+              data: {
+                  group_id: groupId,
+                  slug,
+                  title,
+                  description,
+                  form_type,
+                  form_schema: form_json || {},
+                  is_published: is_published || false,
+                  is_active: is_active ?? true,
+                  folderId: folderId ? parseInt(folderId) : null,
+                  projectId: projectId
+              }
+          });
 
-    console.log('Created Form:', newForm.id);
-    
-    // [VERSIONING] Create initial v1
-    try {
-        await prisma.formVersion.create({
-            data: {
-                form_id: newForm.id,
-                version: 1,
-                schema: newForm.form_schema || {},
-                changelog: 'Initial version',
-                editorId: req.body.userId || null // [BLAME] Capture creator
-            }
-        });
-    } catch (verError) {
-        console.error('Failed to create initial version:', verError);
-        // non-blocking
-    }
+          await tx.formVersion.create({
+              data: {
+                  form_id: createdForm.id,
+                  version: 1,
+                  schema: createdForm.form_schema || {},
+                  changelog: 'Initial version',
+                  editorId: req.body.userId || null
+              }
+          });
+
+          return { newForm: createdForm };
+      });
 
     res.status(201).json({
         success: true,
         data: { form: newForm },
         message: 'Form created successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
       console.error('Create Form Error:', error);
-      // Prisma error handling
-      if (error.code === 'P2002') {
+      if (error instanceof Object && 'code' in error && (error as { code: string }).code === 'P2002') {
           return res.status(409).json({ success: false, error: 'A form with this name already exists (slug collision)' });
       }
-      res.status(500).json({ 
-          success: false, 
+      res.status(500).json({
+          success: false,
           error: 'Failed to create form',
-          details: error.message 
+          details: error instanceof Error ? error.message : 'Unknown error'
       });
   }
 });
@@ -231,9 +284,9 @@ router.put('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
         data: { form: updatedForm },
         message: 'Form updated successfully'
       });
-  } catch (error: any) {
+  } catch (error: unknown) {
        console.error('Update Form Error:', error);
-      res.status(500).json({ success: false, error: 'Failed to update form', details: error.message });
+      res.status(500).json({ success: false, error: 'Failed to update form', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -537,14 +590,51 @@ router.post('/:formId/submissions', async (req: Request, res: Response) => {
 // Get Submissions
 router.get('/:formId/submissions', async (req: Request, res: Response) => {
   const formId = parseInt(req.params.formId);
-  try {
-      const submissions = await prisma.submission.findMany({
-          where: { form_id: formId },
-          orderBy: { created_at: 'desc' }
+  if (isNaN(formId)) {
+    return res.status(400).json({ success: false, error: 'Invalid form ID' });
+  }
+  const take = Math.min(parseInt(req.query.take as string) || 20, 100);
+  const skip = parseInt(req.query.skip as string) || 0;
+
+  const userId = (req as any).user.id;
+
+  // Verify caller has access to the form's project
+  const form = await prisma.form.findUnique({
+      where: { id: formId },
+      select: { projectId: true }
+  });
+  if (!form) {
+      return res.status(404).json({ success: false, error: 'Form not found' });
+  }
+  if (form.projectId) {
+      const project = await prisma.project.findFirst({
+          where: {
+              id: form.projectId,
+              OR: [
+                  { createdById: userId },
+                  { members: { some: { userId } } }
+              ]
+          },
+          select: { id: true }
       });
-      res.json({ success: true, data: { submissions } });
+      if (!project) {
+          return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+  }
+
+  try {
+      const [submissions, total] = await Promise.all([
+          prisma.submission.findMany({
+              where: { form_id: formId },
+              orderBy: { createdAt: 'desc' },
+              take,
+              skip
+          }),
+          prisma.submission.count({ where: { form_id: formId } })
+      ]);
+      res.json({ success: true, data: { submissions }, meta: { total, take, skip } });
   } catch (error) {
-      res.status(500).json({ success: false, error: 'Error' });
+      res.status(500).json({ success: false, error: 'Failed to fetch submissions' });
   }
 });
 

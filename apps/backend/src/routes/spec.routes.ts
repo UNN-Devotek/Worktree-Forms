@@ -24,7 +24,7 @@ router.get('/projects/:projectId/specs', async (req: Request, res: Response) => 
 router.post('/projects/:projectId/specs', async (req: Request, res: Response) => {
     const { projectId } = req.params;
     const { section, title, keywords, type, fileUrl, objectKey } = req.body;
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
 
     try {
         const spec = await SpecService.createSpec({

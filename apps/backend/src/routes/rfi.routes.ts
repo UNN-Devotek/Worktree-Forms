@@ -23,7 +23,7 @@ router.get('/projects/:projectId/rfis', async (req: Request, res: Response) => {
 router.post('/projects/:projectId/rfis', async (req: Request, res: Response) => {
   const { projectId } = req.params;
   const { title, question, images } = req.body;
-  const userId = (req.headers['x-user-id'] as string) || 'dev-admin'; 
+  const userId = (req as any).user.id;
 
   try {
       const rfi = await RfiService.createRfi({

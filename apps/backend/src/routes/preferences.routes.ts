@@ -12,10 +12,7 @@ router.get('/:key', async (req: Request, res: Response) => {
     const { key } = req.params;
     const { projectId } = req.query; // Optional scoping
     
-    // In a real app, strict auth check here.
-    // Assuming 'x-user-id' header or similar is passed from frontend/gateway
-    // For now, defaulting to a known user if not present (dev mode)
-    const userId = (req.headers['x-user-id'] as string) || 'user-1'; 
+    const userId = (req as any).user.id;
 
     const where: any = {
       userId: userId,
@@ -44,7 +41,7 @@ router.get('/:key', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { key, value, projectId } = req.body;
-    const userId = (req.headers['x-user-id'] as string) || 'user-1';
+    const userId = (req as any).user.id;
 
     const pref = await prisma.userPreference.upsert({
       where: {

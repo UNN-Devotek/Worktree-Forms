@@ -1,9 +1,16 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { prisma } from '../db.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
+import { auditMiddleware } from '../middleware/audit.middleware.js';
 
 const router = Router();
+
+const createProjectSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+});
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 
@@ -13,16 +20,31 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 // Get all projects
 router.get('/', async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
     try {
-        const projects = await prisma.project.findMany({
-            orderBy: { updatedAt: 'desc' },
-            include: {
-                _count: {
-                    select: { forms: true, members: true }
+        const take = Math.min(parseInt(req.query.take as string) || 50, 200);
+        const skip = parseInt(req.query.skip as string) || 0;
+        const where = {
+            OR: [
+                { createdById: userId },
+                { members: { some: { userId } } }
+            ]
+        } as const;
+        const [projects, total] = await Promise.all([
+            prisma.project.findMany({
+                where,
+                take,
+                skip,
+                orderBy: { updatedAt: 'desc' },
+                include: {
+                    _count: {
+                        select: { forms: true, members: true }
+                    }
                 }
-            }
-        });
-        res.json({ success: true, data: projects });
+            }),
+            prisma.project.count({ where })
+        ]);
+        res.json({ success: true, data: projects, meta: { total, take, skip } });
     } catch (error) {
         console.error('Fetch Projects Error:', error);
         res.status(500).json({ success: false, error: 'Failed to fetch projects' });
@@ -106,14 +128,19 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
 });
 
 // Create project
-router.post('/', async (req: Request, res: Response) => {
-    const { name, description } = req.body;
-    // Mock user ID for now or get from auth
-    const userId = (req.headers['x-user-id'] as string) || 'user-1';
+router.post('/', auditMiddleware('project.create'), async (req: Request, res: Response) => {
+    const parsed = createProjectSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
+    }
+
+    const { name, description } = parsed.data;
+    const userId = (req as any).user.id;
 
     try {
-        // Simple slug generation
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+        // Generate slug with base36 timestamp + random suffix to avoid collisions
+        const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const slug = `${slugBase}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
         
         const project = await prisma.project.create({
             data: {
@@ -124,17 +151,17 @@ router.post('/', async (req: Request, res: Response) => {
             }
         });
         res.status(201).json({ success: true, data: project });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Create Project Error:', error);
-        res.status(500).json({ success: false, error: 'Failed to create project', details: error.message });
+        res.status(500).json({ success: false, error: 'Failed to create project', details: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
 
 // Generic Project Upload (for RFI photos, etc)
 router.post('/:projectId/upload', upload.single('file'), async (req: Request, res: Response) => {
     const { projectId } = req.params;
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin'; 
-    
+    const userId = (req as any).user.id;
+
     if (!req.file) {
         return res.status(400).json({ success: false, error: 'No file uploaded' });
     }

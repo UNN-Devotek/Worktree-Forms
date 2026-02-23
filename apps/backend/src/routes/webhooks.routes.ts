@@ -11,7 +11,7 @@ const router = Router();
 // Register Webhook (Auth Required)
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const { url, events, projectId } = req.body;
 
     if (!url || !events || !Array.isArray(events)) {
@@ -39,7 +39,7 @@ router.post('/', async (req: Request, res: Response) => {
 // List Webhooks (Auth Required)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const projectId = req.query.projectId as string | undefined;
 
     const webhooks = await WebhookService.listWebhooks(userId, projectId);
@@ -53,7 +53,7 @@ router.get('/', async (req: Request, res: Response) => {
 // Delete Webhook (Auth Required)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+    const userId = (req as any).user.id;
     const { id } = req.params;
 
     await WebhookService.deleteWebhook(id, userId);
