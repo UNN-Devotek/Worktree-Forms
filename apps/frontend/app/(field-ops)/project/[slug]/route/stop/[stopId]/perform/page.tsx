@@ -1,27 +1,25 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Save, WifiOff } from 'lucide-react';
+import { ArrowLeft, Loader2, WifiOff } from 'lucide-react';
 import { FormRenderer } from '@/components/form-renderer/FormRenderer';
-import { apiClient } from '@/lib/api';
 import { useGeolocation } from '@/hooks/use-geolocation';
-// import { useOfflineQueue } from '@/features/offline/hooks/use-offline-queue'; // We'll implement this hook logic inline or assuming it exists.
 
 interface PerformPageProps {
-    params: {
+    params: Promise<{
         slug: string;
         stopId: string;
-    }
+    }>
 }
 
 export default function PerformPage({ params }: PerformPageProps) {
     const router = useRouter();
-    const { stopId, slug } = params;
+    const { stopId, slug } = use(params);
     const queryClient = useQueryClient();
-    const { coordinates } = useGeolocation();
+    const { coordinates: _coordinates } = useGeolocation(); // used in commented offline queue code
 
     const [isOffline, setIsOffline] = useState(false);
 

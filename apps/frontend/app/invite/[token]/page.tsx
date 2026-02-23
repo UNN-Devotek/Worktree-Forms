@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 
-export default async function InvitePage({ params }: { params: { token: string } }) {
-  const { token } = params;
+export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const session = await auth();
 
   // 1. Validate Token & Fetch Invite

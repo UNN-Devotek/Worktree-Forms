@@ -1,5 +1,6 @@
 import { SheetList } from '@/features/sheets/components/SheetList';
 
-export default function SheetsPage({ params }: { params: { slug: string } }) {
-  return <SheetList projectSlug={params.slug} />;
+export default async function SheetsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return <SheetList projectSlug={slug} />;
 }

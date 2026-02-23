@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  params: { slug: string };
-  searchParams: { page?: string; action?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string; action?: string }>;
 };
 
 export default async function AuditLogPage({ params, searchParams }: PageProps) {
@@ -22,13 +22,15 @@ export default async function AuditLogPage({ params, searchParams }: PageProps) 
     redirect("/login");
   }
 
-  const page = parseInt(searchParams.page || "1", 10);
-  const actionFilter = searchParams.action;
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const page = parseInt(resolvedSearchParams.page || "1", 10);
+  const actionFilter = resolvedSearchParams.action;
 
   // Fetch logs and action types
   const [logsResult, actionsResult] = await Promise.all([
-    getAuditLogs(params.slug, page, 50, actionFilter),
-    getAuditActionTypes(params.slug),
+    getAuditLogs(slug, page, 50, actionFilter),
+    getAuditActionTypes(slug),
   ]);
 
   // Handle errors
@@ -64,7 +66,7 @@ export default async function AuditLogPage({ params, searchParams }: PageProps) 
       <AuditLogTable
         logs={logsResult.logs!}
         pagination={logsResult.pagination!}
-        projectSlug={params.slug}
+        projectSlug={slug}
         actionTypes={actionsResult.actions!}
         currentFilter={actionFilter}
       />
@@ -73,7 +75,7 @@ export default async function AuditLogPage({ params, searchParams }: PageProps) 
         <h3 className="mb-2 text-sm font-semibold">Privacy Notice</h3>
         <p className="text-xs text-muted-foreground">
           Audit logs include IP addresses for security purposes. Data is retained for 90 days and
-          automatically deleted thereafter. For GDPR data export requests, use the "Export CSV" button.
+          automatically deleted thereafter. For GDPR data export requests, use the &ldquo;Export CSV&rdquo; button.
         </p>
       </div>
     </div>

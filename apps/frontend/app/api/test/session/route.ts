@@ -18,22 +18,25 @@ export async function POST(req: Request) {
     }
 
     console.log("[BACKDOOR] Attempting signIn for:", email);
-    console.log("[BACKDOOR] Cookies before:", cookies().getAll().map(c => c.name));
+    const cookieStore = await cookies();
+    console.log("[BACKDOOR] Cookies before:", cookieStore.getAll().map(c => c.name));
 
     // Use NextAuth's signIn server-side function
     await signIn("credentials", {
         email: email,
-        redirect: false, 
+        redirect: false,
     });
-    
-    console.log("[BACKDOOR] Cookies after:", cookies().getAll().map(c => c.name));
-    
+
+    const cookieStoreAfter = await cookies();
+    console.log("[BACKDOOR] Cookies after:", cookieStoreAfter.getAll().map(c => c.name));
+
     // Explicitly return success. Cookies set via cookies() API should be attached automatically.
     return Response.json({ success: true });
 
   } catch (error) {
       if (isRedirectError(error)) {
-          console.log("[BACKDOOR] Caught Redirect (Success). Cookies:", cookies().getAll().map(c => c.name));
+          const cookieStoreRedirect = await cookies();
+          console.log("[BACKDOOR] Caught Redirect (Success). Cookies:", cookieStoreRedirect.getAll().map(c => c.name));
           return Response.json({ success: true });
       }
 

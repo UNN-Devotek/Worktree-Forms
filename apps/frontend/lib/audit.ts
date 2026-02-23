@@ -14,9 +14,9 @@ import type { AuditEventDetails } from './audit-types';
  * 2. X-Real-IP (single proxy)
  * 3. null (localhost/dev)
  */
-function extractIpAddress(): string | null {
+async function extractIpAddress(): Promise<string | null> {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     
     // Check X-Forwarded-For (proxy chain)
     const forwardedFor = headersList.get('x-forwarded-for');
@@ -73,7 +73,7 @@ export async function createAuditLog({
       return;
     }
 
-    const ipAddress = extractIpAddress();
+    const ipAddress = await extractIpAddress();
 
     await db.auditLog.create({
       data: {

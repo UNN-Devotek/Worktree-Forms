@@ -5,15 +5,15 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        // canvas is a native addon — redirect to empty stub so imports don't fail
-        canvas: './empty-module.js',
-        // bahttext, bessel, jstat, chevrotain are real npm packages;
-        // Turbopack resolves them natively — no alias needed (unlike webpack)
-      },
+  turbopack: {
+    resolveAlias: {
+      // canvas is a native addon — redirect to empty stub so imports don't fail
+      canvas: './empty-module.js',
+      // bahttext, bessel, jstat, chevrotain are real npm packages;
+      // Turbopack resolves them natively — no alias needed (unlike webpack)
     },
+  },
+  experimental: {
     optimizePackageImports: [
       '@radix-ui/react-icons',
       'lucide-react',
@@ -58,16 +58,10 @@ const nextConfig = {
   },
 
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;

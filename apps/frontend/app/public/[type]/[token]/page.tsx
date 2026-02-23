@@ -24,9 +24,10 @@ async function getPublicResource(token: string) {
 export default async function PublicAccessPage({
   params,
 }: {
-  params: { type: string; token: string };
+  params: Promise<{ type: string; token: string }>;
 }) {
-  const resource = await getPublicResource(params.token);
+  const { token } = await params;
+  const resource = await getPublicResource(token);
 
   if (!resource) {
     notFound();

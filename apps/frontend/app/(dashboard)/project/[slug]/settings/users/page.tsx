@@ -4,8 +4,8 @@ import { InviteUserDialog } from "@/features/projects/components/settings/invite
 import { UserListTable } from "@/features/projects/components/settings/user-list-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function ProjectUsersPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default async function ProjectUsersPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   // 1. Get Project ID from Slug
   const project = await db.project.findUnique({

@@ -3,8 +3,9 @@ import { getProject } from "@/features/projects/server/project-actions";
 import { notFound } from "next/navigation";
 import { SpecList } from "@/features/specs/components/SpecList";
 
-export default async function ProjectSpecsPage({ params }: { params: { slug: string } }) {
-  const project = await getProject(params.slug);
+export default async function ProjectSpecsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const project = await getProject(slug);
 
   if (!project) {
     notFound();

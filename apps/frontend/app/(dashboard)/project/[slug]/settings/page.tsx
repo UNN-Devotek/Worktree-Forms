@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { use, useState } from "react";
 import { toast } from "sonner";
 
-export default function ProjectSettingsPage({ params }: { params: { slug: string } }) {
+export default function ProjectSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = use(params);
     return (
         <div className="flex flex-col gap-6 p-8 max-w-5xl mx-auto">
             <div>
@@ -26,7 +27,7 @@ export default function ProjectSettingsPage({ params }: { params: { slug: string
                 </TabsList>
 
                 <TabsContent value="general">
-                    <GeneralSettings slug={params.slug} />
+                    <GeneralSettings slug={slug} />
                 </TabsContent>
                 
                 <TabsContent value="integrations">
@@ -38,7 +39,7 @@ export default function ProjectSettingsPage({ params }: { params: { slug: string
                 </TabsContent>
 
                 <TabsContent value="danger">
-                    <DangerZone slug={params.slug} />
+                    <DangerZone slug={slug} />
                 </TabsContent>
             </Tabs>
         </div>
@@ -139,7 +140,7 @@ function NotificationSettings() {
     );
 }
 
-function DangerZone({ slug }: { slug: string }) {
+function DangerZone({ slug: _slug }: { slug: string }) {
     return (
         <Card className="border-red-500/50 bg-red-50/50 dark:bg-red-950/10">
             <CardHeader>

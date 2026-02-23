@@ -1,13 +1,14 @@
 'use client';
 
-import { ChatPanel } from '@/features/sheets/components/ChatPanel';
+import { use } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSheetSync } from '@/features/sheets/useSheetSync';
 
 // Reusing ChatPanel but making it full page for now
-export default function ChatPage({ params }: { params: { slug: string } }) {
+export default function ChatPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const { data: session } = useSession();
-  const projectId = params.slug; 
+  const projectId = slug;
   
   // We can use a dedicated "chat" document ID or reuse the project ID if we had a project sync.
   // For now, let's use a "project-chat-{slug}" room
@@ -68,7 +69,7 @@ interface InlineChatProps {
   users: { id: string; name: string; color: string }[];
 }
 
-const InlineChat: React.FC<InlineChatProps> = ({ doc, currentUser, users }) => {
+const InlineChat: React.FC<InlineChatProps> = ({ doc, currentUser, users: _users }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

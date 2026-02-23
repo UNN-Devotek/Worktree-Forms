@@ -18,7 +18,8 @@ import { RouteList } from '@/features/field-ops/route-list';
    2. Frontend: Pass `slug` as `projectId`.
 */
 
-export default function RoutePage({ params }: { params: { slug: string } }) {
+export default async function RoutePage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
   // In a real app we might resolve the user ID from session here too.
   // referencing "userId" from searchParams or similar is unsafe.
   // RouteList should use useSession to get userId.
@@ -29,7 +30,7 @@ export default function RoutePage({ params }: { params: { slug: string } }) {
   
   return (
     <div className="h-full bg-gray-50/50">
-       <RouteList projectId={params.slug} userId="user_1" /> 
+       <RouteList projectId={resolvedParams.slug} userId="user_1" />
        {/* userId is temporarily hardcoded or valid from session */}
     </div>
   );
