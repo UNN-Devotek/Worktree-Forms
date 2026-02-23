@@ -105,10 +105,11 @@ export async function getSheets(projectSlug: string) {
 
     if (!project) return [];
 
-    // Get sheets from Prisma (metadata)
+    // Get sheets from Prisma (metadata only — exclude content Bytes to avoid Uint8Array serialization error)
     const sheets = await db.sheet.findMany({
       where: { projectId: project.id },
       orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
     });
 
     return sheets;

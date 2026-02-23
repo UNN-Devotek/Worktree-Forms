@@ -131,7 +131,8 @@ export async function getSheets(projectSlug: string) {
 
         const sheets = await db.sheet.findMany({
             where: { projectId: project.id },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
         });
         console.log('[getSheets] Found sheets:', sheets.length);
 
@@ -146,13 +147,9 @@ export async function getSheets(projectSlug: string) {
 export async function getSheet(sheetId: string) {
     try {
         const sheet = await db.sheet.findUnique({
-            where: { id: sheetId }
+            where: { id: sheetId },
+            select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
         });
-        
-        // Convert Bytes to base64 string for client safety if needed, 
-        // or let Server Components handle Buffer serialization (Next.js handles Buffer/UInt8Array usually).
-        // However, passing Buffer to Client Component might need serialization.
-        // Let's return as is and see.
         return sheet;
     } catch (error) {
         console.error('Failed to get sheet:', error);

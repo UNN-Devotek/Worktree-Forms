@@ -24,7 +24,7 @@ export interface ActivityItem {
 export const DashboardService = {
     async getProjectMetrics(projectId: string): Promise<DashboardMetrics> {
         try {
-            const res = await fetch(`/api/projects/${projectId}/metrics`);
+            const res = await fetch(`/api/projects/${projectId}/metrics`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch metrics');
             const json = await res.json();
             return json.success ? json.data : { totalSubmissions: 0, statsByForm: [], plan: 'FREE', storageUsage: 0, submissionCount: 0 };
@@ -37,7 +37,7 @@ export const DashboardService = {
 
     async getActivityFeed(projectId: string): Promise<ActivityItem[]> {
         try {
-            const res = await fetch(`/api/projects/${projectId}/activity`);
+            const res = await fetch(`/api/projects/${projectId}/activity`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch activity');
             const json = await res.json();
             return json.success ? json.data : [];
