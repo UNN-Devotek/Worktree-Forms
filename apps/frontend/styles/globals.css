@@ -66,6 +66,9 @@
   --shadow-2xl: 0px 0px 4.5px 1px hsl(216.8421 94.2149% 52.549% / 0.38);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --color-brand-blue: #0055B8;
+  --color-brand-red: #B31B1B;
+  --color-brand-red-light: #ff6b6b;
 }
 
 .dark {
@@ -188,6 +191,18 @@ body {
   letter-spacing: var(--tracking-normal);
 }
 
+:focus-visible {
+  outline: 2px solid var(--color-brand-blue);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -263,10 +278,10 @@ body {
   }
 
   /* Standardized Button Styles - Same Size */
-  button.bg-primary,
+  /* button.bg-primary,
   button.bg-secondary {
     @apply h-11 px-6 py-2 text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
-  }
+  } */
 
   /* Full Color Backgrounds explicitly */
   .bg-primary {
