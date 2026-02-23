@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import ws from 'ws';
+import jwt from 'jsonwebtoken';
 
 export class SheetIntegrationService {
   /**
@@ -121,7 +122,11 @@ export class SheetIntegrationService {
         document: doc,
         WebSocketPolyfill: ws,
         parameters: {
-          token: 'SYSTEM_TOKEN', 
+          token: jwt.sign(
+            { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
+            process.env.JWT_SECRET!,
+            { expiresIn: '5m' },
+          ),
         },
         onConnect: () => {
           console.log('Backend Yjs client connected');

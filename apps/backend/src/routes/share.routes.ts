@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 import { ShareService } from '../services/share.service.js';
 import { StorageService } from '../storage.js';
+import { authenticate } from '../middleware/authenticate.js';
 
 const router = Router();
 
@@ -46,10 +47,9 @@ router.get('/access/:token', async (req: Request, res: Response) => {
 
 
 // Generate Token (Auth Required)
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', authenticate, async (req: Request, res: Response) => {
     try {
-        // Mock Auth
-        const userId = (req.headers['x-user-id'] as string) || 'dev-admin';
+        const userId = (req as any).user.id;
         
         const { resourceType, resourceId, expiresInDays } = req.body;
         

@@ -15,7 +15,7 @@ export function auditMiddleware(action: string) {
 
       // Only log successful mutations (2xx)
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        const userId = (req.headers['x-user-id'] as string) || (req as any).user?.id;
+        const userId = (req as any).user?.id;
         if (userId) {
           prisma.auditLog.create({
             data: {
