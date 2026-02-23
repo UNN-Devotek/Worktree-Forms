@@ -10,6 +10,12 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 
 
+/** Clipboard state for row cut/copy/paste (local per-user, not synced via Yjs) */
+interface CopiedRowState {
+  id: string;
+  values: Record<string, unknown>;
+}
+
 interface SheetContextType {
   data: any[];
   columns: any[];
@@ -50,6 +56,26 @@ interface SheetContextType {
   token: string; // JWT token for WebSocket auth
   user: { name: string; color: string; id?: string }; // User info for collaboration
   sheetId: string; // Sheet identifier for per-sheet persistence (e.g. Gantt mapping)
+
+  // Row operations
+  insertRowAbove: (rowId: string) => void;
+  duplicateRow: (rowId: string) => void;
+  clearRowCells: (rowId: string) => void;
+
+  // Clipboard (local state, NOT Yjs)
+  copiedRow: CopiedRowState | null;
+  isCut: boolean;
+  copyRow: (rowId: string) => void;
+  cutRow: (rowId: string) => void;
+  pasteRowAfter: (rowId: string) => void;
+
+  // Column operations
+  deleteColumn: (columnId: string) => void;
+  insertColumnLeft: (columnId: string) => void;
+  insertColumnRight: (columnId: string) => void;
+  renameColumn: (columnId: string, newLabel: string) => void;
+  hideColumn: (columnId: string) => void;
+  unhideAllColumns: () => void;
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -86,6 +112,8 @@ export function SheetProvider({
   // Finding #7 (R5): cellStyles local state removed — getCellStyle reads from Yjs `cells` map directly.
   // applyCellStyle kept for local-only style previews before committing to Yjs.
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
+  const [copiedRow, setCopiedRow] = useState<CopiedRowState | null>(null);
+  const [isCut, setIsCut] = useState(false);
 
   // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
   const openDetailPanel = useCallback((rowId: string) => {
@@ -549,6 +577,219 @@ export function SheetProvider({
     });
   }, [doc]);
 
+  // --- Row operations ---
+
+  const insertRowAbove = useCallback((rowId: string) => {
+    if (!doc) return;
+    const yOrder = doc.getArray('order');
+    const yRows = doc.getMap('rows');
+    const order = yOrder.toArray() as string[];
+    const idx = order.indexOf(rowId);
+    const newId = crypto.randomUUID();
+    const newRow = { id: newId, parentId: null };
+    doc.transact(() => {
+      yRows.set(newId, newRow);
+      if (idx > -1) {
+        yOrder.insert(idx, [newId]);
+      } else {
+        yOrder.push([newId]);
+      }
+    });
+  }, [doc]);
+
+  const duplicateRow = useCallback((rowId: string) => {
+    if (!doc) return;
+    const yRows = doc.getMap('rows');
+    const yOrder = doc.getArray('order');
+    const sourceRow = yRows.get(rowId) as Record<string, unknown> | undefined;
+    if (!sourceRow) return;
+    const newId = crypto.randomUUID();
+    const cloned = { ...sourceRow, id: newId };
+    doc.transact(() => {
+      yRows.set(newId, cloned);
+      const order = yOrder.toArray() as string[];
+      const idx = order.indexOf(rowId);
+      if (idx > -1) {
+        yOrder.insert(idx + 1, [newId]);
+      } else {
+        yOrder.push([newId]);
+      }
+    });
+  }, [doc]);
+
+  const clearRowCells = useCallback((rowId: string) => {
+    if (!doc) return;
+    const yRows = doc.getMap('rows');
+    const yColumns = doc.getArray('columns');
+    const row = yRows.get(rowId) as Record<string, unknown> | undefined;
+    if (!row) return;
+    const cols = yColumns.toArray() as Array<{ id: string }>;
+    const cleared = { ...row };
+    for (const col of cols) {
+      cleared[col.id] = '';
+    }
+    doc.transact(() => {
+      yRows.set(rowId, cleared);
+    });
+  }, [doc]);
+
+  // --- Clipboard operations (local state, not Yjs) ---
+
+  const copyRow = useCallback((rowId: string) => {
+    if (!doc) return;
+    const yRows = doc.getMap('rows');
+    const row = yRows.get(rowId) as Record<string, unknown> | undefined;
+    if (!row) return;
+    const { id: _id, parentId: _pid, ...values } = row;
+    setCopiedRow({ id: rowId, values });
+    setIsCut(false);
+  }, [doc]);
+
+  const cutRow = useCallback((rowId: string) => {
+    if (!doc) return;
+    const yRows = doc.getMap('rows');
+    const row = yRows.get(rowId) as Record<string, unknown> | undefined;
+    if (!row) return;
+    const { id: _id, parentId: _pid, ...values } = row;
+    setCopiedRow({ id: rowId, values });
+    setIsCut(true);
+  }, [doc]);
+
+  const pasteRowAfter = useCallback((targetRowId: string) => {
+    if (!doc || !copiedRow) return;
+    const yRows = doc.getMap('rows');
+    const yOrder = doc.getArray('order');
+    const newId = crypto.randomUUID();
+    const newRow = { ...copiedRow.values, id: newId, parentId: null };
+    doc.transact(() => {
+      yRows.set(newId, newRow);
+      const order = yOrder.toArray() as string[];
+      const idx = order.indexOf(targetRowId);
+      if (idx > -1) {
+        yOrder.insert(idx + 1, [newId]);
+      } else {
+        yOrder.push([newId]);
+      }
+      // If cut, remove the source row
+      if (isCut) {
+        yRows.delete(copiedRow.id);
+        const srcIdx = yOrder.toArray().indexOf(copiedRow.id);
+        if (srcIdx > -1) {
+          yOrder.delete(srcIdx, 1);
+        }
+      }
+    });
+    if (isCut) {
+      setCopiedRow(null);
+      setIsCut(false);
+    }
+  }, [doc, copiedRow, isCut]);
+
+  // --- Column operations ---
+
+  const deleteColumn = useCallback((columnId: string) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const yRows = doc.getMap('rows');
+    const cellsMap = doc.getMap('cells');
+    doc.transact(() => {
+      // Remove column from Y.Array
+      const cols = yColumns.toArray() as Array<{ id: string }>;
+      const idx = cols.findIndex(c => c.id === columnId);
+      if (idx > -1) {
+        yColumns.delete(idx, 1);
+      }
+      // Clear all cells referencing this column from rows
+      const yOrder = doc.getArray('order');
+      const order = yOrder.toArray() as string[];
+      for (const rowId of order) {
+        const row = yRows.get(rowId) as Record<string, unknown> | undefined;
+        if (row && columnId in row) {
+          const { [columnId]: _removed, ...rest } = row;
+          yRows.set(rowId, rest);
+        }
+      }
+      // Remove cell styles for this column
+      const allKeys = Array.from(cellsMap.keys()) as string[];
+      for (const key of allKeys) {
+        if (key.endsWith(`:${columnId}`)) {
+          cellsMap.delete(key);
+        }
+      }
+    });
+  }, [doc]);
+
+  const insertColumnLeft = useCallback((columnId: string) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string }>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    const newCol = { id: crypto.randomUUID(), label: 'New Column', type: 'TEXT', width: 120 };
+    doc.transact(() => {
+      if (idx > -1) {
+        yColumns.insert(idx, [newCol]);
+      } else {
+        yColumns.push([newCol]);
+      }
+    });
+  }, [doc]);
+
+  const insertColumnRight = useCallback((columnId: string) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string }>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    const newCol = { id: crypto.randomUUID(), label: 'New Column', type: 'TEXT', width: 120 };
+    doc.transact(() => {
+      if (idx > -1) {
+        yColumns.insert(idx + 1, [newCol]);
+      } else {
+        yColumns.push([newCol]);
+      }
+    });
+  }, [doc]);
+
+  const renameColumn = useCallback((columnId: string, newLabel: string) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string; label: string; type: string; width?: number; hidden?: boolean }>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    if (idx === -1) return;
+    doc.transact(() => {
+      const col = cols[idx];
+      yColumns.delete(idx, 1);
+      yColumns.insert(idx, [{ ...col, label: newLabel }]);
+    });
+  }, [doc]);
+
+  const hideColumn = useCallback((columnId: string) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string; label: string; type: string; width?: number; hidden?: boolean }>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    if (idx === -1) return;
+    doc.transact(() => {
+      const col = cols[idx];
+      yColumns.delete(idx, 1);
+      yColumns.insert(idx, [{ ...col, hidden: true }]);
+    });
+  }, [doc]);
+
+  const unhideAllColumns = useCallback(() => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string; label: string; type: string; width?: number; hidden?: boolean }>;
+    doc.transact(() => {
+      for (let i = cols.length - 1; i >= 0; i--) {
+        if (cols[i].hidden) {
+          const col = cols[i];
+          yColumns.delete(i, 1);
+          yColumns.insert(i, [{ ...col, hidden: false }]);
+        }
+      }
+    });
+  }, [doc]);
+
     return (
       <SheetContext.Provider value={{
         data,
@@ -584,6 +825,23 @@ export function SheetProvider({
         token,
         user,
         sheetId,
+        // Row operations
+        insertRowAbove,
+        duplicateRow,
+        clearRowCells,
+        // Clipboard
+        copiedRow,
+        isCut,
+        copyRow,
+        cutRow,
+        pasteRowAfter,
+        // Column operations
+        deleteColumn,
+        insertColumnLeft,
+        insertColumnRight,
+        renameColumn,
+        hideColumn,
+        unhideAllColumns,
       }}>
 
         {children}

@@ -11,6 +11,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useSheet } from "../providers/SheetProvider"
 import { cn } from "@/lib/utils"
+import { CellContextMenu, ColumnContextMenu } from "./grid/GridContextMenu"
 
 
 
@@ -20,7 +21,7 @@ interface LiveTableProps {
 }
 
 export function LiveTable({ containerClassName }: LiveTableProps) {
-  const { data, columns, updateCell, selectedRowId, openDetailPanel } = useSheet()
+  const { data, columns, updateCell, selectedRowId, openDetailPanel, copiedRow, isCut } = useSheet()
 
   const tableColumns = useMemo<ColumnDef<any>[]>(
     () => {
@@ -69,16 +70,18 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
             {table.getHeaderGroups().map((headerGroup) => (
                 <div key={headerGroup.id} className="flex">
                     {headerGroup.headers.map((header) => (
-                        <div key={header.id} 
-                             className="h-10 px-4 flex items-center font-medium text-muted-foreground border-r"
-                             style={{ width: header.getSize() }}>
-                            {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                )}
-                        </div>
+                        <ColumnContextMenu key={header.id} columnId={header.column.id}>
+                            <div
+                                 className="h-10 px-4 flex items-center font-medium text-muted-foreground border-r"
+                                 style={{ width: header.getSize() }}>
+                                {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                    )}
+                            </div>
+                        </ColumnContextMenu>
                     ))}
                 </div>
             ))}
@@ -95,31 +98,35 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                 const row = table.getRowModel().rows[virtualRow.index]
                 if (!row) return null
                 
+                const isRowCut = isCut && copiedRow?.id === row.original.id;
+
                 return (
-                    <div
-                        key={row.id}
-                        data-index={virtualRow.index}
-                        ref={(node) => rowVirtualizer.measureElement(node)}
-                        className={cn(
-                            "flex absolute w-full border-b items-center cursor-pointer transition-colors",
-                            "hover:bg-muted/50",
-                            row.original.id === selectedRowId && "bg-muted border-l-2 border-l-primary"
-                        )}
-                        style={{
-                            transform: `translateY(${virtualRow.start}px)`,
-                            height: `${virtualRow.size}px`
-                        }}
-                        onClick={() => openDetailPanel(row.original.id)}
-                    >
-                        {row.getVisibleCells().map((cell) => (
-                            <div key={cell.id} 
-                                 className="px-2 border-r h-full flex items-center" 
-                                 style={{ width: cell.column.getSize() }}
-                                 onClick={(e) => e.stopPropagation()}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </div>
-                        ))}
-                    </div>
+                    <CellContextMenu key={row.id} rowId={row.original.id}>
+                        <div
+                            data-index={virtualRow.index}
+                            ref={(node) => rowVirtualizer.measureElement(node)}
+                            className={cn(
+                                "flex absolute w-full border-b items-center cursor-pointer transition-colors",
+                                "hover:bg-muted/50",
+                                row.original.id === selectedRowId && "bg-muted border-l-2 border-l-primary",
+                                isRowCut && "opacity-50 border-dashed"
+                            )}
+                            style={{
+                                transform: `translateY(${virtualRow.start}px)`,
+                                height: `${virtualRow.size}px`
+                            }}
+                            onClick={() => openDetailPanel(row.original.id)}
+                        >
+                            {row.getVisibleCells().map((cell) => (
+                                <div key={cell.id}
+                                     className="px-2 border-r h-full flex items-center"
+                                     style={{ width: cell.column.getSize() }}
+                                     onClick={(e) => e.stopPropagation()}>
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </div>
+                            ))}
+                        </div>
+                    </CellContextMenu>
                 )
             })}
         </div>
