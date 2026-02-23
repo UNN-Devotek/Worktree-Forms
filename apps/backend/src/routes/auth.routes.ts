@@ -39,12 +39,12 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
         const accessToken = jwt.sign(
           { sub: user.id, email: user.email, systemRole: (user as any).systemRole ?? 'MEMBER' },
           process.env.JWT_SECRET!,
-          { expiresIn: (process.env.JWT_EXPIRE || '15m') as jwt.SignOptions['expiresIn'] },
+          { algorithm: 'HS256', expiresIn: (process.env.JWT_EXPIRE || '15m') as jwt.SignOptions['expiresIn'] },
         );
         const refreshToken = jwt.sign(
           { sub: user.id },
           process.env.JWT_SECRET!,
-          { expiresIn: (process.env.JWT_REFRESH_EXPIRE || '7d') as jwt.SignOptions['expiresIn'] },
+          { algorithm: 'HS256', expiresIn: (process.env.JWT_REFRESH_EXPIRE || '7d') as jwt.SignOptions['expiresIn'] },
         );
 
         res.cookie('access_token', accessToken, {

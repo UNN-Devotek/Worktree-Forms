@@ -1,6 +1,18 @@
 
 import { prisma } from '../db';
-import crypto from 'crypto';
+import crypto, { timingSafeEqual, createHash } from 'crypto';
+
+/**
+ * Compares a raw API key against a stored SHA-256 hex hash using a
+ * constant-time comparison to prevent timing-based side-channel attacks.
+ */
+function safeCompareHashes(inputKey: string, storedHash: string): boolean {
+  const inputHash = createHash('sha256').update(inputKey).digest('hex');
+  const bufA = Buffer.from(inputHash);
+  const bufB = Buffer.from(storedHash);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 export class ApiKeyService {
   /**
@@ -53,6 +65,10 @@ export class ApiKeyService {
     });
 
     if (!apiKey) return null;
+
+    // Timing-safe verification: re-confirm the stored hash matches the input key
+    // using constant-time comparison to prevent timing side-channel attacks.
+    if (!safeCompareHashes(rawKey, apiKey.keyHash)) return null;
 
     // Check Expiry
     if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {

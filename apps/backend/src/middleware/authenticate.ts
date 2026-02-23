@@ -39,7 +39,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     return res.status(500).json({ success: false, error: 'Server misconfiguration' });
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as {
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as {
       sub: string; email: string; systemRole: string;
     };
     (req as AuthenticatedRequest).user = {
