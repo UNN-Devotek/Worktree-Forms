@@ -185,15 +185,43 @@ router.post('/:projectId/upload', upload.single('file'), async (req: Request, re
 
 
 // ==========================================
-// FOLDER ENDPOINTS
+// SHEET ROW ENDPOINTS
 // ==========================================
 
-// NOTE: Ideally these should be under /api/projects/:id/folders if they were strictly hierarchical,
-// but architectural decision was loose coupling or global folders?
-// The original index.ts had /api/folders at root. We'll keep them here or in a separate file?
-// Let's create `folders.routes.ts` separately for cleanliness if they are top-level.
-// BUT, often folders belong to projects.
-// Re-reading code: `app.get('/api/folders'...)`.
-// I'll put folders in a separate file `folders.routes.ts` to be safe/clean.
+// PATCH /api/projects/:id/sheets/:sheetId/rows/:rowId
+// Update cell data for a row, enforcing column-level lock permissions.
+router.patch('/:id/sheets/:sheetId/rows/:rowId', async (req: Request, res: Response) => {
+  const userRole = (req as any).user?.systemRole ?? 'MEMBER';
+  const { sheetId, rowId } = req.params;
+  const cellUpdates: Record<string, unknown> = req.body.data ?? {};
+
+  try {
+    // Check if any updated columns are locked
+    const updatedColumnIds = Object.keys(cellUpdates);
+    if (updatedColumnIds.length > 0) {
+      const lockedColumns = await prisma.sheetColumn.findMany({
+        where: { id: { in: updatedColumnIds }, sheetId, locked: true },
+        select: { id: true, name: true },
+      });
+      if (lockedColumns.length > 0 && userRole !== 'ADMIN' && userRole !== 'OWNER') {
+        const names = lockedColumns.map((c) => c.name).join(', ');
+        return res.status(403).json({
+          success: false,
+          error: `Column(s) locked: ${names}`,
+        });
+      }
+    }
+
+    const row = await prisma.sheetRow.update({
+      where: { id: rowId },
+      data: { data: { ...(await prisma.sheetRow.findUnique({ where: { id: rowId }, select: { data: true } }))?.data as object ?? {}, ...cellUpdates } },
+    });
+
+    res.json({ success: true, data: row });
+  } catch (error) {
+    console.error('SheetRow update error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update row' });
+  }
+});
 
 export default router;
