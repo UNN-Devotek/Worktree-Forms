@@ -28,7 +28,8 @@ interface SheetContextType {
   editingCell: { rowId: string, columnId: string, initialValue?: string } | null;
   setEditingCell: (cell: { rowId: string, columnId: string, initialValue?: string } | null) => void;
   isDetailPanelOpen: boolean;
-  openDetailPanel: (rowId: string) => void;
+  detailPanelTab: string;
+  openDetailPanel: (rowId: string, tab?: string) => void;
   closeDetailPanel: () => void;
   updateCell: (rowId: string, columnId: string, value: any) => void;
   updateCells: (updates: Array<{ rowId: string; columnId: string; value: any }>) => void;
@@ -110,6 +111,7 @@ export function SheetProvider({
   const [focusedCell, setFocusedCell] = useState<{ rowId: string, columnId: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowId: string, columnId: string, initialValue?: string } | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [detailPanelTab, setDetailPanelTab] = useState('fields');
   // Finding #7 (R5): cellStyles local state removed — getCellStyle reads from Yjs `cells` map directly.
   // applyCellStyle kept for local-only style previews before committing to Yjs.
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
@@ -117,8 +119,9 @@ export function SheetProvider({
   const [isCut, setIsCut] = useState(false);
 
   // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
-  const openDetailPanel = useCallback((rowId: string) => {
+  const openDetailPanel = useCallback((rowId: string, tab = 'fields') => {
     setSelectedRowId(rowId);
+    setDetailPanelTab(tab);
     setIsDetailPanelOpen(true);
   }, []);
 
@@ -817,6 +820,7 @@ export function SheetProvider({
         editingCell,
         setEditingCell,
         isDetailPanelOpen,
+        detailPanelTab,
         openDetailPanel,
         closeDetailPanel,
         updateCell,

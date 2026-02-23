@@ -101,7 +101,7 @@ function ColumnTypeIcon({ type, className }: { type?: string; className?: string
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export function RowDetailPanel() {
-  const { data, columns, selectedRowId, isDetailPanelOpen, closeDetailPanel, updateCell, user } = useSheet();
+  const { data, columns, selectedRowId, isDetailPanelOpen, detailPanelTab, closeDetailPanel, updateCell, user } = useSheet();
 
   const selectedRow = data.find(r => r.id === selectedRowId);
 
@@ -135,7 +135,7 @@ export function RowDetailPanel() {
           This remounts the entire tab tree (including Radix's internal state) when the
           selected row changes, resetting both the active tab and all uncontrolled inputs.
         */}
-        <Tabs key={selectedRowId ?? 'none'} defaultValue="fields" onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
+        <Tabs key={`${selectedRowId}-${detailPanelTab}`} defaultValue={detailPanelTab} onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 border-b bg-muted/20 shrink-0">
             <TabsList className="bg-transparent h-12 gap-4">
               <TabsTrigger

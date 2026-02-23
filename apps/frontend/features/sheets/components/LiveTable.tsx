@@ -30,10 +30,12 @@ import {
   ClipboardPaste,
   Eraser,
   MessageSquare,
+  Paperclip,
+  History,
 } from "lucide-react"
 
 // Fixed width of the row-meta column (number + actions)
-const ROW_META_WIDTH = 64
+const ROW_META_WIDTH = 96
 
 interface LiveTableProps {
   documentId?: string
@@ -201,26 +203,52 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                         >
                             {/* Row meta: number + actions */}
                             <div
-                                className="flex-none border-r flex items-center justify-between px-1.5 min-h-[40px] gap-1 bg-background/50"
+                                className="flex-none border-r flex items-center px-1.5 min-h-[40px] gap-0.5 bg-background/50"
                                 style={{ width: ROW_META_WIDTH }}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <span className="text-xs text-muted-foreground tabular-nums select-none w-5 text-right shrink-0">
+                                {/* Row number — always visible */}
+                                <span className="text-xs text-muted-foreground tabular-nums select-none w-5 text-right shrink-0 mr-0.5">
                                     {virtualRow.index + 1}
                                 </span>
-                                <RowActionsMenu
-                                    rowId={row.original.id}
-                                    copiedRow={copiedRow}
-                                    onCut={() => cutRow(row.original.id)}
-                                    onCopy={() => copyRow(row.original.id)}
-                                    onPaste={() => pasteRowAfter(row.original.id)}
-                                    onClear={() => clearRowCells(row.original.id)}
-                                    onInsertAbove={() => insertRowAbove(row.original.id)}
-                                    onInsertBelow={() => addRow({ id: crypto.randomUUID(), parentId: null }, row.original.id)}
-                                    onDelete={() => deleteRow(row.original.id)}
-                                    onDuplicate={() => duplicateRow(row.original.id)}
-                                    onComment={() => openDetailPanel(row.original.id)}
-                                />
+
+                                {/* Hover-revealed action icons */}
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <RowActionsMenu
+                                        rowId={row.original.id}
+                                        copiedRow={copiedRow}
+                                        onCut={() => cutRow(row.original.id)}
+                                        onCopy={() => copyRow(row.original.id)}
+                                        onPaste={() => pasteRowAfter(row.original.id)}
+                                        onClear={() => clearRowCells(row.original.id)}
+                                        onInsertAbove={() => insertRowAbove(row.original.id)}
+                                        onInsertBelow={() => addRow({ id: crypto.randomUUID(), parentId: null }, row.original.id)}
+                                        onDelete={() => deleteRow(row.original.id)}
+                                        onDuplicate={() => duplicateRow(row.original.id)}
+                                        onComment={() => openDetailPanel(row.original.id)}
+                                    />
+                                    <button
+                                        className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        onClick={() => openDetailPanel(row.original.id, 'chat')}
+                                        aria-label="Open chat"
+                                    >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        onClick={() => openDetailPanel(row.original.id, 'files')}
+                                        aria-label="Open files"
+                                    >
+                                        <Paperclip className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        onClick={() => openDetailPanel(row.original.id, 'history')}
+                                        aria-label="Open history"
+                                    >
+                                        <History className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Data cells */}
@@ -426,7 +454,7 @@ function EditableCell({
             <input
                 type="date"
                 aria-label={t('grid.edit_date', 'Edit date value')}
-                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
+                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
                 style={inputStyle}
                 value={value ?? ''}
                 onChange={e => {
