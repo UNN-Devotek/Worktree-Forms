@@ -7,6 +7,7 @@ const _parsed = _redisUrl ? new URL(_redisUrl) : null;
 const connection = {
   host: _parsed?.hostname || process.env.REDIS_HOST || 'redis',
   port: _parsed ? parseInt(_parsed.port || '6379') : parseInt(process.env.REDIS_PORT || '6379'),
+  ...(_parsed?.password ? { password: decodeURIComponent(_parsed.password) } : {}),
 };
 
 new Worker('webhooks', async (job) => {

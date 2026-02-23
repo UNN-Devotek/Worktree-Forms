@@ -1,8 +1,4 @@
 /** @type {import('next').NextConfig} */
-// Force restart
-const createNextIntlPlugin = require('next-intl/plugin');
-const withNextIntl = createNextIntlPlugin('./i18n.ts');
-
 const nextConfig = {
   reactStrictMode: true,
   turbopack: {
@@ -80,4 +76,4 @@ const nextConfig = {
   transpilePackages: ['react-pdf', 'pdfjs-dist'],
 };
 
-module.exports = withNextIntl(nextConfig);
+module.exports = nextConfig;
