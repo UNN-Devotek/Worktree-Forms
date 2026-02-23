@@ -108,7 +108,8 @@ export function RowDetailPanel() {
   // Track active tab for runtime-conditional styling (avoids aria-selected: Tailwind
   // variants which trigger a Turbopack CSS parser bug on button elements)
   const [activeRowTab, setActiveRowTab] = useState('fields');
-  useEffect(() => { setActiveRowTab('fields'); }, [selectedRowId]);
+  // Sync whenever the requested tab or selected row changes
+  useEffect(() => { setActiveRowTab(detailPanelTab); }, [detailPanelTab, selectedRowId]);
 
   // Finding #12 (R3): sanitize rowId for use as a Yjs key component.
   // Yjs keys are arbitrary strings, but we use a convention of `row-{id}-{suffix}`.
@@ -135,7 +136,7 @@ export function RowDetailPanel() {
           This remounts the entire tab tree (including Radix's internal state) when the
           selected row changes, resetting both the active tab and all uncontrolled inputs.
         */}
-        <Tabs key={`${selectedRowId}-${detailPanelTab}`} defaultValue={detailPanelTab} onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
+        <Tabs key={selectedRowId ?? 'none'} value={activeRowTab} onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 border-b bg-muted/20 shrink-0">
             <TabsList className="bg-transparent h-12 gap-4">
               <TabsTrigger
