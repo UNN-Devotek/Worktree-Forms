@@ -78,6 +78,14 @@ interface SheetContextType {
   hideColumn: (columnId: string) => void;
   unhideAllColumns: () => void;
   updateColumnWidth: (columnId: string, width: number) => void;
+
+  // Bulk selection for formatting
+  selectedColumnId: string | null;
+  setSelectedColumnId: (id: string | null) => void;
+  selectedFormattingRowId: string | null;
+  setSelectedFormattingRowId: (id: string | null) => void;
+  applyColumnStyle: (columnId: string, style: Partial<CellStyleConfig>) => void;
+  applyRowStyle: (rowId: string, style: Partial<CellStyleConfig>) => void;
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -117,6 +125,8 @@ export function SheetProvider({
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
   const [copiedRow, setCopiedRow] = useState<CopiedRowState | null>(null);
   const [isCut, setIsCut] = useState(false);
+  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
+  const [selectedFormattingRowId, setSelectedFormattingRowId] = useState<string | null>(null);
 
   // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
   const openDetailPanel = useCallback((rowId: string, tab = 'fields') => {
@@ -498,6 +508,40 @@ export function SheetProvider({
     });
   }, [doc]);
 
+  // Apply a style to every cell in a column (all current rows).
+  const applyColumnStyle = useCallback((columnId: string, style: Partial<CellStyleConfig>) => {
+    if (!doc) return;
+    const cellsMap = doc.getMap('cells');
+    const yRows = doc.getMap('rows');
+    const yOrder = doc.getArray('order');
+    const order = yOrder.toArray() as string[];
+    doc.transact(() => {
+      for (const rowId of order) {
+        if (!yRows.get(rowId)) continue;
+        const key = getCellStyleKey(rowId, columnId);
+        const cell = cellsMap.get(key) as any;
+        const existing = cell?.style || {};
+        cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
+      }
+    });
+  }, [doc]);
+
+  // Apply a style to every cell in a row (all visible columns).
+  const applyRowStyle = useCallback((rowId: string, style: Partial<CellStyleConfig>) => {
+    if (!doc) return;
+    const cellsMap = doc.getMap('cells');
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<{ id: string }>;
+    doc.transact(() => {
+      for (const col of cols) {
+        const key = getCellStyleKey(rowId, col.id);
+        const cell = cellsMap.get(key) as any;
+        const existing = cell?.style || {};
+        cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
+      }
+    });
+  }, [doc]);
+
   // Finding #1 (R9): Map toolbar keys to CellStyleConfig property names.
   // Previously wrote `{ bold: true }` but getCellStyle reads `fontWeight`.
   const STYLE_KEY_MAP: Record<'bold' | 'italic' | 'strike', { prop: keyof CellStyleConfig; on: string; off: string }> = {
@@ -507,25 +551,41 @@ export function SheetProvider({
   };
 
   const toggleCellStyle = useCallback((styleKey: 'bold' | 'italic' | 'strike') => {
-    if (!doc || !focusedCell) return;
+    if (!doc) return;
+    if (!focusedCell && !selectedColumnId && !selectedFormattingRowId) return;
 
     const { prop, on, off } = STYLE_KEY_MAP[styleKey];
-    const cellKey = `${focusedCell.rowId}:${focusedCell.columnId}`;
-    const cellsMap = doc.getMap('cells');
-    const current = cellsMap.get(cellKey) as any;
-    const currentStyle = current?.style || {};
-    const isActive = currentStyle[prop] === on;
 
-    doc.transact(() => {
-      const cell = cellsMap.get(cellKey) as any;
-      const newStyle = { ...(cell?.style || {}), [prop]: isActive ? off : on };
-      if (cell) {
-        cellsMap.set(cellKey, { ...cell, style: newStyle });
-      } else {
-        cellsMap.set(cellKey, { value: null, type: 'TEXT', style: newStyle });
-      }
-    });
-  }, [doc, focusedCell]);
+    if (focusedCell) {
+      const cellKey = `${focusedCell.rowId}:${focusedCell.columnId}`;
+      const cellsMap = doc.getMap('cells');
+      const current = cellsMap.get(cellKey) as any;
+      const currentStyle = current?.style || {};
+      const isActive = currentStyle[prop] === on;
+      doc.transact(() => {
+        const cell = cellsMap.get(cellKey) as any;
+        const newStyle = { ...(cell?.style || {}), [prop]: isActive ? off : on };
+        cellsMap.set(cellKey, cell ? { ...cell, style: newStyle } : { value: null, type: 'TEXT', style: newStyle });
+      });
+    } else if (selectedColumnId) {
+      // Read current state from first row to determine toggle direction
+      const cellsMap = doc.getMap('cells');
+      const yOrder = doc.getArray('order');
+      const firstRowId = (yOrder.toArray() as string[])[0];
+      const firstKey = firstRowId ? `${firstRowId}:${selectedColumnId}` : null;
+      const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
+      const isActive = firstCell?.style?.[prop] === on;
+      applyColumnStyle(selectedColumnId, { [prop]: isActive ? off : on } as any);
+    } else if (selectedFormattingRowId) {
+      const cellsMap = doc.getMap('cells');
+      const yColumns = doc.getArray('columns');
+      const firstCol = (yColumns.toArray() as Array<{ id: string }>)[0];
+      const firstKey = firstCol ? `${selectedFormattingRowId}:${firstCol.id}` : null;
+      const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
+      const isActive = firstCell?.style?.[prop] === on;
+      applyRowStyle(selectedFormattingRowId, { [prop]: isActive ? off : on } as any);
+    }
+  }, [doc, focusedCell, selectedColumnId, selectedFormattingRowId, applyColumnStyle, applyRowStyle]);
 
   // Finding #9 (R3): sortRows now preserves hierarchy.
   // Previously it sorted the flat order array, breaking parent-child grouping.
@@ -861,6 +921,13 @@ export function SheetProvider({
         hideColumn,
         unhideAllColumns,
         updateColumnWidth,
+        // Bulk selection
+        selectedColumnId,
+        setSelectedColumnId,
+        selectedFormattingRowId,
+        setSelectedFormattingRowId,
+        applyColumnStyle,
+        applyRowStyle,
       }}>
 
         {children}

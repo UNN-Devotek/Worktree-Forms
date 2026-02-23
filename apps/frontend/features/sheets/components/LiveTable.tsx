@@ -49,6 +49,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     updateCell,
     selectedRowId,
     openDetailPanel,
+    isDetailPanelOpen,
     copiedRow,
     isCut,
     focusedCell,
@@ -63,6 +64,10 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     copyRow,
     cutRow,
     pasteRowAfter,
+    selectedColumnId,
+    setSelectedColumnId,
+    selectedFormattingRowId,
+    setSelectedFormattingRowId,
   } = useSheet()
 
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -73,7 +78,10 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
       blurTimerRef.current = null
     }
     setFocusedCell({ rowId, columnId })
-  }, [setFocusedCell])
+    // Clicking into a cell clears bulk selections
+    setSelectedColumnId(null)
+    setSelectedFormattingRowId(null)
+  }, [setFocusedCell, setSelectedColumnId, setSelectedFormattingRowId])
 
   const handleCellBlur = useCallback(() => {
     blurTimerRef.current = setTimeout(() => {
@@ -133,6 +141,28 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     overscan: 5,
   })
 
+  // Remeasure rows after the side panel opens/closes — the container width
+  // changes during the panel animation, causing row heights to shift (text
+  // wrapping changes) which leaves the virtualizer's cached positions stale.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      rowVirtualizer.measure()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [isDetailPanelOpen, rowVirtualizer])
+
+  // Clear bulk column/row selection on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedColumnId(null)
+        setSelectedFormattingRowId(null)
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [setSelectedColumnId, setSelectedFormattingRowId])
+
   return (
     <div ref={parentRef} className={cn("h-full w-full overflow-auto border rounded-md relative", containerClassName)}>
         {/* Sticky Header */}
@@ -147,8 +177,20 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                     {headerGroup.headers.map((header) => (
                         <ColumnContextMenu key={header.id} columnId={header.column.id}>
                             <div
-                                 className="relative h-10 px-4 flex items-center font-medium text-muted-foreground border-r select-none"
-                                 style={{ width: header.getSize() }}>
+                                 className={cn(
+                                   "relative h-10 px-4 flex items-center font-medium text-muted-foreground border-r select-none cursor-pointer transition-colors",
+                                   selectedColumnId === header.column.id
+                                     ? "bg-primary/15 text-primary outline outline-2 outline-primary outline-offset-[-1px] z-10"
+                                     : "hover:bg-muted/50"
+                                 )}
+                                 style={{ width: header.getSize() }}
+                                 onClick={() => {
+                                   setSelectedColumnId(
+                                     selectedColumnId === header.column.id ? null : header.column.id
+                                   )
+                                   setSelectedFormattingRowId(null)
+                                   setFocusedCell(null)
+                                 }}>
                                 {header.isPlaceholder
                                     ? null
                                     : flexRender(
@@ -192,7 +234,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                             className={cn(
                                 "flex absolute w-full border-b items-stretch cursor-pointer transition-colors group",
                                 "hover:bg-muted/50",
-                                row.original.id === selectedRowId && "bg-muted border-l-2 border-l-primary",
+                                row.original.id === selectedRowId && "bg-muted shadow-[inset_2px_0_0_hsl(var(--primary))]",
                                 isRowCut && "opacity-50 border-dashed"
                             )}
                             style={{
@@ -203,12 +245,30 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                         >
                             {/* Row meta: number + actions */}
                             <div
-                                className="flex-none border-r flex items-center px-1.5 min-h-[40px] gap-0.5 bg-background/50"
+                                className={cn(
+                                  "flex-none border-r flex items-center px-1.5 min-h-[40px] gap-0.5 transition-colors",
+                                  selectedFormattingRowId === row.original.id
+                                    ? "bg-primary/15 outline outline-2 outline-primary outline-offset-[-1px] z-10"
+                                    : "bg-background/50"
+                                )}
                                 style={{ width: ROW_META_WIDTH }}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                {/* Row number — always visible */}
-                                <span className="text-xs text-muted-foreground tabular-nums select-none w-5 text-right shrink-0 mr-0.5">
+                                {/* Row number — click to select entire row for formatting */}
+                                <span
+                                  className={cn(
+                                    "text-xs tabular-nums select-none w-5 text-right shrink-0 mr-0.5 cursor-pointer rounded px-0.5 hover:bg-primary/20 transition-colors",
+                                    selectedFormattingRowId === row.original.id
+                                      ? "text-primary font-semibold"
+                                      : "text-muted-foreground"
+                                  )}
+                                  onClick={() => {
+                                    const newId = selectedFormattingRowId === row.original.id ? null : row.original.id
+                                    setSelectedFormattingRowId(newId)
+                                    setSelectedColumnId(null)
+                                    setFocusedCell(null)
+                                  }}
+                                >
                                     {virtualRow.index + 1}
                                 </span>
 
@@ -257,13 +317,16 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                 const isFocused =
                                     focusedCell?.rowId === row.original.id &&
                                     focusedCell?.columnId === colId
+                                const isColSelected = selectedColumnId === colId
+                                const isRowSelected = selectedFormattingRowId === row.original.id
 
                                 return (
                                     <div
                                         key={cell.id}
                                         className={cn(
-                                            "px-2 border-r flex items-center relative min-h-[40px]",
-                                            isFocused && "outline outline-2 outline-primary outline-offset-[-1px] z-10"
+                                            "px-2 border-r flex items-center relative min-h-[40px] transition-colors",
+                                            (isFocused || isColSelected || isRowSelected) && "outline outline-2 outline-primary outline-offset-[-1px] z-10",
+                                            (isColSelected || isRowSelected) && "bg-primary/10"
                                         )}
                                         style={{ width: cell.column.getSize() }}
                                         onClick={(e) => e.stopPropagation()}

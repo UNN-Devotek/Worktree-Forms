@@ -12,23 +12,35 @@ interface WrapToggleProps {
 }
 
 export function WrapToggle({ className }: WrapToggleProps) {
-  const { focusedCell, getCellStyle, applyCellStyle } = useSheet();
-  
-  const currentStyle = focusedCell 
-    ? getCellStyle(focusedCell.rowId, focusedCell.columnId) 
-    : null;
-  
+  const {
+    focusedCell, getCellStyle, applyCellStyle,
+    selectedColumnId, selectedFormattingRowId,
+    applyColumnStyle, applyRowStyle,
+    data, columns,
+  } = useSheet();
+
+  const currentStyle = (() => {
+    if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
+    if (selectedColumnId && data[0]) return getCellStyle(data[0].id, selectedColumnId);
+    if (selectedFormattingRowId && columns[0]) return getCellStyle(selectedFormattingRowId, columns[0].id);
+    return null;
+  })();
+
   const isWrapped = currentStyle?.wrap === true;
-  
+
   const handleToggleWrap = () => {
-    if (!focusedCell) return;
-    applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
-      wrap: !isWrapped,
-    });
+    const style = { wrap: !isWrapped };
+    if (focusedCell) {
+      applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
+    } else if (selectedColumnId) {
+      applyColumnStyle(selectedColumnId, style);
+    } else if (selectedFormattingRowId) {
+      applyRowStyle(selectedFormattingRowId, style);
+    }
   };
-  
-  const isDisabled = !focusedCell;
-  
+
+  const isDisabled = !focusedCell && !selectedColumnId && !selectedFormattingRowId;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>

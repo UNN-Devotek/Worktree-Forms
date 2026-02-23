@@ -28,6 +28,9 @@ import { ColumnManagerDialog } from '../controls/ColumnManagerDialog';
 import { useSheet } from '../../providers/SheetProvider';
 import { t } from '@/lib/i18n';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ShareModal } from '../modals/ShareModal';
+import { ImportExportControls } from '../ImportExportControls';
+import { exportToCsv, exportToExcel } from '@/lib/import-export.utils';
 import {
   Popover,
   PopoverContent,
@@ -61,7 +64,7 @@ interface SearchResult {
 }
 
 export function SheetToolbar({ title }: SheetToolbarProps) {
-  const { addRow, indentRow, outdentRow, selectedRowId, activeView, setActiveView, doc, setFocusedCell, focusedCell, columns } = useSheet();
+  const { addRow, indentRow, outdentRow, selectedRowId, activeView, setActiveView, doc, setFocusedCell, focusedCell, columns, data, setSelectedColumnId, setSelectedFormattingRowId } = useSheet();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -179,10 +182,38 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
 
   const handleSettingsChange = (newSettings: SheetSettings) => {
     setSettings(newSettings);
-    // TODO: Apply settings (e.g., update column widths, row heights)
-    // TODO: Consider persisting to localStorage
     console.log('Settings updated:', newSettings);
   };
+
+  const handleImport = useCallback((rows: any[]) => {
+    for (const importedRow of rows) {
+      const newRow: any = { id: crypto.randomUUID(), parentId: null };
+      for (const col of columns) {
+        const label = col.label || col.id;
+        if (importedRow[label] !== undefined) {
+          newRow[col.id] = importedRow[label];
+        }
+      }
+      addRow(newRow);
+    }
+    setSelectedColumnId(null);
+    setSelectedFormattingRowId(null);
+  }, [columns, addRow, setSelectedColumnId, setSelectedFormattingRowId]);
+
+  const handleExport = useCallback((type: 'csv' | 'excel') => {
+    const exportData = data.map((row: any) => {
+      const exported: any = {};
+      for (const col of columns) {
+        exported[col.label || col.id] = row[col.id] ?? '';
+      }
+      return exported;
+    });
+    if (type === 'csv') {
+      exportToCsv(exportData, title || 'sheet');
+    } else {
+      exportToExcel(exportData, title || 'sheet');
+    }
+  }, [data, columns, title]);
 
   return (
     <TooltipProvider>
@@ -362,14 +393,14 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
-          <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
-            <Share2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs">{t('toolbar.share', 'Share')}</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
-            <Download className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs">{t('toolbar.export', 'Export')}</span>
-          </Button>
+          <ShareModal>
+            <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
+              <Share2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs">{t('toolbar.share', 'Share')}</span>
+            </Button>
+          </ShareModal>
+
+          <ImportExportControls onImport={handleImport} onExport={handleExport} />
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 

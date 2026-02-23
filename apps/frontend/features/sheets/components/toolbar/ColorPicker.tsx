@@ -30,20 +30,32 @@ const PRESET_COLORS = [
 ];
 
 export function ColorPicker({ className }: ColorPickerProps) {
-  const { focusedCell, getCellStyle, applyCellStyle } = useSheet();
+  const {
+    focusedCell, getCellStyle, applyCellStyle,
+    selectedColumnId, selectedFormattingRowId,
+    applyColumnStyle, applyRowStyle,
+    data, columns,
+  } = useSheet();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentStyle = focusedCell
-    ? getCellStyle(focusedCell.rowId, focusedCell.columnId)
-    : null;
+  const currentStyle = (() => {
+    if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
+    if (selectedColumnId && data[0]) return getCellStyle(data[0].id, selectedColumnId);
+    if (selectedFormattingRowId && columns[0]) return getCellStyle(selectedFormattingRowId, columns[0].id);
+    return null;
+  })();
 
   const currentColor = currentStyle?.color || '#000000';
 
   const handleColorChange = (color: string) => {
-    if (!focusedCell) return;
-    applyCellStyle(focusedCell.rowId, focusedCell.columnId, {
-      color,
-    });
+    const style = { color };
+    if (focusedCell) {
+      applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
+    } else if (selectedColumnId) {
+      applyColumnStyle(selectedColumnId, style);
+    } else if (selectedFormattingRowId) {
+      applyRowStyle(selectedFormattingRowId, style);
+    }
   };
 
   const handlePresetClick = (color: string) => {
@@ -51,7 +63,7 @@ export function ColorPicker({ className }: ColorPickerProps) {
     setIsOpen(false);
   };
 
-  const isDisabled = !focusedCell;
+  const isDisabled = !focusedCell && !selectedColumnId && !selectedFormattingRowId;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

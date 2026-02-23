@@ -35,9 +35,9 @@ export function ColumnManagerDialog() {
     // Two columns named "Due Date" no longer overwrite each other.
     addColumn({
       id: `col_${crypto.randomUUID().slice(0, 8)}`,
-      header: name.trim(),
+      label: name.trim(),
       type: type,
-      size: 150,
+      width: 150,
     });
     
     setName('');
