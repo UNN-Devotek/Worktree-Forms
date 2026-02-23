@@ -52,6 +52,10 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache openssl
 
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs appuser
+
 # Install PM2 globally
 RUN npm install -g pm2
 
@@ -69,6 +73,10 @@ COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
 # Copy PM2 config
 COPY ecosystem.config.js .
+
+# Set ownership and switch to non-root user
+RUN chown -R appuser:nodejs /app
+USER appuser
 
 # Expose ports
 EXPOSE 3005 5005
