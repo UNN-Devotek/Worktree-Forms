@@ -35,7 +35,7 @@ import {
 } from "lucide-react"
 
 // Fixed width of the row-meta column (number + actions)
-const ROW_META_WIDTH = 96
+const ROW_META_WIDTH = 140
 
 interface LiveTableProps {
   documentId?: string
