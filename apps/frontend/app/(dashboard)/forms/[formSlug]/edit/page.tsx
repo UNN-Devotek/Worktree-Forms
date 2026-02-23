@@ -9,9 +9,6 @@ import { ApiResponse } from '@/types/api'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-// Hardcoded group ID for now, as per NewFormPage
-const DEFAULT_GROUP_ID = 1
-
 export default function EditFormPage() {
   const params = useParams()
   const router = useRouter()
@@ -24,27 +21,19 @@ export default function EditFormPage() {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        // Since we don't have a direct slug endpoint confirmed, we fetch all forms for the group
-        // and find the matching one.
-        const response = await apiClient<ApiResponse<{ forms: GroupForm[] }>>(
-          `/api/groups/${DEFAULT_GROUP_ID}/forms`
+        const response = await apiClient<ApiResponse<GroupForm>>(
+          `/api/forms?slug=${encodeURIComponent(formSlug)}`
         )
 
         if (response.success && response.data) {
-          const foundForm = response.data.forms.find(f => f.slug === formSlug)
-          
-          if (foundForm) {
-            setForm(foundForm)
-          } else {
-            toast({
-              title: "Form not found",
-              description: "The requested form could not be found.",
-              variant: "destructive"
-            })
-            router.push('/forms')
-          }
+          setForm(response.data)
         } else {
-            throw new Error(response.error || "Failed to fetch forms")
+          toast({
+            title: "Form not found",
+            description: "The requested form could not be found.",
+            variant: "destructive"
+          })
+          router.push('/forms')
         }
       } catch (error) {
         console.error('Error fetching form:', error)
@@ -77,7 +66,7 @@ export default function EditFormPage() {
 
   return (
     <FormBuilderLayout
-      groupId={DEFAULT_GROUP_ID}
+      groupId={form.group_id}
       formId={form.id}
       formSlug={form.slug}
       formTitle={form.title}

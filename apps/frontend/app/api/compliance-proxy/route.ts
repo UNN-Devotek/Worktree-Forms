@@ -1,34 +1,28 @@
 
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-    const session = await auth();
-    if (!session || !session.user) {
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${process.env.BACKEND_PORT || 5100}`;
+
+export async function POST(req: NextRequest) {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { insuranceUrl } = await req.json();
+    const body = await req.json();
 
-    // Call Backend
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:5005";
-    
     try {
-        const res = await fetch(`${backendUrl}/api/users/compliance`, {
+        const res = await fetch(`${BACKEND_URL}/api/users/compliance`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-user-id': session.user.id || '' // Fallback to empty string or handle error
+                'Authorization': authHeader,
             },
-            body: JSON.stringify({ insuranceUrl })
+            body: JSON.stringify(body),
         });
 
-        if (!res.ok) {
-            throw new Error(`Backend error: ${res.statusText}`);
-        }
-
         const data = await res.json();
-        return NextResponse.json(data);
+        return NextResponse.json(data, { status: res.status });
     } catch (e: any) {
         console.error("Proxy Error:", e);
         return NextResponse.json({ error: e.message }, { status: 500 });
