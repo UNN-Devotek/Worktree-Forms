@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef } from "react"
+import React, { useMemo, useRef, useCallback } from "react"
 import { t } from "@/lib/i18n"
 import {
   ColumnDef,
@@ -21,7 +21,35 @@ interface LiveTableProps {
 }
 
 export function LiveTable({ containerClassName }: LiveTableProps) {
-  const { data, columns, updateCell, selectedRowId, openDetailPanel, copiedRow, isCut } = useSheet()
+  const {
+    data,
+    columns,
+    updateCell,
+    selectedRowId,
+    openDetailPanel,
+    copiedRow,
+    isCut,
+    focusedCell,
+    setFocusedCell,
+    getCellStyle,
+  } = useSheet()
+
+  // Delay clearing focusedCell so toolbar button clicks register before blur fires
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleCellFocus = useCallback((rowId: string, columnId: string) => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current)
+      blurTimerRef.current = null
+    }
+    setFocusedCell({ rowId, columnId })
+  }, [setFocusedCell])
+
+  const handleCellBlur = useCallback(() => {
+    blurTimerRef.current = setTimeout(() => {
+      setFocusedCell(null)
+    }, 200)
+  }, [setFocusedCell])
 
   const tableColumns = useMemo<ColumnDef<any>[]>(
     () => {
@@ -33,18 +61,22 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
             size: col.width || 120,
             cell: ({ row, getValue }: any) => {
                 const initialValue = getValue()
-                // Finding #9 (R8): pass column type for type-aware rendering
                 return (
-                    <EditableCell 
-                        initialValue={initialValue} 
+                    <EditableCell
+                        rowId={row.original.id}
+                        columnId={col.id}
+                        initialValue={initialValue}
                         onChange={(val) => updateCell(row.original.id, col.id, val)}
                         columnType={col.type}
+                        onFocus={handleCellFocus}
+                        onBlur={handleCellBlur}
+                        getCellStyle={getCellStyle}
                     />
                 )
             }
         }))
     },
-    [columns, updateCell]
+    [columns, updateCell, handleCellFocus, handleCellBlur, getCellStyle]
   )
 
   const table = useReactTable({
@@ -55,7 +87,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
 
   // Virtualization
   const parentRef = useRef<HTMLDivElement>(null)
-  
+
   const rowVirtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,
@@ -88,7 +120,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
         </div>
 
         {/* Virtualized Body */}
-        <div 
+        <div
             className="relative w-full"
             style={{
                 height: `${rowVirtualizer.getTotalSize()}px`,
@@ -97,7 +129,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const row = table.getRowModel().rows[virtualRow.index]
                 if (!row) return null
-                
+
                 const isRowCut = isCut && copiedRow?.id === row.original.id;
 
                 return (
@@ -117,14 +149,26 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                             }}
                             onClick={() => openDetailPanel(row.original.id)}
                         >
-                            {row.getVisibleCells().map((cell) => (
-                                <div key={cell.id}
-                                     className="px-2 border-r h-full flex items-center"
-                                     style={{ width: cell.column.getSize() }}
-                                     onClick={(e) => e.stopPropagation()}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </div>
-                            ))}
+                            {row.getVisibleCells().map((cell) => {
+                                const colId = cell.column.id
+                                const isFocused =
+                                    focusedCell?.rowId === row.original.id &&
+                                    focusedCell?.columnId === colId
+
+                                return (
+                                    <div
+                                        key={cell.id}
+                                        className={cn(
+                                            "px-2 border-r h-full flex items-center relative",
+                                            isFocused && "outline outline-2 outline-primary outline-offset-[-1px] z-10"
+                                        )}
+                                        style={{ width: cell.column.getSize() }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </div>
+                                )
+                            })}
                         </div>
                     </CellContextMenu>
                 )
@@ -134,7 +178,27 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
   )
 }
 
-function EditableCell({ initialValue, onChange, columnType }: { initialValue: any, onChange: (val: any) => void, columnType?: string }) {
+interface EditableCellProps {
+  rowId: string
+  columnId: string
+  initialValue: any
+  onChange: (val: any) => void
+  columnType?: string
+  onFocus: (rowId: string, columnId: string) => void
+  onBlur: () => void
+  getCellStyle: (rowId: string, columnId: string) => any
+}
+
+function EditableCell({
+  rowId,
+  columnId,
+  initialValue,
+  onChange,
+  columnType,
+  onFocus,
+  onBlur,
+  getCellStyle,
+}: EditableCellProps) {
     const [value, setValue] = React.useState(initialValue)
 
     // Sync from props if external change
@@ -142,13 +206,26 @@ function EditableCell({ initialValue, onChange, columnType }: { initialValue: an
         setValue(initialValue)
     }, [initialValue])
 
-    const onBlur = () => {
+    const handleBlur = () => {
         if (value !== initialValue) {
             onChange(value)
         }
+        onBlur()
     }
 
-    // Finding #9 (R8): render type-aware inputs instead of always plain text
+    const cellStyle = getCellStyle(rowId, columnId)
+    const inputStyle: React.CSSProperties = {
+        fontWeight: cellStyle.fontWeight === 'bold' ? 'bold' : 'normal',
+        fontStyle: cellStyle.fontStyle === 'italic' ? 'italic' : 'normal',
+        textDecoration: cellStyle.textDecoration === 'none' || !cellStyle.textDecoration
+            ? 'none'
+            : cellStyle.textDecoration,
+        textAlign: cellStyle.textAlign || 'left',
+        color: cellStyle.color || undefined,
+        backgroundColor: cellStyle.backgroundColor || undefined,
+        whiteSpace: cellStyle.wrap ? 'pre-wrap' : undefined,
+    }
+
     if (columnType === 'CHECKBOX') {
         return (
             <input
@@ -160,6 +237,8 @@ function EditableCell({ initialValue, onChange, columnType }: { initialValue: an
                     setValue(e.target.checked)
                     onChange(e.target.checked)
                 }}
+                onFocus={() => onFocus(rowId, columnId)}
+                onBlur={onBlur}
             />
         )
     }
@@ -170,9 +249,11 @@ function EditableCell({ initialValue, onChange, columnType }: { initialValue: an
                 type="number"
                 aria-label={t('grid.edit_number', 'Edit number value')}
                 className="w-full h-full bg-transparent outline-none border-none p-1 text-right"
+                style={inputStyle}
                 value={value ?? ''}
                 onChange={e => setValue(e.target.value === '' ? '' : Number(e.target.value))}
-                onBlur={onBlur}
+                onFocus={() => onFocus(rowId, columnId)}
+                onBlur={handleBlur}
             />
         )
     }
@@ -183,11 +264,14 @@ function EditableCell({ initialValue, onChange, columnType }: { initialValue: an
                 type="date"
                 aria-label={t('grid.edit_date', 'Edit date value')}
                 className="w-full h-full bg-transparent outline-none border-none p-1"
+                style={inputStyle}
                 value={value ?? ''}
                 onChange={e => {
                     setValue(e.target.value)
                     onChange(e.target.value)
                 }}
+                onFocus={() => onFocus(rowId, columnId)}
+                onBlur={handleBlur}
             />
         )
     }
@@ -196,9 +280,11 @@ function EditableCell({ initialValue, onChange, columnType }: { initialValue: an
         <input
             aria-label={t('grid.edit_cell', 'Edit cell value')}
             className="w-full h-full bg-transparent outline-none border-none p-1"
+            style={inputStyle}
             value={value ?? ''}
             onChange={e => setValue(e.target.value)}
-            onBlur={onBlur}
+            onFocus={() => onFocus(rowId, columnId)}
+            onBlur={handleBlur}
         />
     )
 }
