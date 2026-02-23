@@ -95,6 +95,7 @@ model Project {
   // FinOps & Usage
   plan            String @default("FREE")
   storageUsage    BigInt @default(0)
+  storageLimit    BigInt @default(5368709120) // 5GB default in bytes
   submissionCount Int    @default(0)
 
   createdAt        DateTime          @default(now())

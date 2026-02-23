@@ -13,6 +13,10 @@ import { contextMiddleware } from './middleware/context.middleware.js';
 import { csrfMiddleware } from './middleware/csrf.middleware.js';
 import { authenticate } from './middleware/authenticate.js';
 
+// Background job workers
+import './jobs/workers/file-rename.worker.js';
+import './jobs/workers/webhook-delivery.worker.js';
+
 // Route Imports
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/users.routes.js';

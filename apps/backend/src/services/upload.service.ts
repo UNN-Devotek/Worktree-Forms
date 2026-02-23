@@ -1,8 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { StorageService } from '../storage.js';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db.js';
 
 export interface FileUploadRecord {
   id: string;
@@ -68,6 +66,30 @@ export class UploadService {
       console.error(`❌ UploadService error:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Upload a pre-processed file with explicit objectKey
+   */
+  static async uploadFileRaw(
+    file: { buffer: Buffer; filename: string; mimetype: string; size: number; objectKey: string },
+    uploadedBy?: string,
+  ): Promise<FileUploadRecord> {
+    await StorageService.ensureBucket();
+    await StorageService.uploadFile(file.objectKey, file.buffer, file.mimetype);
+
+    const fileRecord = await prisma.fileUpload.create({
+      data: {
+        objectKey: file.objectKey,
+        filename: file.filename,
+        contentType: file.mimetype,
+        size: file.size,
+        folder: file.objectKey.split('/')[0],
+        uploadedBy: uploadedBy || null,
+      }
+    });
+
+    return fileRecord;
   }
 
   /**
