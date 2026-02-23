@@ -125,7 +125,7 @@ export class SheetIntegrationService {
           token: jwt.sign(
             { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
             process.env.JWT_SECRET!,
-            { expiresIn: '5m' },
+            { algorithm: 'HS256', expiresIn: '5m' },
           ),
         },
         onConnect: () => {
