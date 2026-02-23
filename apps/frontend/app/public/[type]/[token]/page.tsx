@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Checking file later.
 
 async function getPublicResource(token: string) {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5005';
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.BACKEND_PORT || 5100}`;
     // Direct server-to-server call or public endpoint
     // Public endpoint is unauthenticated, so fetch directly
     try {
