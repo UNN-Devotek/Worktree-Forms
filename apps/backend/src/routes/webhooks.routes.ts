@@ -3,6 +3,16 @@ import { WebhookService } from '../services/webhook.service.js';
 import { EmailIngestionService } from '../services/email-ingestion.service.js';
 import { isAllowedWebhookUrl } from '../utils/url-validator.js';
 
+function sanitizeEmailField(value: unknown, maxLength: number): string {
+  const str = String(value ?? '').slice(0, maxLength);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 const router = Router();
 
 // ============================================
@@ -80,12 +90,18 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.post('/inbound-email', async (req: Request, res: Response) => {
     try {
       const { from, subject, text } = req.body;
-      
+
       if (!from || !subject) {
           return res.status(400).json({ error: 'Missing from or subject' });
       }
-  
-      const result = await EmailIngestionService.processInboundEmail({ from, subject, text: text || '' });
+
+      const sanitized = {
+        from: sanitizeEmailField(from, 255),
+        subject: sanitizeEmailField(subject, 500),
+        text: sanitizeEmailField(text, 50000),
+      };
+
+      const result = await EmailIngestionService.processInboundEmail({ from: sanitized.from, subject: sanitized.subject, text: sanitized.text });
       res.json(result);
   
     } catch (error) {

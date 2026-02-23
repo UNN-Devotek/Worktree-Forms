@@ -253,10 +253,12 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
                 // [MIGRATION] Check for Field Renames in this update
                 const renames = MigrationService.detectRenames(currentForm.form_schema, updates.form_json);
                 if (Object.keys(renames).length > 0) {
-                     // Running async to not block
-                     MigrationService.migrateSubmissions(formId, renames).catch(err => 
-                        console.error('Migration failed:', err)
-                     );
+                    try {
+                        await MigrationService.migrateSubmissions(formId, renames);
+                    } catch (err) {
+                        console.error('Migration failed:', err);
+                        return res.status(500).json({ success: false, error: 'Schema migration failed' });
+                    }
                 }
                 
                 // Get max version
