@@ -59,24 +59,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleLogout = useCallback(() => {
-    // Clear storage
+    // Remove both keys: 'token' (legacy) and 'access_token' (current re-auth key)
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
-    
+
     // Reset state
     setUser(null);
     setShowTimeoutDialog(false);
     setIsSessionExpired(false);
     warningLevelRef.current = 0;
-    
+
     // Redirect
     router.push('/login');
-    
 
-  }, [router, toast]);
+  }, [router]);
 
-  const handleReLogin = async (e: React.FormEvent) => {
+  const handleReLogin = useCallback(async (e: React.FormEvent) => {
       e.preventDefault();
       if (isSubmitting) return;
       setAuthError('');
@@ -98,19 +97,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                   resetTimer();
                   return;
               }
+              setAuthError('Login failed. Unexpected server response.');
+              return;
           }
           setAuthError('Login failed. Please check your credentials.');
       } catch (err) {
           const message = err instanceof Error ? err.message : '';
           if (message.includes('timeout') || message.includes('connect') || message.includes('network')) {
-              setAuthError(message);
+              setAuthError('Network error. Please check your connection and try again.');
           } else {
               setAuthError('Invalid credentials. Please try again.');
           }
       } finally {
           setIsSubmitting(false);
       }
-  };
+  }, [email, password, isSubmitting, setUser, resetTimer]);
 
   useEffect(() => {
       // Pre-fill email/user if user exists
