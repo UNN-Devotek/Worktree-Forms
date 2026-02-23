@@ -107,7 +107,7 @@ export function PreviewModal({ open, onClose }: PreviewModalProps) {
                       value={key}
                       aria-label={conf.label}
                       title={conf.label}
-                      className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                      className={deviceType === key ? "bg-primary text-primary-foreground" : ""}
                     >
                       <Icon className="h-4 w-4" />
                     </ToggleGroupItem>

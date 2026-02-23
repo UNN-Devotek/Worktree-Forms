@@ -276,7 +276,6 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 - **Mobile App**: **Offline Sync**, Camera integration, Signature capture.
 - **Project Mgmt**: Dashboard (Metrics), Basic Route List.
 - **Security**: Standard Roles (Owner/Admin/Member), Private Links.
-- **Security**: Standard Roles (Owner/Admin/Member), Private Links.
 - **Deployment**: Docker Compose (Self-Hosted).
 - **Field Tools**: **RFIs** (Draft Mode), **Specs** (Text Search), **Schedule** (List View).
 
@@ -474,7 +473,10 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
     - **Caching:** Permission changes take effect on **Next Login** (Session Refreshed).
     - **Precedence:** Object Visibility (`Private`) > Role Permission (`Edit Sheet`).
 
-### 3.5 Intelligence & Automationt\*\*: Template-defined roles are strictly _Project Scoped_. Templates cannot define or modify Global System Roles to prevent privilege escalation.
+### 3.5 Intelligence & Automation
+
+> [!IMPORTANT]
+> Template-defined roles are strictly _Project Scoped_. Templates cannot define or modify Global System Roles to prevent privilege escalation.
 
 ### FR15: External Compliance & Access Gates
 

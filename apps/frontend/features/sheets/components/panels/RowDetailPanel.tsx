@@ -71,6 +71,11 @@ export function RowDetailPanel() {
 
   const selectedRow = data.find(r => r.id === selectedRowId);
 
+  // Track active tab for runtime-conditional styling (avoids aria-selected: Tailwind
+  // variants which trigger a Turbopack CSS parser bug on button elements)
+  const [activeRowTab, setActiveRowTab] = useState('fields');
+  useEffect(() => { setActiveRowTab('fields'); }, [selectedRowId]);
+
   // Finding #12 (R3): sanitize rowId for use as a Yjs key component.
   // Yjs keys are arbitrary strings, but we use a convention of `row-{id}-{suffix}`.
   // If rowId ever contains the literal string "-messages" or "-history" as a suffix,
@@ -96,33 +101,33 @@ export function RowDetailPanel() {
           This remounts the entire tab tree (including Radix's internal state) when the
           selected row changes, resetting both the active tab and all uncontrolled inputs.
         */}
-        <Tabs key={selectedRowId ?? 'none'} defaultValue="fields" className="flex-1 flex flex-col min-h-0">
+        <Tabs key={selectedRowId ?? 'none'} defaultValue="fields" onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 border-b bg-muted/20 shrink-0">
             <TabsList className="bg-transparent h-12 gap-4">
               <TabsTrigger
                 value="fields"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0"
+                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'fields' && "bg-transparent border-b-2 border-primary")}
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.fields', 'Fields')}
               </TabsTrigger>
               <TabsTrigger
                 value="chat"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0"
+                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'chat' && "bg-transparent border-b-2 border-primary")}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.chat', 'Chat')}
               </TabsTrigger>
               <TabsTrigger
                 value="files"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0"
+                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'files' && "bg-transparent border-b-2 border-primary")}
               >
                 <Paperclip className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.files', 'Files')}
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0"
+                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'history' && "bg-transparent border-b-2 border-primary")}
               >
                 <History className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.history', 'History')}

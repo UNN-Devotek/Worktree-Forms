@@ -25,16 +25,24 @@ interface Route {
   stops: RouteStop[];
 }
 
-export function RouteList({ projectId, userId }: { projectId: string; userId: string }) {
+import { useSession } from 'next-auth/react';
+
+export function RouteList({ projectId, userId, projectSlug }: { projectId?: string; userId?: string; projectSlug?: string }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [route, setRoute] = useState<Route | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const effectiveUserId = userId || session?.user?.id;
+  const effectiveProjectId = projectId || projectSlug;
+
   useEffect(() => {
     async function fetchRoute() {
+      if (!effectiveUserId || !effectiveProjectId) return;
+      
       try {
-        const res = await fetch(`/api/projects/${projectId}/routes/my-daily?userId=${userId}`);
+        const res = await fetch(`/api/projects/${effectiveProjectId}/routes/my-daily?userId=${effectiveUserId}`);
         if (!res.ok) throw new Error('Failed to fetch route');
         const json = await res.json();
         if (json.success) {
@@ -50,10 +58,12 @@ export function RouteList({ projectId, userId }: { projectId: string; userId: st
       }
     }
 
-    if (projectId && userId) {
-      fetchRoute();
-    }
-  }, [projectId, userId]);
+    fetchRoute();
+  }, [effectiveProjectId, effectiveUserId]);
+
+  if (loading && (!effectiveUserId || !effectiveProjectId)) {
+      return <div className="p-4 text-center">Loading session...</div>;
+  }
 
   if (loading) {
     return <div className="p-4 text-center">Loading route...</div>;

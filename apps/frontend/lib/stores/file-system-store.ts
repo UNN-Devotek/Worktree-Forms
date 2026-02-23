@@ -56,8 +56,8 @@ export const useFileSystemStore = create<FileSystemStore>((set, get) => ({
                     name: f.title,
                     type: 'form',
                     parentId: f.folderId ? `folder-${f.folderId}` : null,
-                    createdAt: f.created_at,
-                    updatedAt: f.updated_at,
+                    createdAt: f.createdAt,
+                    updatedAt: f.updatedAt,
                     formSlug: f.slug
                 } as any);
             });

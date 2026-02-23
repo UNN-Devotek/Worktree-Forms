@@ -7,8 +7,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ProjectCard } from "./project-card";
 import { CreateProjectDialog } from "./create-project-dialog";
 
+interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  updatedAt: Date;
+  members: { roles: string[] }[];
+  _count?: { members: number };
+}
+
 interface ProjectListProps {
-  initialProjects: any[]; // Typed from getProjects
+  initialProjects: Project[];
 }
 
 export function ProjectList({ initialProjects }: ProjectListProps) {

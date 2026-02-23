@@ -151,7 +151,6 @@ The core experience is defined by **"Contextual Execution."** The application ac
     - **Territory Polygons:** Overlay semi-transparent colored zones to show Technician areas.
 2.  **Route Panel (Left):** A collapsible list of "Draft Routes" and "Active Routes".
     - **Drag & Drop:** Move jobs between Technician cards to re-balance workload.
-    - **Drag & Drop:** Move jobs between Technician cards to re-balance workload.
 3.  **Timeline View (Bottom Toggle):** A "Gantt Chart" view showing routes against time, highlighting gaps or overlaps (Traffic-Aware).
 
 ### 2.3 The Help Center Studio (Model: GitBook/Notion)
@@ -514,21 +513,23 @@ The application moves from a "Global Dashboard" (Project Selector) to a "Project
       - **API Keys:** List of Active Keys (Masked). Button: "Generate New Key".
       - **Webhooks:** List of endpoints + "Test" button.
 
-419: ### User Management & Role UX
-420:
-421: **Role Management (Settings Tab):**
-422: - **UI Pattern:** "Permission Matrix" Grid.
-423: - **Rows:** Capabilities (e.g., "Edit Sheets", "Invite Users", "View Private Maps").
-424: - **Columns:** Roles (Director, Manager, Foreman, Tech, Guest).
-425: - **Interaction:** Checkboxes to toggle permissions.
-426: - **Role Library:** "Save Role as Preset" / "Load Role from Library" to reuse custom roles (e.g., "Safety Officer") across projects.
-427: - **Role Badges:** Colored badges (Director=Gold, Tech=Blue) used in Chat and Comments for instant hierarchy recognition.
-428:
-429: **Critical Workflows:**
-430: - **Role Deletion:** If a user deletes a role (e.g., "Foreman"), a **Migration Modal** appears: "You have 5 users with this role. Please reassign them to [Select New Role] before deleting."
-431: - **Self-Lockout Prevention:** If a Director tries to remove their own Director status (and they are the only one), the system disables the action with a tooltip: "You must assign another Director first."
-432:
-433: ### Visa Gate (Form-Driven)
+### User Management & Role UX
+
+**Role Management (Settings Tab):**
+
+- **UI Pattern:** "Permission Matrix" Grid.
+- **Rows:** Capabilities (e.g., "Edit Sheets", "Invite Users", "View Private Maps").
+- **Columns:** Roles (Director, Manager, Foreman, Tech, Guest).
+- **Interaction:** Checkboxes to toggle permissions.
+- **Role Library:** "Save Role as Preset" / "Load Role from Library" to reuse custom roles (e.g., "Safety Officer") across projects.
+- **Role Badges:** Colored badges (Director=Gold, Tech=Blue) used in Chat and Comments for instant hierarchy recognition.
+
+**Critical Workflows:**
+
+- **Role Deletion:** If a user deletes a role (e.g., "Foreman"), a **Migration Modal** appears: "You have 5 users with this role. Please reassign them to [Select New Role] before deleting."
+- **Self-Lockout Prevention:** If a Director tries to remove their own Director status (and they are the only one), the system disables the action with a tooltip: "You must assign another Director first."
+
+### Visa Gate (Form-Driven)
 
 **Concept:** "Compliance as a Form"
 Instead of hardcoding a verified "Upload Insurance" page, we utilize the **Form Builder**.

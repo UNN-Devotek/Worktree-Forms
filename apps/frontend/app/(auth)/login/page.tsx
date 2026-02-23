@@ -11,7 +11,18 @@ export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   return (
-    <React.Suspense fallback={<div>Loading...</div>}>
+    <React.Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="space-y-4 w-full max-w-sm px-4">
+            <div className="h-8 bg-muted animate-pulse rounded w-3/4 mx-auto" />
+            <div className="h-10 bg-muted animate-pulse rounded" />
+            <div className="h-10 bg-muted animate-pulse rounded" />
+            <div className="h-10 bg-muted animate-pulse rounded" />
+          </div>
+        </div>
+      }
+    >
       <LoginForm />
     </React.Suspense>
   );

@@ -37,37 +37,30 @@ function CalendarSidebar({
   onCloseSidebar,
   isMobileView,
 }: CalendarSidebarProps) {
-  // Helper function to get the color class
-  const getColorClass = (color: string) => {
+  // Helper function to get the color class.
+  // Uses runtime checked state instead of data-[state=checked]: Tailwind variants
+  // to avoid a Turbopack CSS parser bug with compound selectors on button elements.
+  const getColorClass = (color: string, isChecked: boolean) => {
+    if (!isChecked) return "";
     const colorMap: Record<string, string> = {
-      blue: " data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500 dark:data-[state=checked]:bg-blue-500",
-      indigo:
-        " data-[state=checked]:border-indigo-500 data-[state=checked]:bg-indigo-500 dark:data-[state=checked]:bg-indigo-500",
-      purple:
-        " data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500 dark:data-[state=checked]:bg-purple-500",
-      pink: " data-[state=checked]:border-pink-500 data-[state=checked]:bg-pink-500 dark:data-[state=checked]:bg-pink-500",
-      red: " data-[state=checked]:border-red-500 data-[state=checked]:bg-red-500 dark:data-[state=checked]:bg-red-500",
-      orange:
-        " data-[state=checked]:border-orange-500 data-[state=checked]:bg-orange-500 dark:data-[state=checked]:bg-orange-500",
-      amber:
-        " data-[state=checked]:border-amber-500 data-[state=checked]:bg-amber-500 dark:data-[state=checked]:bg-amber-500",
-      yellow:
-        " data-[state=checked]:border-yellow-500 data-[state=checked]:bg-yellow-500 dark:data-[state=checked]:bg-yellow-500",
-      lime: " data-[state=checked]:border-lime-500 data-[state=checked]:bg-lime-500 dark:data-[state=checked]:bg-lime-500",
-      green:
-        " data-[state=checked]:border-green-500 data-[state=checked]:bg-green-500 dark:data-[state=checked]:bg-green-500",
-      emerald:
-        " data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500",
-      teal: " data-[state=checked]:border-teal-500 data-[state=checked]:bg-teal-500 dark:data-[state=checked]:bg-teal-500",
-      cyan: " data-[state=checked]:border-cyan-500 data-[state=checked]:bg-cyan-500 dark:data-[state=checked]:bg-cyan-500",
-      sky: " data-[state=checked]:border-sky-500 data-[state=checked]:bg-sky-500 dark:data-[state=checked]:bg-sky-500",
-      gray: " data-[state=checked]:border-gray-500 data-[state=checked]:bg-gray-500 dark:data-[state=checked]:bg-gray-500",
-      rose: " data-[state=checked]:border-rose-500 data-[state=checked]:bg-rose-500 dark:data-[state=checked]:bg-rose-500",
+      blue: "border-blue-500 bg-blue-500 dark:bg-blue-500",
+      indigo: "border-indigo-500 bg-indigo-500 dark:bg-indigo-500",
+      purple: "border-purple-500 bg-purple-500 dark:bg-purple-500",
+      pink: "border-pink-500 bg-pink-500 dark:bg-pink-500",
+      red: "border-red-500 bg-red-500 dark:bg-red-500",
+      orange: "border-orange-500 bg-orange-500 dark:bg-orange-500",
+      amber: "border-amber-500 bg-amber-500 dark:bg-amber-500",
+      yellow: "border-yellow-500 bg-yellow-500 dark:bg-yellow-500",
+      lime: "border-lime-500 bg-lime-500 dark:bg-lime-500",
+      green: "border-green-500 bg-green-500 dark:bg-green-500",
+      emerald: "border-emerald-500 bg-emerald-500 dark:bg-emerald-500",
+      teal: "border-teal-500 bg-teal-500 dark:bg-teal-500",
+      cyan: "border-cyan-500 bg-cyan-500 dark:bg-cyan-500",
+      sky: "border-sky-500 bg-sky-500 dark:bg-sky-500",
+      gray: "border-gray-500 bg-gray-500 dark:bg-gray-500",
+      rose: "border-rose-500 bg-rose-500 dark:bg-rose-500",
     };
-
-    return (
-      colorMap[color] || "border-gray-500 data-[state=checked]:bg-gray-500"
-    );
+    return colorMap[color] || "border-gray-500 bg-gray-500";
   };
 
   return (
@@ -123,7 +116,7 @@ function CalendarSidebar({
                     id={calendarUniqueId}
                     checked={selectedCalendars[calendarUniqueId]}
                     onCheckedChange={() => onToggleCalendar(calendarUniqueId)}
-                    className={getColorClass(calendar.color)}
+                    className={getColorClass(calendar.color, selectedCalendars[calendarUniqueId] ?? false)}
                   />
                   <label
                     htmlFor={calendarUniqueId}

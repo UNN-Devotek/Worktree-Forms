@@ -1,7 +1,13 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { prisma } from '../db.js';
 
 const router = Router();
+
+const createFolderSchema = z.object({
+  name: z.string().min(1, 'Folder name is required'),
+  parentId: z.union([z.string(), z.number()]).optional().nullable(),
+});
 
 // ==========================================
 // FOLDER ENDPOINTS
@@ -22,7 +28,11 @@ router.get('/', async (req: Request, res: Response) => {
 
 // Create folder
 router.post('/', async (req: Request, res: Response) => {
-    const { name, parentId } = req.body;
+    const parsed = createFolderSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
+    }
+    const { name, parentId } = parsed.data;
     try {
         const folder = await prisma.folder.create({
             data: {
@@ -40,6 +50,9 @@ router.post('/', async (req: Request, res: Response) => {
 // Update folder
 router.put('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).json({ success: false, error: 'Invalid folder ID' });
+    }
     const { name, parentId } = req.body;
     try {
         const folder = await prisma.folder.update({
@@ -59,6 +72,9 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete folder
 router.delete('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).json({ success: false, error: 'Invalid folder ID' });
+    }
     try {
         // Move forms to root
         await prisma.form.updateMany({

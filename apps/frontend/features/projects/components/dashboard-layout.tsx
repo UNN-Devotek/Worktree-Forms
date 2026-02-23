@@ -5,6 +5,7 @@ import { SidebarErrorBoundary } from "./sidebar-error-boundary";
 import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             isSheetPage ? "p-0 overflow-hidden" : "p-4 md:p-8 overflow-y-auto"
           )}
         >
+            {!isSheetPage && <Breadcrumbs />}
             {children}
         </div>
       </main>

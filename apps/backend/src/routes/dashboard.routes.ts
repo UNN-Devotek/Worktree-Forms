@@ -11,9 +11,11 @@ const router = Router();
 // Admin Stats
 router.get('/admin/stats', async (req: Request, res: Response) => {
     try {
-        const totalUsers = await prisma.user.count();
-        const activeForms = await prisma.form.count({ where: { is_active: true } });
-        const totalSubmissions = await prisma.submission.count();
+        const [totalUsers, activeForms, totalSubmissions] = await prisma.$transaction([
+            prisma.user.count(),
+            prisma.form.count({ where: { is_active: true } }),
+            prisma.submission.count(),
+        ]);
         
         res.json({
             success: true,
@@ -123,6 +125,8 @@ router.get('/projects/:id/metrics', getSecurityMiddleware(), async (req: Request
 router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const take = Math.min(parseInt(req.query.take as string) || 20, 100);
+        const skip = parseInt(req.query.skip as string) || 0;
 
          // 1. Get Forms for Project
          const forms = await prisma.form.findMany({
@@ -132,16 +136,17 @@ router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Reques
         const formIds = forms.map(f => f.id);
 
         if (formIds.length === 0) {
-            return res.json({ success: true, data: [] });
+            return res.json({ success: true, data: [], meta: { take, skip } });
         }
 
         // 2. Fetch submissions
         const recentSubmissions = await prisma.submission.findMany({
-            where: { 
+            where: {
                 form_id: { in: formIds }
             },
-            orderBy: { created_at: 'desc' },
-            take: 20,
+            orderBy: { createdAt: 'desc' },
+            take,
+            skip,
             include: {
                 // User not directly linked in Submission schema.
                 // Omitting user for now.
@@ -158,12 +163,13 @@ router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Reques
             user: 'Technician',
             action: 'submitted',
             target: sub.form_version?.form.title || 'Unknown Form',
-            timestamp: sub.created_at
+            timestamp: sub.createdAt
         }));
 
         res.json({
             success: true,
-            data: activities
+            data: activities,
+            meta: { take, skip }
         });
 
     } catch (error) {

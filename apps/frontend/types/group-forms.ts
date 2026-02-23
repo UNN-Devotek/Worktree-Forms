@@ -346,8 +346,8 @@ export interface GroupForm {
   visible_to_members: boolean
   target_sub_group_id?: number
   created_by: string
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 
   // Analytics metadata
   submission_count?: number
@@ -377,7 +377,7 @@ export interface GroupFormSubmission {
   review_notes?: string
   read_at?: string                    // When user acknowledged the review result
   submitted_at: string
-  updated_at: string
+  updatedAt: string
   pdf_filename?: string
   pdf_url?: string
 
@@ -541,8 +541,8 @@ export interface WorkflowRule {
     config: Record<string, any>  // Action-specific configuration
     delay?: number               // Delay in seconds before executing
   }>
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface WebhookConfig {

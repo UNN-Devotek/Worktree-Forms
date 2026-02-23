@@ -23,8 +23,7 @@ export function DevLoginButtons() {
   useEffect(() => {
     if (showDev) {
       window.tryTestLogin = async (email: string) => {
-        console.log("Window Test Login triggered for:", email);
-        return signIn("credentials", { 
+        return signIn("credentials", {
           email: email, 
           redirect: true,
           callbackUrl 
@@ -45,7 +44,8 @@ export function DevLoginButtons() {
           variant="secondary"
           size="sm"
           onClick={() => signIn("credentials", { 
-            email: "admin@worktree.pro", 
+            email: "admin@worktree.pro",
+            password: "password", 
             redirect: true,
             callbackUrl 
           })}
@@ -56,7 +56,8 @@ export function DevLoginButtons() {
           variant="outline"
           size="sm"
           onClick={() => signIn("credentials", { 
-            email: "user@worktree.com", 
+            email: "user@worktree.com",
+            password: "password", 
             redirect: true,
             callbackUrl
           })}

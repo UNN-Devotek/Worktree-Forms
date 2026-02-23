@@ -26,6 +26,16 @@ import { formatDistanceToNow } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { FormViewer } from './form-viewer'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
@@ -38,23 +48,41 @@ interface SubmissionsTableProps {
 }
 
 export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) {
-    const [submissions, setSubmissions] = useState<any[]>([])
+    interface Submission {
+        id: number;
+        form_id: number;
+        data: Record<string, unknown>;
+        response_data?: Record<string, unknown>;
+        status: string;
+        createdAt: string;
+        form_version_id?: number;
+        files?: Array<{ id: string; filename: string; objectKey: string }>;
+    }
+
+    const [submissions, setSubmissions] = useState<Submission[]>([])
     const [loading, setLoading] = useState(true)
     const { toast } = useToast()
-    const [viewSubmission, setViewSubmission] = useState<any | null>(null)
+    const [viewSubmission, setViewSubmission] = useState<Submission | null>(null)
     const [isViewOpen, setIsViewOpen] = useState(false)
-    
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalCount, setTotalCount] = useState(0)
+
     // Export states
     const [exportingPdfId, setExportingPdfId] = useState<number | null>(null)
     const [exportingPhotosId, setExportingPhotosId] = useState<number | null>(null)
     const pdfContainerRef = useRef<HTMLDivElement>(null)
+    const pdfSubmissionRef = useRef<Submission | null>(null)
 
     const fetchSubmissions = async () => {
         setLoading(true)
+        const skip = (page - 1) * pageSize
         try {
-            const res = await apiClient<ApiResponse<{ submissions: any[] }>>(`/api/forms/${formId}/submissions`)
+            const res = await apiClient<ApiResponse<{ submissions: Submission[] }> & { meta?: { total: number } }>(`/api/forms/${formId}/submissions?take=${pageSize}&skip=${skip}`)
             if (res.success && res.data) {
                 setSubmissions(res.data.submissions)
+                if (res.meta) setTotalCount(res.meta.total)
             }
         } catch (error) {
             console.error(error)
@@ -66,10 +94,9 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
 
     useEffect(() => {
         fetchSubmissions()
-    }, [formId])
+    }, [formId, page, pageSize])
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this submission?')) return
         try {
             const res = await apiClient(`/api/submissions/${id}`, { method: 'DELETE' })
             if (res.success) {
@@ -98,27 +125,24 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
     
     // --- Export Logic ---
 
-    const handleExportPdf = (submissionId: number) => {
-        console.log(`Starting PDF export for submission ${submissionId}`)
-        setExportingPdfId(submissionId)
-        // Effect will trigger capture
+    const handleExportPdf = (submission: Submission) => {
+        pdfSubmissionRef.current = submission
+        setExportingPdfId(submission.id)
     }
 
     useEffect(() => {
         if (exportingPdfId !== null && pdfContainerRef.current) {
             const generatePdf = async () => {
-                console.log("Waiting for PDF render...")
                 try {
                     // Wait for render - slightly longer to ensure images load
                     await new Promise(resolve => setTimeout(resolve, 800))
-                    
+
                     const element = pdfContainerRef.current
                     if (!element) {
                         console.error("PDF Container ref is null")
                         throw new Error("Render element not found")
                     }
 
-                    console.log("Capturing canvas...")
                     const canvas = await html2canvas(element, {
                         scale: 1.5, // Slightly lower scale to reduce memory usage/fail rate
                         logging: true,
@@ -128,8 +152,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                         windowWidth: element.scrollWidth,
                         windowHeight: element.scrollHeight
                     })
-                    
-                    console.log("Canvas captured, generating PDF...")
+
                     const imgData = canvas.toDataURL('image/png')
                     const pdf = new jsPDF({
                         orientation: 'portrait',
@@ -253,6 +276,8 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
 
     // --- Render ---
 
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
     if (loading) {
         return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-muted-foreground" /></div>
     }
@@ -261,8 +286,8 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
         return <div className="text-center p-8 text-muted-foreground">No submissions yet.</div>
     }
 
-    // Get submission data for PDF export
-    const pdfSubmission = submissions.find(s => s.id === exportingPdfId)
+    // Stable reference captured at click time — immune to pagination state changes
+    const pdfSubmission = pdfSubmissionRef.current
 
     return (
         <div className="space-y-4">
@@ -293,7 +318,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                                         {submission.status}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(submission.created_at), { addSuffix: true })}</TableCell>
+                                <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(submission.createdAt), { addSuffix: true })}</TableCell>
                                 <TableCell className="text-muted-foreground truncate max-w-[200px]">
                                     {(() => {
                                         const values = Object.values(submission.data || {});
@@ -321,7 +346,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                                                 <Eye className="mr-2 h-4 w-4" />
                                                 View Details
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleExportPdf(submission.id)} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => handleExportPdf(submission)} className="cursor-pointer">
                                                 <FileDown className="mr-2 h-4 w-4" />
                                                 Export to PDF
                                             </DropdownMenuItem>
@@ -339,7 +364,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                                                 Deny
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onClick={() => handleDelete(submission.id)}>
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onClick={() => setConfirmDeleteId(submission.id)}>
                                                 <Trash className="mr-2 h-4 w-4" />
                                                 Delete
                                             </DropdownMenuItem>
@@ -353,22 +378,26 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                 
                 {/* Admin Table Footer */}
                 <div className="border-t border-border p-4 text-xs text-muted-foreground flex justify-between items-center">
-                    <span>0 of {submissions.length} row(s) selected.</span>
+                    <span>{submissions.length} of {totalCount} row(s).</span>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             Rows per page
-                            <select className="bg-background border border-border rounded px-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
-                                <option>10</option>
-                                <option>20</option>
-                                <option>50</option>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                                className="bg-background border border-border rounded px-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                            >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
                             </select>
                         </div>
-                        <span>Page 1 of 1</span>
+                        <span>Page {page} of {totalPages}</span>
                         <div className="flex gap-1">
-                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" disabled>&lt;&lt;</Button>
-                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" disabled>&lt;</Button>
-                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" disabled>&gt;</Button>
-                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" disabled>&gt;&gt;</Button>
+                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" onClick={() => setPage(1)} disabled={page === 1}>&lt;&lt;</Button>
+                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>&lt;</Button>
+                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>&gt;</Button>
+                            <Button variant="outline" size="icon" className="h-6 w-6 border-border p-0 text-muted-foreground hover:bg-muted" onClick={() => setPage(totalPages)} disabled={page === totalPages}>&gt;&gt;</Button>
                         </div>
                     </div>
                 </div>
@@ -386,6 +415,31 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                 </DialogContent>
             </Dialog>
 
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete submission</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this submission? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (confirmDeleteId !== null) {
+                                    handleDelete(confirmDeleteId)
+                                    setConfirmDeleteId(null)
+                                }
+                            }}
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             {/* Hidden PDF Render Container */}
             <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -50, width: '210mm', minHeight: '297mm', background: 'white', padding: '10mm', opacity: exportingPdfId ? 1 : 0, pointerEvents: 'none' }}>
                 {pdfSubmission && formSchema && (
@@ -393,7 +447,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                         <h1 className="text-2xl font-bold mb-4">{formSchema.settings.title || 'Form Submission'}</h1>
                         <div className="text-sm text-muted-foreground mb-6">
                             <p>Submission ID: #{pdfSubmission.id}</p>
-                            <p>Date: {new Date(pdfSubmission.created_at).toLocaleString()}</p>
+                            <p>Date: {new Date(pdfSubmission.createdAt).toLocaleString()}</p>
                             <p>Status: {pdfSubmission.status}</p>
                         </div>
                         <FormViewer formSchema={formSchema} responseData={pdfSubmission.data?.response_data || pdfSubmission.data || {}} />

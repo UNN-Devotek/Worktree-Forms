@@ -17,9 +17,7 @@ import { SubmissionsTable } from '@/components/groups/forms/SubmissionsTable'
 import { useToast } from '@/hooks/use-toast'
 import { PublicShareModal } from '@/features/share/PublicShareModal'
 import { Share } from 'lucide-react'
-
-// Hardcoded for now
-const DEFAULT_GROUP_ID = 1
+import { cn } from '@/lib/utils'
 
 export default function FormLandingPage() {
   const params = useParams()
@@ -34,21 +32,19 @@ export default function FormLandingPage() {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const response = await apiClient<ApiResponse<{ forms: GroupForm[] }>>(
-          `/api/groups/${DEFAULT_GROUP_ID}/forms`
+        const response = await apiClient<ApiResponse<GroupForm>>(
+          `/api/forms?slug=${encodeURIComponent(formSlug)}`
         )
         if (response.success && response.data) {
-          const foundForm = response.data.forms.find(f => f.slug === formSlug)
-          if (foundForm) {
-            setForm(foundForm)
-          } else {
-             // Handle 404
-             toast({ title: "Form not found", variant: "destructive" })
-             router.push('/forms')
-          }
+          setForm(response.data)
+        } else {
+          toast({ title: "Form not found", variant: "destructive" })
+          router.push('/forms')
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load form'
         console.error('Error fetching form:', error)
+        toast({ title: 'Error loading form', description: message, variant: 'destructive' })
       } finally {
         setLoading(false)
       }
@@ -112,18 +108,21 @@ export default function FormLandingPage() {
                     {/* Share Button */}
                      <PublicShareModal 
                           resourceType="FORM" 
-                          resourceId={String(form.id)} // ID shouldn't be revealed but for now using ID as identifier in DB for simplicity. ideally UUID.
+                          resourceId={String(form.id)} // TODO: Use slug-based lookup instead of exposing numeric IDs
                           trigger={<Button variant="outline" size="sm"><Share className="mr-2 h-4 w-4" /> Share</Button>}
                      />
                 </div>
             </div>
             <div className="border-b-0">
                 <TabsList className="bg-muted p-1.5 rounded-full w-fit border border-border h-auto">
-                    {['Overview', 'Submit', 'Edit', 'Review', 'Integrations', 'Settings'].map(tab => (
-                        <TabsTrigger 
-                            key={tab} 
+                    {['Overview', 'Submit', 'Edit', 'Review', 'Integrations', 'Settings'].map((tab) => (
+                        <TabsTrigger
+                            key={tab}
                             value={tab.toLowerCase()}
-                            className="rounded-full px-4 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground shadow-none data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground"
+                            className={cn(
+                                "rounded-full px-4 py-1.5 text-sm font-medium transition-all shadow-none text-muted-foreground hover:text-foreground",
+                                activeTab === tab.toLowerCase() && "bg-background text-foreground shadow-sm"
+                            )}
                         >
                             {tab}
                         </TabsTrigger>

@@ -18,8 +18,8 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('sonner', () => ({
   Toaster: () => <div>Toaster</div>,
 }))
-vi.mock('../features/offline/context/offline-sync-provider', () => ({
-  OfflineSyncProvider: ({ children }: { children: React.ReactNode }) => <div>OfflineSyncProvider {children}</div>,
+vi.mock('@/features/sync/components/sync-provider', () => ({
+  SyncProvider: ({ children }: { children: React.ReactNode }) => <div>SyncProvider {children}</div>,
 }))
 
 describe('Providers', () => {
@@ -34,6 +34,6 @@ describe('Providers', () => {
     expect(getByText(/SessionProvider/)).toBeDefined()
     expect(getByText(/ThemeProvider/)).toBeDefined()
     expect(getByText(/QueryClientProvider/)).toBeDefined()
-    expect(getByText(/OfflineSyncProvider/)).toBeDefined()
+    expect(getByText(/SyncProvider/)).toBeDefined()
   })
 })

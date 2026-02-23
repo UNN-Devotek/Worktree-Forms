@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PropertiesTab } from './tabs/PropertiesTab'
@@ -10,6 +11,7 @@ import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
 import { X, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 
 interface PropertiesPanelProps {
   groupId: number
@@ -20,6 +22,10 @@ interface PropertiesPanelProps {
 export function PropertiesPanel({ groupId, formId, isSIGRequestForm = false }: PropertiesPanelProps) {
   const { selectField, getSelectedField } = useFormBuilderStore()
   const selectedField = getSelectedField()
+
+  // Track active tab for runtime-conditional styling (avoids data-[state=active]: Tailwind
+  // variants which trigger a Turbopack CSS parser bug on button elements)
+  const [activePropertiesTab, setActivePropertiesTab] = useState('properties')
 
   if (!selectedField) return null
 
@@ -100,29 +106,29 @@ export function PropertiesPanel({ groupId, formId, isSIGRequestForm = false }: P
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="properties" className="flex-1 flex flex-col">
+      <Tabs defaultValue="properties" onValueChange={setActivePropertiesTab} className="flex-1 flex flex-col">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
           <TabsTrigger
             value="properties"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            className={cn("rounded-none border-b-2 shadow-none", activePropertiesTab === 'properties' ? "border-primary" : "border-transparent")}
           >
             Properties
           </TabsTrigger>
           <TabsTrigger
             value="logic"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            className={cn("rounded-none border-b-2 shadow-none", activePropertiesTab === 'logic' ? "border-primary" : "border-transparent")}
           >
             Logic
           </TabsTrigger>
           <TabsTrigger
             value="validation"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            className={cn("rounded-none border-b-2 shadow-none", activePropertiesTab === 'validation' ? "border-primary" : "border-transparent")}
           >
             Validation
           </TabsTrigger>
           <TabsTrigger
             value="advanced"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            className={cn("rounded-none border-b-2 shadow-none", activePropertiesTab === 'advanced' ? "border-primary" : "border-transparent")}
           >
             Advanced
           </TabsTrigger>

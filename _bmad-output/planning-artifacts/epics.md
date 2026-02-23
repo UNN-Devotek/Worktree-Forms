@@ -59,10 +59,7 @@ This document provides the complete epic and story breakdown for Worktree, decom
 **Goal:** Implement a custom, high-performance "Smart Grid" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
 **Value:** The office team can manage complex project schedules and trackers with hierarchy, rich data types, and real-time concurrency.
 **Key Database Entities:** `Sheet`, `SheetColumn` (Definitions), `SheetRow` (Data + Metadata), `YjsDocument` (Binary State).
-**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5.
-**Value:** The entire office team can edit the "Master Schedule" together without locking each other out.
-**Key Database Entities:** `Sheet`, `SheetRow`, `SheetCell`, `YjsUpdate` (Blob).
-**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, NFR9, NFR12.
+**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, NFR9, NFR12.
 
 ### Epic 7: Document Control & Field Tools
 
@@ -170,9 +167,7 @@ Applies to **ALL** Epics and User Stories generated from this document:
 3.  **Mobile Responsiveness**: All views must be verified on mobile breakpoints. Complex tables must degrade to "Card Views" on small screens.
 4.  **Error Handling**: All Server Actions must return standardized error objects. UI must display toast notifications for errors.
 5.  **Offline Safety**: All mutations must check for connection status. If offline, mutations must be queued in the Sync Engine (RepliCache).
-
-6.  **Offline Safety**: All mutations must check for connection status. If offline, mutations must be queued in the Sync Engine (RepliCache).
-7.  **Visual Feedback**: All Action Buttons must show a visible Loading Spinner/State during `isPending` to prevent "Rage Clicks" (UX #1).
+6.  **Visual Feedback**: All Action Buttons must show a visible Loading Spinner/State during `isPending` to prevent "Rage Clicks" (UX #1).
 
 ## Epic 1: Core Project Foundation & Identity
 
@@ -201,7 +196,6 @@ So that I can establish a secure workspace for my team.
 **When** I click "Create Project" and enter "Headquarters Reno"
 **Then** a new Project entity is created with slug `headquarters-reno`
 **And** I am redirected to `/project/headquarters-reno`
-**And** I am redirected to `/project/headquarters-reno`
 **And** a dedicated MinIO bucket path `/project-uuid/` is reserved (using UUID not Slug to allow renaming) (Arch #9)
 **And** I am assigned the "Owner" role for this project
 **And** long project names are truncated with an ellipsis and show full text on hover (QA #4).
@@ -228,8 +222,6 @@ I want to ensure data isolation at the database level,
 So that users cannot access data from other projects or exceed their privileges.
 
 **Acceptance Criteria:**
-**Given** a user is logged in
-**When** they attempt to query `SELECT * FROM forms` via the API
 **Given** a user is logged in
 **When** they attempt to query `SELECT * FROM forms` via the API
 **Then** the query only returns rows where `project_id` matches their current project context

@@ -4,6 +4,8 @@ import Credentials from "next-auth/providers/credentials"
 import { db } from "@/lib/database"
 import { z } from "zod"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
+import bcrypt from "bcryptjs"
+import type { Provider } from "@auth/core/providers"
 
 // Simple schema for credentials
 const credentialsSchema = z.object({
@@ -11,41 +13,57 @@ const credentialsSchema = z.object({
   password: z.string().optional(),
 })
 
-const providers: any[] = [
+const providers: Provider[] = [
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        console.log("[AUTH] Authorizing credentials:", { email: credentials?.email, flow: 'credentials' });
-        const { email, password: _password } = await credentialsSchema.parseAsync(credentials);
+        const { email, password } = await credentialsSchema.parseAsync(credentials);
 
         // 1. Check if user exists
         let user = await db.user.findUnique({
             where: { email }
         });
 
-        // 2. DEV MODE AUTO-SIGNUP (If User doesn't exist, create them for testing)
-        // In production, this would verify password hash.
-        if (!user && (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true')) {
-             console.log(`[DEV] Auto-creating user: ${email}`);
-             if (!user) { // Double check
-                 user = await db.user.create({
-                     data: {
-                         email,
-                         name: email.split('@')[0], // simple name from email
-                         systemRole: "MEMBER" // Default
-                     }
-                 });
-             }
+        // 2. DEV MODE AUTO-SIGNUP (Only if enabled via env var)
+        const enableDevLogin = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true';
+        
+        if (!user && enableDevLogin) {
+             // Hash specific dev password if provided, or default "password"
+             const hashedPassword = await bcrypt.hash(password || "password", 10);
+             
+             user = await db.user.create({
+                 data: {
+                     email,
+                     name: email.split('@')[0],
+                     systemRole: "MEMBER",
+                     password: hashedPassword,
+                     complianceStatus: "PENDING"
+                 }
+             });
         }
 
         if (!user) {
-             throw new Error("User not found.");
+             return null;
         }
 
-        // Return user object
+        // 3. Verify Password
+        // If user has no password (e.g. created via OAuth), they cannot login via credentials
+        if (!user.password) {
+            return null;
+        }
+
+        if (!password) {
+             return null;
+        }
+
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) {
+            return null;
+        }
+
         return user;
       },
     }),
@@ -63,10 +81,10 @@ const useSecureCookies = process.env.NODE_ENV === "production";
 
 const { handlers, auth: nextAuth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db as any),
-  session: { strategy: "jwt" },
-  trustHost: true, // Essential when running behind proxies or in containers
+  session: { strategy: "jwt" }, // REVERTED: Database strategy does not support Credentials provider (Dev Login)
+  trustHost: true,
+  secret: process.env.JWT_SECRET, // Explicitly set secret to avoid config errors
   providers,
-  // Force insecure cookies in dev/test to allow http://localhost:3005 access in Docker
   cookies: {
         sessionToken: {
             name: `next-auth.session-token`,
@@ -95,86 +113,32 @@ const { handlers, auth: nextAuth, signIn, signOut } = NextAuth({
         }
   },
   callbacks: {
+      async jwt({ token, user }) {
+          // On initial sign-in, 'user' is the object returned by authorize()
+          if (user) {
+              token.id = user.id;
+              // @ts-expect-error - Custom fields on User model
+              token.systemRole = user.systemRole;
+              // @ts-expect-error - Custom fields on User model
+              token.complianceStatus = user.complianceStatus;
+          }
+          return token;
+      },
       async session({ session, token }) {
-          if (token.sub && session.user) {
-              session.user.id = token.sub;
-              // @ts-ignore
+          // With JWT strategy, read from token
+          if (session.user && token) {
+              session.user.id = token.id as string;
+              // @ts-expect-error - Custom fields on User model
               session.user.systemRole = token.systemRole;
-              // @ts-ignore
+              // @ts-expect-error - Custom fields on User model
               session.user.complianceStatus = token.complianceStatus;
           }
           return session;
       },
-      async jwt({ token, user }) {
-          if (user) {
-              token.sub = user.id;
-              // @ts-ignore
-              token.systemRole = user.systemRole;
-              // @ts-ignore
-              token.complianceStatus = user.complianceStatus || 'PENDING';
-          }
-          return token;
-      }
   }
 })
 
 export { handlers, signIn, signOut };
 
-export const auth = (...args: any[]) => {
-    // 1. Middleware Case (args present) or non-standard usage
-    if (args.length > 0) {
-        // @ts-ignore: Spread argument type mismatch
-        return nextAuth(...args);
-    }
+export const auth = nextAuth;
 
-    // 2. Server Component / Action Case (no args)
-    // Check for Bypass Cookie
-    return (async () => {
-        try {
-            console.log("[AUTH] auth() called");
-            // Dynamic import to avoid Edge Runtime issues in Middleware
-            const { cookies, headers } = await import("next/headers");
-            const cookieStore = cookies();
-            const headerStore = headers();
-            
-            const bypassCookie = cookieStore.get("worktree-test-bypass");
-            const bypassHeader = headerStore.get("x-test-bypass");
-            
-            const bypassValue = bypassCookie?.value || bypassHeader;
-            
-            const isDev = process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_LOGIN === "true";
-
-            if (bypassValue) {
-                 console.log(`[AUTH] Bypass found (Cookie/Header): ${bypassValue}, isDev: ${isDev}`);
-            } else {
-                 console.log(`[AUTH] No bypass found. Cookies: ${cookieStore.getAll().map(c => c.name).join(', ')}`);
-            }
-
-            // CHECK BYPASS FIRST
-            if (isDev && bypassValue) {
-                 const userId = bypassValue;
-                 console.log(`[AUTH] Bypassing session with cookie for user: ${userId}`);
-                 return {
-                     user: {
-                         name: "Test User",
-                         email: "test@example.com",
-                         image: null,
-                         id: userId,
-                         systemRole: "ADMIN",
-                         complianceStatus: "VERIFIED"
-                     },
-                     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-                 }
-            }
-
-            // FALLBACK: Force Admin Session in Dev Mode (Nuclear Nuclear Option)
-            // ... commented out ...
-        } catch (e) {
-            console.error("[AUTH] Error in auth() bypass logic:", e);
-            // cookies() might fail if called outside of request context (e.g. static gen)
-            // or if dynamic import fails
-        }
-
-        return nextAuth();
-    })();
-}

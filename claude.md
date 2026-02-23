@@ -70,17 +70,27 @@ npm run lint
 # 1. Ensure .env file exists with external connections
 # (Database and MinIO hosted on Dokploy)
 
-# 2. Start the application with Docker Compose Watch
+# 2. Create persistent data volumes (one-time, safe to re-run)
+bash scripts/init-volumes.sh
+
+# 3. Start the application with Docker Compose Watch
 # NOTE: Always use --watch in development for instant file sync without polling overhead
 docker compose up --watch
 
-# 3. Check logs for successful startup
+# 4. In a second terminal: run migrations + seed dev data (one-time, safe to re-run)
+bash scripts/seed-dev.sh
+
+# 5. Check logs for successful startup
 docker-compose logs -f app
 
-# 4. Access the application
+# 6. Access the application
 # Frontend: http://localhost:3100
 # Backend API: http://localhost:5100
 # Health Check: http://localhost:5100/api/health
+
+# Dev login credentials (shown on login page in development mode):
+#   Admin:  admin@worktree.pro  / password
+#   User:   user@worktree.com   / password
 ```
 
 ### Required Environment Variables

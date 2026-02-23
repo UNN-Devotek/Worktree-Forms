@@ -1,71 +1,83 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding database...');
+  console.log('Seeding dev database...');
 
-  // 1. Create default admin user
-  const adminEmail = 'admin@worktree.pro';
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const passwordHash = await bcrypt.hash('password', 10);
 
-  if (!existingAdmin) {
-    await prisma.user.create({
-      data: {
-        id: '1', // keeping ID 1 for compatibility with frontend mocks if any
-        email: adminEmail,
-        // password removed
-        name: 'Admin User',
-        systemRole: 'ADMIN', // Changed from role: 'admin'
-      }
-    });
-    console.log('Created admin user');
-  }
+  // 1. Dev Admin — upsert so re-running always ensures password is set
+  await prisma.user.upsert({
+    where: { email: 'admin@worktree.pro' },
+    update: { password: passwordHash, systemRole: 'ADMIN', complianceStatus: 'VERIFIED' },
+    create: {
+      email: 'admin@worktree.pro',
+      name: 'Dev Admin',
+      password: passwordHash,
+      systemRole: 'ADMIN',
+      complianceStatus: 'VERIFIED',
+    },
+  });
+  console.log('  ✓ admin@worktree.pro');
 
-  // 2. Create default Project
-  const existingProject = await prisma.project.findUnique({ where: { slug: 'demo-project' } });
-  let projectId = existingProject?.id;
+  // 2. Dev User
+  await prisma.user.upsert({
+    where: { email: 'user@worktree.com' },
+    update: { password: passwordHash, systemRole: 'MEMBER', complianceStatus: 'VERIFIED' },
+    create: {
+      email: 'user@worktree.com',
+      name: 'Dev User',
+      password: passwordHash,
+      systemRole: 'MEMBER',
+      complianceStatus: 'VERIFIED',
+    },
+  });
+  console.log('  ✓ user@worktree.com');
 
-  if (!existingProject) {
-      const project = await prisma.project.create({
-          data: {
-              name: 'Demo Project',
-              slug: 'demo-project',
-              createdById: existingAdmin?.id || '1',
-              plan: 'PRO',
-          }
-      });
-      projectId = project.id;
-      console.log('Created Demo Project');
-  }
+  // 3. Demo Project (linked to admin)
+  const adminUser = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@worktree.pro' } });
 
-  // 3. Create default Contact Form
+  const project = await prisma.project.upsert({
+    where: { slug: 'demo-project' },
+    update: {},
+    create: {
+      name: 'Demo Project',
+      slug: 'demo-project',
+      createdById: adminUser.id,
+      plan: 'PRO',
+    },
+  });
+  console.log('  ✓ Demo Project');
+
+  // 4. Contact Form (only create; skip if slug already exists)
   const existingForm = await prisma.form.findUnique({ where: { slug: 'contact-form' } });
-
   if (!existingForm) {
-      await prisma.form.create({
-          data: {
-              id: 1, 
-              group_id: 1,
-              projectId: projectId, // Link to project
-              slug: 'contact-form',
-              title: 'Contact Form',
-              description: 'Simple contact form for inquiries',
-              form_type: 'general',
-              form_schema: {
-                version: '2.0',
-                pages: [],
-                settings: { title: 'Contact Form' },
-                theme: { mode: 'auto' }
-              },
-              is_published: true,
-              is_active: true,
-          }
-      });
-      console.log('Created Contact Form');
+    await prisma.form.create({
+      data: {
+        group_id: 1,
+        projectId: project.id,
+        slug: 'contact-form',
+        title: 'Contact Form',
+        description: 'Simple contact form for inquiries',
+        form_type: 'general',
+        form_schema: {
+          version: '2.0',
+          pages: [],
+          settings: { title: 'Contact Form' },
+          theme: { mode: 'auto' },
+        },
+        is_published: true,
+        is_active: true,
+      },
+    });
+    console.log('  ✓ Contact Form');
   }
 
-  console.log('Seeding completed.');
+  console.log('\nSeeding complete.');
+  console.log('  Dev Admin:  admin@worktree.pro  / password');
+  console.log('  Dev User:   user@worktree.com   / password');
 }
 
 main()

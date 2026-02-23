@@ -51,3 +51,9 @@
 
 We have consolidated the Product Plan and defined the Architecture.
 **Next Step:** Execute against the **[Task Manifest](./tasks.md)** derived from the Epics.
+
+## 5. Development Environment
+
+- **Command:** Always use `docker compose up --watch` to start the project.
+- **Port:** The frontend is available at `http://localhost:3100`.
+- **Workflow:** Use `/restart-worktree` to reset the environment.
