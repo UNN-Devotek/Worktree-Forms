@@ -14,7 +14,10 @@ export function isAllowedWebhookUrl(rawUrl: string): boolean {
   // In production, only allow HTTPS
   if (process.env.NODE_ENV === 'production' && parsed.protocol !== 'https:') return false;
 
-  const hostname = parsed.hostname.toLowerCase();
+  // Normalize: strip IPv6 brackets and trailing FQDN dot
+  const hostname = parsed.hostname.toLowerCase()
+    .replace(/^\[|\]$/g, '')  // remove IPv6 brackets: [::1] -> ::1
+    .replace(/\.$/, '');       // remove trailing dot: localhost. -> localhost
 
   // Block private/internal IP ranges and hostnames
   const blockedPatterns = [
@@ -24,11 +27,13 @@ export function isAllowedWebhookUrl(rawUrl: string): boolean {
     /^172\.(1[6-9]|2\d|3[01])\./,
     /^192\.168\./,
     /^0\.0\.0\.0$/,
-    /^::1$/,
-    /^fc00:/i,
-    /^fe80:/i,
-    /^169\.254\./, // link-local
-    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // CGNAT
+    /^::1$/,                                           // IPv6 loopback (brackets already stripped)
+    /^fc00:/i,                                         // IPv6 ULA (brackets already stripped)
+    /^fe80:/i,                                         // IPv6 link-local (brackets already stripped)
+    /^::ffff:127\./i,                                  // IPv4-mapped loopback
+    /^::ffff:7f/i,                                     // IPv4-mapped loopback hex
+    /^169\.254\./,                                     // link-local
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,      // CGNAT
   ];
 
   if (blockedPatterns.some(re => re.test(hostname))) return false;
