@@ -81,6 +81,11 @@ services:
           path: apps/frontend/package.json
         - action: rebuild
           path: apps/backend/package.json
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
     deploy:
       resources:
         limits:
@@ -116,6 +121,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
     deploy:
       resources:
         limits:
@@ -141,6 +151,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
     deploy:
       resources:
         limits:
@@ -162,6 +177,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
     deploy:
       resources:
         limits:
@@ -188,6 +208,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
     deploy:
       resources:
         limits:
