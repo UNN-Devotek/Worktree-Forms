@@ -29,7 +29,7 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
   const { email, password } = parsed.data;
 
   try {
-    if (process.env.ENABLE_DEV_LOGIN === 'true') {
+    if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_LOGIN === 'true') {
       const user = await prisma.user.findUnique({ where: { email } });
 
       // Allow login if user exists (Dev/Test mode - Passwordless)
