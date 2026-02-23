@@ -58,11 +58,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setAuthError('');
   }, []);
 
-  const handleLogout = useCallback(() => {
-    // Remove both keys: 'token' (legacy) and 'access_token' (current re-auth key)
-    localStorage.removeItem('token');
-    localStorage.removeItem('access_token');
+  const handleLogout = useCallback(async () => {
+    // Clear user object from localStorage
     localStorage.removeItem('user');
+
+    // Ask backend to clear httpOnly auth cookies
+    try {
+      await apiRequest(API_ENDPOINTS.auth.logout, { method: 'POST' });
+    } catch {
+      // Proceed with client-side logout even if the request fails
+    }
 
     // Reset state
     setUser(null);
@@ -81,7 +86,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setAuthError('');
       setIsSubmitting(true);
       try {
-          const response = await apiRequest<{ success: boolean; data?: { token?: string; accessToken?: string; user?: User } }>(
+          const response = await apiRequest<{ success: boolean; data?: { user?: User } }>(
               API_ENDPOINTS.auth.login,
               {
                   method: 'POST',
@@ -89,9 +94,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
               }
           );
           if (response.success && response.data) {
-              const token = response.data.accessToken ?? response.data.token;
-              if (token && response.data.user) {
-                  localStorage.setItem('access_token', token);
+              if (response.data.user) {
                   localStorage.setItem('user', JSON.stringify(response.data.user));
                   setUser(response.data.user);
                   resetTimer();

@@ -17,6 +17,8 @@ const registerSchema = z.object({
 
 const router = Router();
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // ==========================================
 // AUTH ENDPOINTS (DB Integration)
 // ==========================================
@@ -34,15 +36,35 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
 
       // Allow login if user exists (Dev/Test mode - Passwordless)
       if (user) {
-        const token = jwt.sign(
+        const accessToken = jwt.sign(
           { sub: user.id, email: user.email, systemRole: (user as any).systemRole ?? 'MEMBER' },
           process.env.JWT_SECRET!,
           { expiresIn: (process.env.JWT_EXPIRE || '15m') as jwt.SignOptions['expiresIn'] },
         );
+        const refreshToken = jwt.sign(
+          { sub: user.id },
+          process.env.JWT_SECRET!,
+          { expiresIn: (process.env.JWT_REFRESH_EXPIRE || '7d') as jwt.SignOptions['expiresIn'] },
+        );
+
+        res.cookie('access_token', accessToken, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'strict',
+          maxAge: 15 * 60 * 1000, // 15 minutes
+          path: '/',
+        });
+        res.cookie('refresh_token', refreshToken, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          path: '/api/auth/refresh',
+        });
+
         return res.json({
           success: true,
           data: {
-            token,
             user: {
               id: user.id,
               email: user.email,
@@ -100,6 +122,12 @@ router.post('/register', rateLimitTiers.auth, auditMiddleware('user.register'), 
      console.error('Registration Error:', error);
      res.status(400).json({ success: false, error: `Registration failed: ${error instanceof Error ? error.message : String(error)}` });
   }
+});
+
+router.post('/logout', (req: Request, res: Response) => {
+  res.clearCookie('access_token', { path: '/' });
+  res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
 export default router;

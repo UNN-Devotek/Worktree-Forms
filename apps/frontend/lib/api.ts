@@ -47,45 +47,45 @@ export const API_ENDPOINTS = {
     logout: '/api/auth/logout',
     fakeLogin: (role: string) => `/api/auth/fake-login/${role}`,
   },
-  
+
   // Health and Documentation
   health: '/health',
   docs: '/api/docs',
   apiSpec: '/api/apispec.json',
-  
+
   // Dashboard Cards
   cards: '/api/cards',
-  
+
   // Admin
   admin: '/api/admin',
-  
+
   // Groups
   groups: '/api/groups',
-  
+
   // Marketplace
   marketplace: '/api/marketplace',
-  
+
   // Fleet
   fleet: '/api/fleet',
-  
+
   // Inventory
   inventory: '/api/inventory',
-  
+
   // Warehouse
   warehouse: '/api/warehouse',
-  
+
   // Giveaways
   giveaways: '/api/giveaways',
-  
+
   // Ribbons
   ribbons: '/api/ribbons',
-  
+
   // Roles
   roles: '/api/roles',
-  
+
   // Audit
   audit: '/api/audit',
-  
+
   // Missions
   missions: '/api/missions',
 } as const;
@@ -98,30 +98,30 @@ export function buildApiUrl(endpoint: string): string {
 }
 
 /**
- * Get authentication headers
+ * Get base headers for authenticated requests.
+ * Tokens are stored in httpOnly cookies and sent automatically via credentials: 'include'.
+ * No Authorization header is injected here; the cookie jar handles authentication.
  */
 export function getAuthHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   return {
     'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 }
 
 /**
- * Make authenticated API request with timeout support
+ * Make authenticated API request with timeout support.
+ * Relies on httpOnly cookies for authentication — credentials: 'include' ensures
+ * the browser sends the access_token cookie on every request.
  */
 export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit & { isFormData?: boolean } = {}
 ): Promise<T> {
   const url = buildApiUrl(endpoint);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
   // For FormData, don't set Content-Type (browser will set it with boundary)
   const headers: HeadersInit = options.isFormData
     ? {
-        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       }
     : {
@@ -130,7 +130,6 @@ export async function apiRequest<T = any>(
       };
 
   console.log(`[apiRequest] ${options.method || 'GET'} ${url}`, {
-    hasToken: !!token,
     isFormData: options.isFormData,
     headers: Object.keys(headers),
   });
@@ -149,6 +148,7 @@ export async function apiRequest<T = any>(
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
       signal,
     });
 
@@ -175,8 +175,6 @@ export async function apiRequest<T = any>(
       if (response.status === 401) {
         if (typeof window !== 'undefined') {
           console.warn('[apiRequest] 401 Unauthorized - redirecting to login');
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
           localStorage.removeItem('user');
           window.location.href = '/login';
         }
@@ -221,7 +219,7 @@ export async function apiRequest<T = any>(
         apiBase: API_BASE,
         stack: errorStack,
       });
-      
+
       // Provide more helpful error message
       throw new Error(`Cannot connect to API server at ${API_BASE}. Please check your connection or contact support.`);
     }
