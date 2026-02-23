@@ -2,9 +2,11 @@ import { Worker } from 'bullmq';
 import { prisma } from '../../db.js';
 import crypto from 'crypto';
 
+const _redisUrl = process.env.REDIS_URL;
+const _parsed = _redisUrl ? new URL(_redisUrl) : null;
 const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
+  host: _parsed?.hostname || process.env.REDIS_HOST || 'redis',
+  port: _parsed ? parseInt(_parsed.port || '6379') : parseInt(process.env.REDIS_PORT || '6379'),
 };
 
 new Worker('webhooks', async (job) => {

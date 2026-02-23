@@ -2,9 +2,11 @@ import { Worker } from 'bullmq';
 import { StorageService } from '../../storage.js';
 import { prisma } from '../../db.js';
 
+const _redisUrl = process.env.REDIS_URL;
+const _parsed = _redisUrl ? new URL(_redisUrl) : null;
 const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
+  host: _parsed?.hostname || process.env.REDIS_HOST || 'redis',
+  port: _parsed ? parseInt(_parsed.port || '6379') : parseInt(process.env.REDIS_PORT || '6379'),
 };
 
 new Worker('file-rename', async (job) => {
