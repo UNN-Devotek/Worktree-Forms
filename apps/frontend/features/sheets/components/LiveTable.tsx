@@ -270,7 +270,7 @@ function EditableCell({
             <input
                 type="number"
                 aria-label={t('grid.edit_number', 'Edit number value')}
-                className="w-full h-full bg-transparent outline-none border-none p-1 text-right"
+                className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 text-right"
                 style={inputStyle}
                 value={value ?? ''}
                 onChange={e => setValue(e.target.value === '' ? '' : Number(e.target.value))}
@@ -285,7 +285,7 @@ function EditableCell({
             <input
                 type="date"
                 aria-label={t('grid.edit_date', 'Edit date value')}
-                className="w-full h-full bg-transparent outline-none border-none p-1"
+                className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
                 style={inputStyle}
                 value={value ?? ''}
                 onChange={e => {
@@ -301,7 +301,7 @@ function EditableCell({
     return (
         <input
             aria-label={t('grid.edit_cell', 'Edit cell value')}
-            className="w-full h-full bg-transparent outline-none border-none p-1"
+            className="w-full h-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
             style={inputStyle}
             value={value ?? ''}
             onChange={e => setValue(e.target.value)}
