@@ -8,15 +8,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // extensions = [vector] // Commented out - pgvector is optional for Dokploy compatibility
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto, vector]
 }
 
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
-  // password removed
+  password         String?
   name             String?
   // role removed
   emailVerified    DateTime?
@@ -45,6 +45,7 @@ model User {
   webhooks              Webhook[]
   helpArticles          HelpArticle[]
   helpArticleVersions   HelpArticleVersion[]
+  chatMessages          ChatMessage[]
 }
 
 model Account {
@@ -112,6 +113,7 @@ model Project {
   vectorEmbeddings VectorEmbedding[]
   webhooks         Webhook[]
   helpArticles     HelpArticle[]
+  chatChannels     ChatChannel[]
 }
 
 model ProjectMember {
@@ -146,30 +148,32 @@ model ScheduleTask {
 }
 
 model Folder {
-  id        Int      @id @default(autoincrement())
-  name      String
-  parentId  Int? // For nested folders
-  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
-  children  Folder[] @relation("FolderToFolder")
-  forms     Form[]
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  name             String
+  parentId         Int? // For nested folders
+  parent           Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children         Folder[] @relation("FolderToFolder")
+  forms            Form[]
+  projectId        String?
+  project          Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  visibilityConfig Json?
 }
 
 model Form {
-  id           Int      @id @default(autoincrement())
-  group_id     Int      @default(1)
-  slug         String   @unique
-  title        String
-  description  String?
-  form_type    String   @default("general")
-  form_schema  Json
-  is_published Boolean  @default(false)
-  is_active    Boolean  @default(true)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  group_id         Int      @default(1)
+  slug             String   @unique
+  title            String
+  description      String?
+  form_type        String   @default("general")
+  form_schema      Json
+  is_published     Boolean  @default(false)
+  is_active        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  visibilityConfig Json?
 
   folderId Int?
   folder   Folder? @relation(fields: [folderId], references: [id])
@@ -178,7 +182,7 @@ model Form {
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   targetSheetId String?
-  targetSheet   Sheet?   @relation("FormToSheet", fields: [targetSheetId], references: [id])
+  targetSheet   Sheet?  @relation("FormToSheet", fields: [targetSheetId], references: [id])
 
   submissions Submission[]
   versions    FormVersion[]
@@ -194,7 +198,7 @@ model FormVersion {
   changelog  String?
   editorId   String? // Nullable for legacy
   editor     User?    @relation(fields: [editorId], references: [id])
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   submissions Submission[]
 
@@ -209,8 +213,8 @@ model Submission {
   form_version    FormVersion? @relation(fields: [form_version_id], references: [id])
   data            Json
   status          String       @default("pending")
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   files            FileUpload[]
   vectorEmbeddings VectorEmbedding[]
@@ -219,10 +223,12 @@ model Submission {
 model AuditLog {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   action    String
   resource  String
   details   String?
+  ipAddress String?
+  userAgent String?
   timestamp DateTime @default(now())
 }
 
@@ -242,6 +248,7 @@ model FileUpload {
 
   @@index([objectKey])
   @@index([uploadedBy])
+  @@index([submissionId])
   @@map("file_uploads")
 }
 
@@ -272,6 +279,9 @@ model Route {
   status     String   @default("draft") // draft, published, completed
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  sourceSheetId String?
+  sourceSheet   Sheet?  @relation("RouteSourceSheet", fields: [sourceSheetId], references: [id])
 
   stops RouteStop[]
 }
@@ -313,7 +323,10 @@ model UserPreference {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, key, projectId])
+  // Note: Uniqueness enforced by two partial unique indexes in migration
+  // (see migrations/20260220_fix_userpreference_null_unique/) rather than a
+  // Prisma @@unique, because PostgreSQL treats NULL != NULL for unique constraints.
+  @@index([userId, key, projectId])
 }
 
 // Epic 6: Real-Time Sheets
@@ -326,13 +339,15 @@ model Sheet {
   // Latest binary snapshot of the Yjs doc
   content Bytes?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  visibilityConfig Json?
 
-  columns   SheetColumn[]
-  rows      SheetRow[]
-  snapshots SheetSnapshot[]
-  linkedForms Form[] @relation("FormToSheet")
+  columns       SheetColumn[]
+  rows          SheetRow[]
+  snapshots     SheetSnapshot[]
+  linkedForms   Form[]          @relation("FormToSheet")
+  sourcedRoutes Route[]         @relation("RouteSourceSheet")
 }
 
 model SheetColumn {
@@ -340,11 +355,11 @@ model SheetColumn {
   sheetId String
   sheet   Sheet  @relation(fields: [sheetId], references: [id], onDelete: Cascade)
 
-  header String
-  type   String // TEXT, NUMBER, STATUS, CONTACT, DATE, CHECKBOX
+  header  String
+  type    String // TEXT, NUMBER, STATUS, CONTACT, DATE, CHECKBOX
   options Json? // Choices for dropdowns
-  size    Int    @default(150)
-  order   Int    @default(0)
+  size    Int     @default(150)
+  order   Int     @default(0)
   locked  Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -446,7 +461,7 @@ model VectorEmbedding {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   content   String @db.Text
-  embedding Json // Changed from vector(1536) to Json for Dokploy compatibility (stores array of floats)
+  embedding Unsupported("vector(1536)") // pgvector native type — requires pgvector extension on DB
 
   createdAt DateTime @default(now())
 
@@ -540,4 +555,34 @@ model HelpArticleVersion {
 
   @@unique([articleId, version])
   @@index([articleId])
+}
+
+model ChatChannel {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name String
+  type String @default("PUBLIC")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages         ChatMessage[]
+  visibilityConfig Json?
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([channelId])
 }

@@ -150,48 +150,29 @@ app.get('/api/docs', (req: Request, res: Response) => {
 // MOUNT ROUTERS
 // ==========================================
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/projects', projectRoutes); // Handles /api/projects/:id...
-// Specific sub-route handling in Project Router covers /projects/:projectId/...
-// BUT some routes were mounted at root like /api/folders
-app.use('/api/folders', folderRoutes); 
+// Public routes (no authentication required)
+app.use('/api/auth', authRoutes);           // POST /api/auth/login, /api/auth/register
+app.use('/api/public', shareRoutes);        // GET  /api/public/access/:token
 
-app.use('/api', formRoutes); 
-// Wait, the Form Router defines '/groups/:groupId/forms'. 
-// So `app.use('/api', formRoutes)`? 
-// No, the Form Router had `router.get('/', ...)` (which matches /api/forms) AND `router.get('/groups/:groupId/forms', ...)` 
-// which matches /api/forms/groups/... => INCORRECT if we mount at /api/forms.
-// Logic: If Form Router has `/groups/:groupId/forms`, and we mount at `/api/forms`, path becomes `/api/forms/groups/...`
-// ORIGINAL was `/api/groups/:groupId/forms`.
-// So we should mount formRoutes at `/api`?
-// Let's check Form Router again.
-// It has `router.get('/', ...)` -> `/api/forms` (if mounted at /api/forms).
-// It has `router.get('/groups/:groupId/forms', ...)` -> `/api/forms/groups/...` (if mounted at /api/forms). This is WRONG.
-// We need to mount specific routers carefully or fix paths.
-// CLEANEST: Mount at `/api`.
-// But then prefix collision?
-// Let's create `appRoutes` that mounts them?
-// Or just mount them at specific paths.
-// If I mount `formRoutes` at `/api`, then `router.get('/forms')` works.
-app.use('/api', scheduleRoutes); // /projects/:id/schedule
-app.use('/api', mobileRoutes); // /projects/:id/routes...
+// Protected routes (authenticate middleware applied above)
+app.use('/api/users', userRoutes);          // GET /api/users, GET /api/users/me
+app.use('/api/projects', projectRoutes);    // GET /api/projects, POST /api/projects
+app.use('/api/folders', folderRoutes);      // GET /api/folders, POST /api/folders
 
-// I need to make sure `formRoutes` doesn't capture `/` as root.
-// I will rewrite `forms.routes.ts` to be safe.
-
-app.use('/api/dashboard', dashboardRoutes); // was /api/projects/:id/metrics... oh..
-// Dashboard routes: `/projects/:id/metrics`.
-// If I mount it at `/api`, then works.
-app.use('/api', dashboardRoutes);
+// Routes mounted at /api because they define prefixed paths internally
+app.use('/api', formRoutes);                // /api/forms, /api/groups/:id/forms
+app.use('/api', rfiRoutes);                 // /api/projects/:id/rfis
+app.use('/api', specRoutes);                // /api/projects/:id/specs
+app.use('/api', scheduleRoutes);            // /api/projects/:id/schedule
+app.use('/api', mobileRoutes);              // /api/projects/:id/routes
+app.use('/api', dashboardRoutes);           // /api/projects/:id/metrics
 
 app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/keys', keyRoutes);
 app.use('/api/help', helpRoutes);
-app.use('/api/public', shareRoutes); // /api/public/access
 app.use('/api/preferences', prefRoutes);
-app.use('/api/upload', uploadRoutes); // /api/upload
+app.use('/api/upload', uploadRoutes);
 
 // Error Handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

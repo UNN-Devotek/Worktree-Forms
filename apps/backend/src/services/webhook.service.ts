@@ -112,10 +112,10 @@ export class WebhookService {
     }
 
     try {
-      // Generate HMAC signature
-      const signature = crypto
+      const body = JSON.stringify(delivery.payload);
+      const signature = 'sha256=' + crypto
         .createHmac('sha256', wh.secret)
-        .update(JSON.stringify(delivery.payload))
+        .update(body)
         .digest('hex');
 
       console.log(`📤 Delivering webhook to: ${wh.url}`);
@@ -124,10 +124,10 @@ export class WebhookService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Webhook-Signature': signature,
-          'X-Webhook-Event': delivery.event
+          'X-Signature': signature,
+          'X-Event': delivery.event,
         },
-        body: JSON.stringify(delivery.payload)
+        body,
       });
 
       await prisma.webhookDelivery.update({
