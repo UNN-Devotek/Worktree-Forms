@@ -43,10 +43,4 @@ new Worker('webhooks', async (job) => {
   if (!response.ok) {
     throw new Error(`Delivery failed: HTTP ${response.status}`);
   }
-}, {
-  connection,
-  defaultJobOptions: {
-    attempts: 5,
-    backoff: { type: 'exponential', delay: 1000 },
-  },
-});
+}, { connection });

@@ -752,7 +752,7 @@ router.get('/forms/:formId/submissions/:submissionId/export-pdf', async (req: Re
       return res.status(404).json({ success: false, error: 'Submission not found' });
     }
 
-    const overlay = form.overlay as { pdfUrl: string; fields: Array<{ fieldId: string; x: number; y: number; page: number }> };
+    const overlay = form.overlay as unknown as { pdfUrl: string; fields: Array<{ fieldId: string; x: number; y: number; page: number }> };
     const pdfBuffer = await generateFlattenedPDF(overlay, submission.data as Record<string, unknown>);
 
     res.setHeader('Content-Type', 'application/pdf');

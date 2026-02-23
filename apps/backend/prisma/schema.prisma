@@ -178,8 +178,8 @@ model Form {
   form_schema      Json
   is_published     Boolean  @default(false)
   is_active        Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt        @map("updated_at")
   visibilityConfig Json?
 
   folderId Int?
@@ -471,7 +471,7 @@ model VectorEmbedding {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   content   String @db.Text
-  embedding Unsupported("vector(1536)") // pgvector native type — requires pgvector extension on DB
+  embedding Json // In production with pgvector: Unsupported("vector(1536)") — requires pgvector extension
 
   createdAt DateTime @default(now())
 

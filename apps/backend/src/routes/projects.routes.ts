@@ -29,7 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
                 { createdById: userId },
                 { members: { some: { userId } } }
             ]
-        } as const;
+        };
         const [projects, total] = await Promise.all([
             prisma.project.findMany({
                 where,

@@ -43,24 +43,13 @@ router.post('/', async (req: Request, res: Response) => {
     const { key, value, projectId } = req.body;
     const userId = (req as any).user.id;
 
-    const pref = await prisma.userPreference.upsert({
-      where: {
-        userId_key_projectId: {
-          userId,
-          key,
-          projectId: (projectId ? String(projectId) : null) as any
-        }
-      },
-      update: {
-        value
-      },
-      create: {
-        userId,
-        key,
-        value,
-        projectId: (projectId ? String(projectId) : null) as any
-      }
+    // UserPreference uses partial unique indexes (not Prisma @@unique), so use findFirst + update/create
+    const existing = await prisma.userPreference.findFirst({
+      where: { userId, key, projectId: projectId ? String(projectId) : null }
     });
+    const pref = existing
+      ? await prisma.userPreference.update({ where: { id: existing.id }, data: { value } })
+      : await prisma.userPreference.create({ data: { userId, key, value, projectId: projectId ? String(projectId) : null } });
 
     res.json(pref);
   } catch (error) {
