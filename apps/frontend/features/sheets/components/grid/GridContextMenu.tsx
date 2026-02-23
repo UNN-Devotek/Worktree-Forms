@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -9,6 +9,17 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
 } from '@/components/ui/context-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useSheet } from '../../providers/SheetProvider';
 import {
   Scissors,
@@ -140,64 +151,110 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
     unhideAllColumns,
   } = useSheet();
 
-  const handleRename = () => {
-    const newName = window.prompt('Enter new column name:');
-    if (newName && newName.trim()) {
-      renameColumn(columnId, newName.trim());
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+
+  const openRenameDialog = () => {
+    setRenameValue('');
+    setRenameOpen(true);
+  };
+
+  const commitRename = () => {
+    if (renameValue.trim()) {
+      renameColumn(columnId, renameValue.trim());
     }
+    setRenameOpen(false);
   };
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {children}
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
-        {/* Column insert/delete */}
-        <ContextMenuItem onSelect={() => insertColumnLeft(columnId)}>
-          <PanelLeft className="mr-2 h-4 w-4" />
-          Insert Column Left
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => insertColumnRight(columnId)}>
-          <PanelRight className="mr-2 h-4 w-4" />
-          Insert Column Right
-        </ContextMenuItem>
-        <ContextMenuItem
-          className="text-destructive focus:text-destructive"
-          onSelect={() => deleteColumn(columnId)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Column
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={handleRename}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Rename Column...
-        </ContextMenuItem>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          {children}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-52">
+          {/* Column insert/delete */}
+          <ContextMenuItem onSelect={() => insertColumnLeft(columnId)}>
+            <PanelLeft className="mr-2 h-4 w-4" />
+            Insert Column Left
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => insertColumnRight(columnId)}>
+            <PanelRight className="mr-2 h-4 w-4" />
+            Insert Column Right
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => deleteColumn(columnId)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Column
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={openRenameDialog}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Rename Column...
+          </ContextMenuItem>
 
-        <ContextMenuSeparator />
+          <ContextMenuSeparator />
 
-        {/* Sort */}
-        <ContextMenuItem onSelect={() => sortRows(columnId, 'asc')}>
-          <ArrowUpAZ className="mr-2 h-4 w-4" />
-          Sort A &rarr; Z
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => sortRows(columnId, 'desc')}>
-          <ArrowDownAZ className="mr-2 h-4 w-4" />
-          Sort Z &rarr; A
-        </ContextMenuItem>
+          {/* Sort */}
+          <ContextMenuItem onSelect={() => sortRows(columnId, 'asc')}>
+            <ArrowUpAZ className="mr-2 h-4 w-4" />
+            Sort A → Z
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => sortRows(columnId, 'desc')}>
+            <ArrowDownAZ className="mr-2 h-4 w-4" />
+            Sort Z → A
+          </ContextMenuItem>
 
-        <ContextMenuSeparator />
+          <ContextMenuSeparator />
 
-        {/* Visibility */}
-        <ContextMenuItem onSelect={() => hideColumn(columnId)}>
-          <EyeOff className="mr-2 h-4 w-4" />
-          Hide Column
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => unhideAllColumns()}>
-          <Eye className="mr-2 h-4 w-4" />
-          Unhide All Columns
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+          {/* Visibility */}
+          <ContextMenuItem onSelect={() => hideColumn(columnId)}>
+            <EyeOff className="mr-2 h-4 w-4" />
+            Hide Column
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => unhideAllColumns()}>
+            <Eye className="mr-2 h-4 w-4" />
+            Unhide All Columns
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* Rename dialog — rendered outside the ContextMenu to avoid portal conflicts */}
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename Column</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this column.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Label htmlFor="col-rename-input" className="sr-only">
+              Column name
+            </Label>
+            <Input
+              id="col-rename-input"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitRename();
+                if (e.key === 'Escape') setRenameOpen(false);
+              }}
+              placeholder="New column name"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={commitRename} disabled={!renameValue.trim()}>
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

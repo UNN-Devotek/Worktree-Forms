@@ -26,8 +26,8 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
   const tableColumns = useMemo<ColumnDef<any>[]>(
     () => {
         if (!columns || columns.length === 0) return []
-        
-        return columns.map((col: any) => ({
+
+        return columns.filter((col: any) => !col.hidden).map((col: any) => ({
             accessorKey: col.id,
             header: col.label || col.id,
             size: col.width || 120,
