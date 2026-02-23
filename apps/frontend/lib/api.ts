@@ -29,13 +29,6 @@ function extractErrorDetails(error: unknown) {
   };
 }
 
-// Log API configuration for debugging (only in browser)
-if (typeof window !== 'undefined') {
-  console.log('[API Config] API_BASE:', API_BASE);
-  console.log('[API Config] NODE_ENV:', process.env.NODE_ENV);
-  console.log('[API Config] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-}
-
 // API endpoints
 export const API_ENDPOINTS = {
   // Authentication
@@ -129,11 +122,6 @@ export async function apiRequest<T = any>(
         ...options.headers,
       };
 
-  console.log(`[apiRequest] ${options.method || 'GET'} ${url}`, {
-    isFormData: options.isFormData,
-    headers: Object.keys(headers),
-  });
-
   // Use external signal if provided, otherwise create timeout controller
   const shouldUseTimeout = !options.signal;
   const timeoutController = shouldUseTimeout ? new AbortController() : null;
@@ -153,11 +141,6 @@ export async function apiRequest<T = any>(
     });
 
     if (timeoutId) clearTimeout(timeoutId);
-
-    console.log(`[apiRequest] Response status: ${response.status}`, {
-      ok: response.ok,
-      statusText: response.statusText,
-    });
 
     // Parse response body
     let responseData: any;
@@ -197,7 +180,6 @@ export async function apiRequest<T = any>(
         throw new Error('Request timed out. Please try again.');
       } else {
         // External cancellation (component unmount, navigation, user-initiated)
-        console.log(`[apiRequest] Request cancelled externally: ${url}`);
         throw error; // Rethrow original AbortError for external handling
       }
     }
@@ -275,11 +257,3 @@ export function openHealthCheck(): void {
   window.open(buildApiUrl(API_ENDPOINTS.health), '_blank');
 }
 
-// Export for debugging
-if (typeof window !== 'undefined') {
-  (window as any).__SQUIDHUB_API_CONFIG__ = {
-    API_BASE,
-    API_ENDPOINTS,
-    buildApiUrl,
-  };
-}

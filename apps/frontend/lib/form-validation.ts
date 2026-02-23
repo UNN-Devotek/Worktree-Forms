@@ -2,6 +2,21 @@ import { z } from 'zod'
 import { FormSchema, FormFieldBase, ValidationRule } from '@/types/group-forms'
 
 /**
+ * Safely compile a user-supplied regex pattern.
+ * Returns null for patterns that are empty, excessively long, or syntactically invalid,
+ * preventing catastrophic backtracking (ReDoS) attacks.
+ */
+function safeCompileRegex(pattern: string): RegExp | null {
+  // Limit pattern length to prevent catastrophic backtracking
+  if (!pattern || pattern.length > 200) return null
+  try {
+    return new RegExp(pattern)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Generate Zod validation schema from FormSchema
  */
 export function generateZodSchema(formSchema: FormSchema): z.ZodObject<any> {
@@ -181,14 +196,11 @@ function applyValidationRule(
 
     case 'pattern':
       if (schema instanceof z.ZodString && typeof rule.value === 'string') {
-        try {
-          // Validate regex before using - prevents ReDoS
-          const regex = new RegExp(rule.value)
+        const regex = safeCompileRegex(rule.value)
+        if (regex !== null) {
           return schema.regex(regex, message)
-        } catch {
-          // Invalid regex pattern, skip validation
-          console.warn(`Invalid regex pattern: ${rule.value}`)
         }
+        // Invalid or unsafe regex pattern — skip validation, treat field as valid
       }
       break
 

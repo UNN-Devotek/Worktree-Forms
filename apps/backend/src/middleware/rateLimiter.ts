@@ -110,6 +110,17 @@ export const apiRateLimiter = makeRateLimiter({
 });
 
 /**
+ * Deletion rate limiter — 20 delete requests per minute per user/IP
+ */
+export const deletionLimiter = makeRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many delete requests. Please slow down.' },
+});
+
+/**
  * Rate limiting tiers for easy access
  */
 export const rateLimitTiers = {

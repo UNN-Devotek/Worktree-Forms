@@ -67,8 +67,8 @@ app.use(cors({
 app.use(csrfMiddleware);
 app.use(getSecurityMiddleware()); // Security headers (Helmet)
 app.use('/api', rateLimitTiers.api); // General API rate limiting
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use((req: Request, res: Response, next: NextFunction) => {
   const originalJson = res.json.bind(res);
   res.json = (body) => originalJson(JSON.parse(JSON.stringify(body, bigIntReplacer)));

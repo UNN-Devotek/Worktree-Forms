@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ApiKeyService } from '../services/api-key.service.js';
+import { deletionLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -55,7 +56,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Revoke API Key (Auth Required)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', deletionLimiter, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const { id } = req.params;
