@@ -27,7 +27,7 @@ interface User {
 interface SessionContextType {
   user: User | null;
   resetTimer: () => void;
-  handleLogout: () => void;
+  handleLogout: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | null>(null);

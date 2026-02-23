@@ -15,11 +15,8 @@ export interface User {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
   user: User;
+  // Tokens are delivered as httpOnly cookies, not in response body
 }
 
 export interface ErrorResponse {

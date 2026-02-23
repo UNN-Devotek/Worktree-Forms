@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { apiClient } from '@/lib/api'
+import { useSession } from '@/components/session-provider'
 
 interface UseFormSubmissionProps {
   formId: number
@@ -27,6 +28,8 @@ export function useFormSubmission({
 }: UseFormSubmissionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const session = useSession()
+  const currentUser = session?.user ?? null
 
   const submitForm = async (data: any) => {
     setIsSubmitting(true)
@@ -51,7 +54,7 @@ export function useFormSubmission({
             form_version_id: latestVersionId,
             submitted_at: new Date().toISOString(),
             device_type: getDeviceType(),
-            user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+            user: currentUser
           }
         });
 
@@ -81,7 +84,7 @@ export function useFormSubmission({
             form_version_id: latestVersionId, // [VERSIONING]
             submitted_at: new Date().toISOString(),
             device_type: getDeviceType(),
-            user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+            user: currentUser
           })
         }
       )

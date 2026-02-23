@@ -50,14 +50,14 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
         res.cookie('access_token', accessToken, {
           httpOnly: true,
           secure: isProduction,
-          sameSite: 'strict',
+          sameSite: 'lax',
           maxAge: 15 * 60 * 1000, // 15 minutes
           path: '/',
         });
         res.cookie('refresh_token', refreshToken, {
           httpOnly: true,
           secure: isProduction,
-          sameSite: 'strict',
+          sameSite: 'lax',
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           path: '/api/auth/refresh',
         });
