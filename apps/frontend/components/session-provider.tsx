@@ -45,6 +45,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const lastActivityRef = useRef<number>(Date.now());
   const warningLevelRef = useRef<number>(0); // 0: none, 1: 15m, 2: 10m, 3: 5m
@@ -60,6 +61,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const handleLogout = useCallback(() => {
     // Clear storage
     localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     
     // Reset state
@@ -76,7 +78,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const handleReLogin = async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isSubmitting) return;
       setAuthError('');
+      setIsSubmitting(true);
       try {
           const response = await apiRequest<{ success: boolean; data?: { token?: string; accessToken?: string; user?: User } }>(
               API_ENDPOINTS.auth.login,
@@ -87,17 +91,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           );
           if (response.success && response.data) {
               const token = response.data.accessToken ?? response.data.token;
-              if (token) {
+              if (token && response.data.user) {
                   localStorage.setItem('access_token', token);
-              }
-              if (response.data.user) {
                   localStorage.setItem('user', JSON.stringify(response.data.user));
                   setUser(response.data.user);
+                  resetTimer();
+                  return;
               }
           }
-          resetTimer();
-      } catch {
-          setAuthError('Invalid credentials. Please try again.');
+          setAuthError('Login failed. Please check your credentials.');
+      } catch (err) {
+          const message = err instanceof Error ? err.message : '';
+          if (message.includes('timeout') || message.includes('connect') || message.includes('network')) {
+              setAuthError(message);
+          } else {
+              setAuthError('Invalid credentials. Please try again.');
+          }
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
@@ -249,8 +260,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                          <Button type="button" variant="outline" className="flex-1" onClick={handleLogout}>
                             Logout
                          </Button>
-                         <Button type="submit" className="flex-1">
-                            Resume Session
+                         <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                            {isSubmitting ? 'Signing in...' : 'Resume Session'}
                          </Button>
                     </div>
                 </form>
