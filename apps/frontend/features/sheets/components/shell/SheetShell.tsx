@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { SheetToolbar } from './SheetToolbar';
+import { FormulaBar } from '../toolbar/FormulaBar';
 
 interface SheetShellProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export function SheetShell({ children, title }: SheetShellProps) {
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden border-t text-sm">
       <SheetToolbar title={title} />
+      <FormulaBar />
       <div className="flex-1 overflow-hidden relative">
         {children}
       </div>
