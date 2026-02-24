@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useCallback, useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { HyperFormula } from "hyperformula"
+import { detectActiveSignature, FUNCTION_SIGNATURES } from '../utils/formula-signatures'
 import { cn as _cn } from "@/lib/utils"
 import { t } from "@/lib/i18n"
 
@@ -589,6 +590,8 @@ function EditableCell({
     const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
     const [activeIndex, setActiveIndex] = useState(-1)
     const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null)
+    const [signatureInfo, setSignatureInfo] = useState<{ fnName: string; argIndex: number } | null>(null)
+    const [signaturePos, setSignaturePos] = useState<{ top: number; left: number } | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     // Keep a ref so the insertCellRefCallback closure is never stale
@@ -641,6 +644,15 @@ function EditableCell({
         setActiveIndex(-1)
     }
 
+    const computeSignature = (v: string, cursorPos: number) => {
+        setSignatureInfo(detectActiveSignature(v, cursorPos))
+    }
+
+    const handleSelect = (e: React.SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const target = e.target as HTMLInputElement
+        computeSignature(target.value, target.selectionStart ?? target.value.length)
+    }
+
     const insertFunction = (fnName: string) => {
         const el = (inputRef.current || textareaRef.current) as HTMLInputElement | null
         const pos = el?.selectionStart ?? String(valueRef.current ?? '').length
@@ -673,6 +685,7 @@ function EditableCell({
         insertCellRefCallback.current = null
         setAutocompleteMatches([])
         setActiveIndex(-1)
+        setSignatureInfo(null)
         const committed = autoClose(value)
         if (committed !== initialValue) {
             onChange(committed)
@@ -713,6 +726,7 @@ function EditableCell({
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
             setAutocompleteMatches([])
+            setSignatureInfo(null)
             ;(e.target as HTMLElement).blur()
         }
         if (e.key === 'Escape') {
@@ -722,6 +736,7 @@ function EditableCell({
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
             setAutocompleteMatches([])
+            setSignatureInfo(null)
             ;(e.target as HTMLElement).blur()
         }
         e.stopPropagation()
@@ -756,6 +771,16 @@ function EditableCell({
         const rect = el.getBoundingClientRect()
         setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: Math.max(rect.width, 224) })
     }, [showDropdown, autocompleteMatches])
+
+    // Signature tooltip: only show when autocomplete is not open
+    const showSignature = signatureInfo !== null && !showDropdown
+    useEffect(() => {
+        if (!showSignature) { setSignaturePos(null); return }
+        const el = (inputRef.current || textareaRef.current) as HTMLElement | null
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        setSignaturePos({ top: rect.bottom + 2, left: rect.left })
+    }, [showSignature, signatureInfo])
 
     if (columnType === 'CHECKBOX') {
         return (
@@ -833,6 +858,39 @@ function EditableCell({
         )
         : null
 
+    // Signature tooltip portal — shown below the input when cursor is inside a known function call
+    const signaturePortal = showSignature && signaturePos && signatureInfo && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+                style={{ position: 'fixed', top: signaturePos.top, left: signaturePos.left, zIndex: 9998 }}
+                className="bg-neutral-800 border border-neutral-600 shadow-lg rounded-md px-3 py-2 text-sm font-mono text-neutral-100 max-w-sm pointer-events-none"
+            >
+                <div>
+                    <span className="text-yellow-300">{signatureInfo.fnName}</span>
+                    <span className="text-neutral-400">(</span>
+                    {FUNCTION_SIGNATURES[signatureInfo.fnName]?.args.map((arg, idx) => (
+                        <React.Fragment key={idx}>
+                            {idx > 0 && <span className="text-neutral-400">, </span>}
+                            <span className={_cn(
+                                idx === signatureInfo.argIndex ? 'text-white font-bold underline' : 'text-neutral-400',
+                                !arg.required && 'italic'
+                            )}>
+                                {!arg.required ? `[${arg.name}]` : arg.name}
+                            </span>
+                        </React.Fragment>
+                    ))}
+                    <span className="text-neutral-400">)</span>
+                </div>
+                {FUNCTION_SIGNATURES[signatureInfo.fnName]?.description && (
+                    <div className="text-neutral-400 text-xs mt-1 font-sans">
+                        {FUNCTION_SIGNATURES[signatureInfo.fnName].description}
+                    </div>
+                )}
+            </div>,
+            document.body
+        )
+        : null
+
     // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
     if (cellStyle.wrap) {
         return (
@@ -850,18 +908,25 @@ function EditableCell({
                         setValue(v)
                         const pos = e.target.selectionStart ?? v.length
                         computeAutocomplete(v, pos)
+                        computeSignature(v, pos)
                         if (v.startsWith('=')) activateFormulaMode(e.target)
                         else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
                     }}
                     onFocus={(e) => {
                         setIsEditing(true)
                         onFocus(rowId, columnId)
-                        if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
+                        if (String(value ?? '').startsWith('=')) {
+                            activateFormulaMode(e.target)
+                            const pos = e.target.selectionStart ?? String(value ?? '').length
+                            computeSignature(String(value ?? ''), pos)
+                        }
                     }}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
+                    onSelect={handleSelect}
                 />
                 {autocompletePortal}
+                {signaturePortal}
             </>
         )
     }
@@ -880,18 +945,25 @@ function EditableCell({
                     setValue(v)
                     const pos = e.target.selectionStart ?? v.length
                     computeAutocomplete(v, pos)
+                    computeSignature(v, pos)
                     if (v.startsWith('=')) activateFormulaMode(e.target)
                     else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
                 }}
                 onFocus={(e) => {
                     setIsEditing(true)
                     onFocus(rowId, columnId)
-                    if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
+                    if (String(value ?? '').startsWith('=')) {
+                        activateFormulaMode(e.target)
+                        const pos = e.target.selectionStart ?? String(value ?? '').length
+                        computeSignature(String(value ?? ''), pos)
+                    }
                 }}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
+                onSelect={handleSelect}
             />
             {autocompletePortal}
+            {signaturePortal}
         </>
     )
 }

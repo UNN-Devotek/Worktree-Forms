@@ -5,6 +5,8 @@ import { HyperFormula } from 'hyperformula';
 import { useSheet } from '../../providers/SheetProvider';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { createPortal } from 'react-dom';
+import { detectActiveSignature, FUNCTION_SIGNATURES } from '../../utils/formula-signatures';
 
 const FORMULA_FUNCTIONS = HyperFormula.getRegisteredFunctionNames('enGB');
 
@@ -47,6 +49,10 @@ export function FormulaBar() {
   const [activeIndex, setActiveIndex] = useState(-1);
   // currentTokenRef tracks the typed fragment for function replacement without causing re-renders
   const currentTokenRef = useRef('');
+
+  // Signature tooltip state
+  const [signatureInfo, setSignatureInfo] = useState<{ fnName: string; argIndex: number } | null>(null);
+  const [signaturePos, setSignaturePos] = useState<{ top: number; left: number } | null>(null);
 
   // Sync external cell value changes (when cell is refocused or changed externally)
   useEffect(() => {
@@ -101,6 +107,15 @@ export function FormulaBar() {
     setActiveIndex(-1);
   }, []);
 
+  const computeSignature = useCallback((value: string, cursorPos: number) => {
+    setSignatureInfo(detectActiveSignature(value, cursorPos));
+  }, []);
+
+  const handleSelect = useCallback((e: React.SyntheticEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    computeSignature(target.value, target.selectionStart ?? target.value.length);
+  }, [computeSignature]);
+
   /**
    * Insert a cell ref string at the current cursor position in the formula bar.
    * This is registered as insertCellRefCallback when the input is focused.
@@ -137,6 +152,11 @@ export function FormulaBar() {
     currentTokenRef.current = '';
   };
 
+  const closeSignature = () => {
+    setSignatureInfo(null);
+    setSignaturePos(null);
+  };
+
   /** Append closing parens to balance any unclosed ones in a formula */
   const autoClose = (v: string): string => {
     if (!v.startsWith('=')) return v;
@@ -155,6 +175,7 @@ export function FormulaBar() {
     if (committed !== localValue) setLocalValue(committed);
     setIsEditing(false);
     closeAutocomplete();
+    closeSignature();
   };
 
   /**
@@ -232,15 +253,18 @@ export function FormulaBar() {
       setIsEditing(false);
       setIsFormulaEditing(false);
       closeAutocomplete();
+      closeSignature();
       inputRef.current?.blur();
     }
   };
 
-  const handleFocus = () => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsEditing(true);
     if (localValue.startsWith('=')) {
       setIsFormulaEditing(true);
       insertCellRefCallback.current = insertCellRef;
+      const cursorPos = e.target.selectionStart ?? localValue.length;
+      computeSignature(localValue, cursorPos);
     }
   };
 
@@ -252,6 +276,7 @@ export function FormulaBar() {
     // Otherwise close formula editing and commit
     setIsFormulaEditing(false);
     closeAutocomplete();
+    closeSignature();
     handleCommit();
   };
 
@@ -265,15 +290,27 @@ export function FormulaBar() {
       insertCellRefCallback.current = insertCellRef;
       const cursorPos = e.target.selectionStart ?? newValue.length;
       computeAutocomplete(newValue, cursorPos);
+      computeSignature(newValue, cursorPos);
     } else {
       if (isFormulaEditing) {
         setIsFormulaEditing(false);
       }
       closeAutocomplete();
+      closeSignature();
     }
   };
 
   const showDropdown = autocompleteMatches.length > 0 && localValue.startsWith('=');
+
+  // Signature tooltip: shown when cursor is inside a known function call and autocomplete isn't open
+  const showSignature = signatureInfo !== null && !showDropdown;
+  useEffect(() => {
+    if (!showSignature) { setSignaturePos(null); return; }
+    const el = inputRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setSignaturePos({ top: rect.bottom + 2, left: rect.left });
+  }, [showSignature, signatureInfo]);
 
   return (
     <div
@@ -298,6 +335,7 @@ export function FormulaBar() {
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          onSelect={handleSelect}
           placeholder={focusedCell ? '' : 'Select a cell to edit its formula'}
           disabled={!focusedCell}
           className={cn(
@@ -335,6 +373,37 @@ export function FormulaBar() {
         <div className="flex-none text-xs text-blue-500 italic whitespace-nowrap">
           (click a cell to insert reference)
         </div>
+      )}
+
+      {/* Formula signature tooltip — rendered via portal to escape overflow constraints */}
+      {showSignature && signaturePos && signatureInfo && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', top: signaturePos.top, left: signaturePos.left, zIndex: 9998 }}
+          className="bg-neutral-800 border border-neutral-600 shadow-lg rounded-md px-3 py-2 text-sm font-mono text-neutral-100 max-w-sm pointer-events-none"
+        >
+          <div>
+            <span className="text-yellow-300">{signatureInfo.fnName}</span>
+            <span className="text-neutral-400">(</span>
+            {FUNCTION_SIGNATURES[signatureInfo.fnName]?.args.map((arg, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <span className="text-neutral-400">, </span>}
+                <span className={cn(
+                  idx === signatureInfo.argIndex ? 'text-white font-bold underline' : 'text-neutral-400',
+                  !arg.required && 'italic'
+                )}>
+                  {!arg.required ? `[${arg.name}]` : arg.name}
+                </span>
+              </React.Fragment>
+            ))}
+            <span className="text-neutral-400">)</span>
+          </div>
+          {FUNCTION_SIGNATURES[signatureInfo.fnName]?.description && (
+            <div className="text-neutral-400 text-xs mt-1 font-sans">
+              {FUNCTION_SIGNATURES[signatureInfo.fnName].description}
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </div>
   );
