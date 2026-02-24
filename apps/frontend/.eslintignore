@@ -1,0 +1,12 @@
+# Generated Prisma client — not our code
+lib/prisma-client/
+
+# Generated frontend Prisma client
+generated/
+
+# Vendored third-party libraries — not our code
+lib/vendor/
+
+# Minified/bundled service files that include third-party code
+lib/nocodb.service.ts
+lib/import-export.utils.ts
