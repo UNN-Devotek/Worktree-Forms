@@ -154,16 +154,31 @@ export async function apiRequest<T = any>(
     if (!response.ok) {
       console.error(`[apiRequest] Request failed: status=${response.status}, statusText="${response.statusText}", error="${responseData?.error || 'none'}", fullResponse=`, responseData);
 
-      // Handle 401 Unauthorized - redirect to login
-      if (response.status === 401) {
-        if (typeof window !== 'undefined') {
-          console.warn('[apiRequest] 401 Unauthorized - redirecting to login');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+      const errorMessage = responseData?.error || `HTTP ${response.status}: ${response.statusText}`;
+
+      // On 401, attempt to refresh the backend token and retry once.
+      // The /api/auth/backend-token endpoint signs a backend-compatible JWT from the
+      // NextAuth session and sets it as the access_token httpOnly cookie.
+      if (response.status === 401 && typeof window !== 'undefined') {
+        try {
+          const tokenRes = await fetch('/api/auth/backend-token', { credentials: 'include' });
+          if (tokenRes.ok) {
+            const retryResponse = await fetch(url, {
+              ...options,
+              headers,
+              credentials: 'include',
+            });
+            if (retryResponse.ok) {
+              let retryData: any;
+              try { retryData = await retryResponse.json(); } catch { retryData = null; }
+              return retryData as T;
+            }
+          }
+        } catch {
+          // Token refresh failed — fall through and throw the original error
         }
       }
 
-      const errorMessage = responseData?.error || `HTTP ${response.status}: ${response.statusText}`;
       throw new Error(errorMessage);
     }
 
