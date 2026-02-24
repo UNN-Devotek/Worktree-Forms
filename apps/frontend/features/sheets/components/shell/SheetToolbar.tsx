@@ -27,6 +27,8 @@ import {
   FileSpreadsheet,
   Loader2,
   Star,
+  ListFilter,
+  History,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -70,6 +72,8 @@ import { ClearFormatting } from '../toolbar/ClearFormatting';
 import { FormatPainter } from '../toolbar/FormatPainter';
 import { FilterModal } from '../filters/FilterModal';
 import { SettingsModal, SheetSettings } from '../modals/SettingsModal';
+import { ConditionalFormattingModal } from '../modals/ConditionalFormattingModal';
+import { HighlightChangesModal } from '../modals/HighlightChangesModal';
 
 // ---------------------------------------------------------------------------
 // View options
@@ -136,6 +140,8 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
 
   // ---- settings -------------------------------------------------------------
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [conditionalFormattingOpen, setConditionalFormattingOpen] = useState(false);
+  const [highlightChangesOpen, setHighlightChangesOpen] = useState(false);
   const [settings, setSettings] = useState<SheetSettings>({
     defaultColumnWidth: 120,
     rowHeight: 'normal',
@@ -309,6 +315,23 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
 
         {/* Center: sheet name (absolutely centered) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 max-w-[40%]">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsFavorite(f => !f)}
+                className={cn(
+                  "h-6 w-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50 shrink-0",
+                  isFavorite ? "text-yellow-400" : "text-muted-foreground"
+                )}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-yellow-400")} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
+            </TooltipContent>
+          </Tooltip>
           {titleEditing ? (
             <input
               ref={titleInputRef}
@@ -332,23 +355,6 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
               {title}
             </button>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => setIsFavorite(f => !f)}
-                className={cn(
-                  "h-6 w-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50 shrink-0",
-                  isFavorite ? "text-yellow-400" : "text-muted-foreground"
-                )}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              >
-                <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-yellow-400")} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
 
         {/* Right: share button */}
@@ -443,6 +449,42 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
         {/* Column manager ── hidden below lg ─────────────────────────── */}
         <div className="hidden lg:block shrink-0">
           <ColumnManagerDialog />
+        </div>
+
+        <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
+
+        {/* Conditional Formatting ─────────────────────────────────────── */}
+        <div className="hidden md:flex items-center shrink-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setConditionalFormattingOpen(true)}
+              >
+                <ListFilter className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Conditional Formatting</p></TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Highlight Changes ───────────────────────────────────────────── */}
+        <div className="hidden md:flex items-center shrink-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setHighlightChangesOpen(true)}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Highlight Changes</p></TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Spacer ─────────────────────────────────────────────────────── */}
@@ -564,6 +606,18 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
         onOpenChange={setSettingsOpen}
         settings={settings}
         onSettingsChange={s => { setSettings(s); }}
+      />
+
+      {/* Conditional Formatting modal */}
+      <ConditionalFormattingModal
+        open={conditionalFormattingOpen}
+        onOpenChange={setConditionalFormattingOpen}
+      />
+
+      {/* Highlight Changes modal */}
+      <HighlightChangesModal
+        open={highlightChangesOpen}
+        onOpenChange={setHighlightChangesOpen}
       />
     </TooltipProvider>
   );

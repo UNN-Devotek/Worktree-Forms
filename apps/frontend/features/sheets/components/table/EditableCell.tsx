@@ -46,7 +46,7 @@ export function EditableCell({
   onUpdate,
   statusOptions: customStatusOptions
 }: EditableCellProps) {
-  const { getCellStyle } = useSheet();
+  const { getEffectiveStyle } = useSheet();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,7 +56,7 @@ export function EditableCell({
   const justSavedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const statusDropdownRef = useRef<HTMLTableCellElement>(null);
 
-  const style = getCellStyle(rowId, columnId);
+  const style = getEffectiveStyle(rowId, columnId);
 
   // Helper to safely set justSaved with tracked timer
   const showJustSaved = useCallback(() => {

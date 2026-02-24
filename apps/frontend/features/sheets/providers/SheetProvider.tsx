@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useYjsStore } from '../stores/useYjsStore';
 import { HyperFormula } from 'hyperformula';
-import type { CellStyleConfig, FilterRule } from '../types/cell-styles';
+import type { CellStyleConfig, FilterRule, ConditionalFormatRule, HighlightChangesConfig } from '../types/cell-styles';
 import { DEFAULT_CELL_STYLE } from '../types/cell-styles';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -96,6 +96,17 @@ interface SheetContextType {
   setSelectedFormattingRowId: (id: string | null) => void;
   applyColumnStyle: (columnId: string, style: Partial<CellStyleConfig>) => void;
   applyRowStyle: (rowId: string, style: Partial<CellStyleConfig>) => void;
+
+  // Conditional formatting (Yjs-synced across collaborators)
+  conditionalFormats: ConditionalFormatRule[];
+  setConditionalFormats: (rules: ConditionalFormatRule[]) => void;
+
+  // Highlight changes (local per-user state, overrides CF)
+  highlightChanges: HighlightChangesConfig;
+  setHighlightChanges: (config: HighlightChangesConfig) => void;
+
+  /** getCellStyle + conditional formats + highlight changes, in priority order */
+  getEffectiveStyle: (rowId: string, columnId: string) => CellStyleConfig;
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -139,6 +150,16 @@ export function SheetProvider({
   const [selectedFormattingRowId, setSelectedFormattingRowId] = useState<string | null>(null);
   const [isFormulaEditing, setIsFormulaEditing] = useState(false);
   const insertCellRefCallback = useRef<((ref: string) => void) | null>(null);
+
+  // Conditional formatting rules (synced via Yjs)
+  const [conditionalFormats, setConditionalFormatsState] = useState<ConditionalFormatRule[]>([]);
+
+  // Highlight changes (local per-user preference)
+  const [highlightChanges, setHighlightChanges] = useState<HighlightChangesConfig>({
+    enabled: false,
+    timeMs: 24 * 60 * 60 * 1000, // 1 day default
+    color: '#fef08a',
+  });
 
   // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
   const openDetailPanel = useCallback((rowId: string, tab = 'fields') => {
@@ -536,6 +557,94 @@ export function SheetProvider({
     return cell?.style ? { ...DEFAULT_CELL_STYLE, ...cell.style } : DEFAULT_CELL_STYLE;
   }, [doc]);
   
+  // Sync conditional formatting rules from Yjs
+  useEffect(() => {
+    if (!doc) return;
+    const cfArray = doc.getArray('conditionalFormats');
+    const update = () => setConditionalFormatsState(cfArray.toArray() as ConditionalFormatRule[]);
+    cfArray.observe(update);
+    update();
+    return () => cfArray.unobserve(update);
+  }, [doc]);
+
+  const setConditionalFormats = useCallback((rules: ConditionalFormatRule[]) => {
+    if (!doc) return;
+    const cfArray = doc.getArray('conditionalFormats');
+    doc.transact(() => {
+      cfArray.delete(0, cfArray.length);
+      if (rules.length > 0) cfArray.insert(0, rules);
+    });
+  }, [doc]);
+
+  // Evaluate a single conditional format rule against a cell value
+  const evaluateCfRule = (rule: ConditionalFormatRule, cellValue: any): boolean => {
+    const { operator, value } = rule;
+    const strCell = String(cellValue ?? '').toLowerCase();
+    const strValue = String(value ?? '').toLowerCase();
+    switch (operator) {
+      case 'equals':          return cellValue === value || strCell === strValue;
+      case 'not_equals':      return strCell !== strValue;
+      case 'contains':        return strCell.includes(strValue);
+      case 'not_contains':    return !strCell.includes(strValue);
+      case 'starts_with':     return strCell.startsWith(strValue);
+      case 'ends_with':       return strCell.endsWith(strValue);
+      case 'is_blank':        return cellValue == null || cellValue === '';
+      case 'is_not_blank':    return cellValue != null && cellValue !== '';
+      case 'greater_than':    return Number(cellValue) > Number(value);
+      case 'less_than':       return Number(cellValue) < Number(value);
+      case 'greater_or_equal':return Number(cellValue) >= Number(value);
+      case 'less_or_equal':   return Number(cellValue) <= Number(value);
+      default:                return false;
+    }
+  };
+
+  // Check if a cell was recently changed (reads from Yjs history)
+  const checkRecentChange = (rowId: string, columnId: string, timeMs: number): boolean => {
+    if (!doc) return false;
+    const historyArr = doc.getArray(`row-${rowId}-history`);
+    const cutoff = timeMs === 0 ? 0 : Date.now() - timeMs;
+    return historyArr.toArray().some((entry: any) => {
+      if (Array.isArray(entry)) {
+        return entry.some((e: any) => e.columnId === columnId && e.timestamp >= cutoff);
+      }
+      return entry.columnId === columnId && entry.timestamp >= cutoff;
+    });
+  };
+
+  // Effective style = base style + conditional formats + highlight changes override
+  const getEffectiveStyle = useCallback((rowId: string, columnId: string): CellStyleConfig => {
+    const baseStyle = getCellStyle(rowId, columnId);
+
+    // Apply conditional formatting (iterate in reverse so index-0 = highest priority wins)
+    let cfStyle: Partial<CellStyleConfig> = {};
+    if (conditionalFormats.length > 0 && doc) {
+      const row = doc.getMap('rows').get(rowId) as any;
+      if (row) {
+        for (let i = conditionalFormats.length - 1; i >= 0; i--) {
+          const rule = conditionalFormats[i];
+          if (!rule.enabled || !rule.columnId) continue;
+          const cellValue = row[rule.columnId];
+          if (evaluateCfRule(rule, cellValue)) {
+            if (rule.applyToRow || rule.columnId === columnId) {
+              cfStyle = { ...cfStyle, ...rule.style };
+            }
+          }
+        }
+      }
+    }
+
+    const withCf: CellStyleConfig = Object.keys(cfStyle).length > 0
+      ? { ...baseStyle, ...cfStyle }
+      : baseStyle;
+
+    // Highlight changes overrides everything
+    if (highlightChanges.enabled && checkRecentChange(rowId, columnId, highlightChanges.timeMs)) {
+      return { ...withCf, backgroundColor: highlightChanges.color };
+    }
+
+    return withCf;
+  }, [getCellStyle, conditionalFormats, highlightChanges, doc]);
+
   // Finding #7 (R5): applyCellStyle now writes to Yjs, consistent with getCellStyle above.
   const applyCellStyle = useCallback((rowId: string, columnId: string, style: Partial<CellStyleConfig>) => {
     if (!doc) return;
@@ -973,6 +1082,13 @@ export function SheetProvider({
         isFormulaEditing,
         setIsFormulaEditing,
         insertCellRefCallback,
+        // Conditional formatting
+        conditionalFormats,
+        setConditionalFormats,
+        // Highlight changes
+        highlightChanges,
+        setHighlightChanges,
+        getEffectiveStyle,
       }}>
 
         {children}

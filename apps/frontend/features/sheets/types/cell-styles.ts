@@ -71,6 +71,17 @@ export interface ConditionalFormatRule {
 }
 
 /**
+ * Highlight changes configuration (local per-user, not synced)
+ */
+export interface HighlightChangesConfig {
+  enabled: boolean;
+  /** Duration in ms to look back. 0 = all time. */
+  timeMs: number;
+  /** Background color applied to changed cells */
+  color: string;
+}
+
+/**
  * Default cell style
  */
 export const DEFAULT_CELL_STYLE: CellStyleConfig = {
