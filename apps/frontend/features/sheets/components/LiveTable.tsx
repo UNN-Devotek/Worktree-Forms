@@ -577,20 +577,75 @@ function EditableCell({
   onBlur,
   getCellStyle,
 }: EditableCellProps) {
+    const { setIsFormulaEditing, insertCellRefCallback } = useSheet()
     const [value, setValue] = React.useState(initialValue)
     const [isEditing, setIsEditing] = React.useState(false)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const inputRef = useRef<HTMLInputElement>(null)
+    // Keep a ref so the insertCellRefCallback closure is never stale
+    const valueRef = useRef<any>(initialValue)
 
     React.useEffect(() => {
         setValue(initialValue)
+        valueRef.current = initialValue
     }, [initialValue])
+
+    /** Append closing parens to balance any unclosed ones in a formula */
+    const autoClose = (v: any): any => {
+        if (typeof v !== 'string' || !v.startsWith('=')) return v
+        const open = (v.match(/\(/g) || []).length
+        const close = (v.match(/\)/g) || []).length
+        const missing = open - close
+        return missing > 0 ? v + ')'.repeat(missing) : v
+    }
+
+    /** Activate formula-editing mode and register the ref-insertion callback */
+    const activateFormulaMode = (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+        setIsFormulaEditing(true)
+        insertCellRefCallback.current = (ref: string) => {
+            if (!el) return
+            const pos = (el as HTMLInputElement).selectionStart ?? String(valueRef.current ?? '').length
+            const v = String(valueRef.current ?? '')
+            const newVal = v.slice(0, pos) + ref + v.slice(pos)
+            valueRef.current = newVal
+            setValue(newVal)
+            requestAnimationFrame(() => {
+                el.focus();
+                (el as HTMLInputElement).setSelectionRange(pos + ref.length, pos + ref.length)
+            })
+        }
+    }
 
     const handleBlur = () => {
         setIsEditing(false)
-        if (value !== initialValue) {
-            onChange(value)
+        setIsFormulaEditing(false)
+        insertCellRefCallback.current = null
+        const committed = autoClose(value)
+        if (committed !== initialValue) {
+            onChange(committed)
         }
         onBlur()
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            const committed = autoClose(value)
+            if (committed !== initialValue) onChange(committed)
+            setIsEditing(false)
+            setIsFormulaEditing(false)
+            insertCellRefCallback.current = null
+            ;(e.target as HTMLElement).blur()
+        }
+        if (e.key === 'Escape') {
+            setValue(initialValue)
+            valueRef.current = initialValue
+            setIsEditing(false)
+            setIsFormulaEditing(false)
+            insertCellRefCallback.current = null
+            ;(e.target as HTMLElement).blur()
+        }
+        e.stopPropagation()
     }
 
     const cellStyle = getCellStyle(rowId, columnId)
@@ -678,22 +733,45 @@ function EditableCell({
                 style={{ ...inputStyle, minHeight: '24px' }}
                 value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
                 rows={1}
-                onChange={e => setValue(e.target.value)}
-                onFocus={() => { setIsEditing(true); onFocus(rowId, columnId) }}
+                onChange={e => {
+                    const v = e.target.value
+                    valueRef.current = v
+                    setValue(v)
+                    if (v.startsWith('=')) activateFormulaMode(e.target)
+                    else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
+                }}
+                onFocus={(e) => {
+                    setIsEditing(true)
+                    onFocus(rowId, columnId)
+                    if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
+                }}
                 onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
             />
         )
     }
 
     return (
         <input
+            ref={inputRef}
             aria-label={t('grid.edit_cell', 'Edit cell value')}
             className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
             style={inputStyle}
             value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
-            onChange={e => setValue(e.target.value)}
-            onFocus={() => { setIsEditing(true); onFocus(rowId, columnId) }}
+            onChange={e => {
+                const v = e.target.value
+                valueRef.current = v
+                setValue(v)
+                if (v.startsWith('=')) activateFormulaMode(e.target)
+                else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
+            }}
+            onFocus={(e) => {
+                setIsEditing(true)
+                onFocus(rowId, columnId)
+                if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
+            }}
             onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
         />
     )
 }

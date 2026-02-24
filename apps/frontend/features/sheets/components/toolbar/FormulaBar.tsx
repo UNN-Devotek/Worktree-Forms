@@ -137,11 +137,22 @@ export function FormulaBar() {
     currentTokenRef.current = '';
   };
 
+  /** Append closing parens to balance any unclosed ones in a formula */
+  const autoClose = (v: string): string => {
+    if (!v.startsWith('=')) return v;
+    const open = (v.match(/\(/g) || []).length;
+    const close = (v.match(/\)/g) || []).length;
+    const missing = open - close;
+    return missing > 0 ? v + ')'.repeat(missing) : v;
+  };
+
   const handleCommit = () => {
     if (!focusedCell) return;
-    if (localValue !== cellValue) {
-      updateCell(focusedCell.rowId, focusedCell.columnId, localValue);
+    const committed = autoClose(localValue);
+    if (committed !== cellValue) {
+      updateCell(focusedCell.rowId, focusedCell.columnId, committed);
     }
+    if (committed !== localValue) setLocalValue(committed);
     setIsEditing(false);
     closeAutocomplete();
   };
