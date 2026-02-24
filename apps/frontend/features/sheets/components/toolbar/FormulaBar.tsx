@@ -59,7 +59,7 @@ export function FormulaBar() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1 border-b bg-background">
+    <div data-formula-bar className="flex items-center gap-2 px-3 py-1 border-b bg-background">
       {/* Cell reference indicator */}
       <div className="flex-none w-16 text-xs text-muted-foreground font-mono text-center border rounded px-2 py-1 bg-muted/30 truncate">
         {cellLabel || '—'}

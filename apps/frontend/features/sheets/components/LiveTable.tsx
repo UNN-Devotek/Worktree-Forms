@@ -100,6 +100,8 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
 
   const handleCellBlur = useCallback(() => {
     blurTimerRef.current = setTimeout(() => {
+      // Keep focusedCell alive if the user clicked into the formula bar
+      if (document.activeElement?.closest('[data-formula-bar]')) return
       setFocusedCell(null)
     }, 200)
   }, [setFocusedCell])
@@ -183,7 +185,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
   }, [setSelectedColumnId, setSelectedFormattingRowId])
 
   return (
-    <div ref={parentRef} className={cn("h-full w-full overflow-auto border rounded-md relative", containerClassName)}>
+    <div ref={parentRef} className={cn("h-full w-full overflow-auto border relative", containerClassName)}>
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 bg-background border-b w-full flex">
             {/* Row meta header (number + actions col) */}
