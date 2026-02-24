@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useMemo, useRef, useCallback, useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { HyperFormula } from "hyperformula"
 import { cn as _cn } from "@/lib/utils"
 import { t } from "@/lib/i18n"
@@ -587,6 +588,7 @@ function EditableCell({
     const [isEditing, setIsEditing] = React.useState(false)
     const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
     const [activeIndex, setActiveIndex] = useState(-1)
+    const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     // Keep a ref so the insertCellRefCallback closure is never stale
@@ -745,6 +747,16 @@ function EditableCell({
         el.style.height = `${el.scrollHeight}px`
     }, [value, cellStyle.wrap])
 
+    // Compute fixed-position coordinates for the autocomplete portal
+    const showDropdown = autocompleteMatches.length > 0
+    useEffect(() => {
+        if (!showDropdown) { setDropdownPos(null); return }
+        const el = (inputRef.current || textareaRef.current) as HTMLElement | null
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: Math.max(rect.width, 224) })
+    }, [showDropdown, autocompleteMatches])
+
     if (columnType === 'CHECKBOX') {
         return (
             <input
@@ -800,12 +812,31 @@ function EditableCell({
     // otherwise fall back to the raw value.
     const renderedDisplay = isEditing ? undefined : (displayValue !== undefined ? displayValue : value)
 
-    const showDropdown = autocompleteMatches.length > 0
+    // Autocomplete portal — rendered at document.body so it escapes overflow+stacking contexts
+    const autocompletePortal = showDropdown && dropdownPos && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+                style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 9999 }}
+                className="bg-neutral-800 border border-neutral-600 shadow-lg rounded-md max-h-48 overflow-y-auto"
+            >
+                {autocompleteMatches.map((fn, idx) => (
+                    <div
+                        key={fn}
+                        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); insertFunction(fn) }}
+                        className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer text-neutral-100 hover:bg-neutral-600', idx === activeIndex && 'bg-neutral-600')}
+                    >
+                        {fn}<span className="text-neutral-400">(</span>
+                    </div>
+                ))}
+            </div>,
+            document.body
+        )
+        : null
 
     // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
     if (cellStyle.wrap) {
         return (
-            <div className="relative w-full">
+            <>
                 <textarea
                     ref={textareaRef}
                     aria-label={t('grid.edit_cell', 'Edit cell value')}
@@ -830,25 +861,13 @@ function EditableCell({
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                 />
-                {showDropdown && (
-                    <div className="absolute left-0 top-full mt-0.5 w-56 bg-neutral-800 dark:bg-neutral-800 border border-neutral-600 shadow-lg rounded-md z-[100] max-h-48 overflow-y-auto">
-                        {autocompleteMatches.map((fn, idx) => (
-                            <div
-                                key={fn}
-                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); insertFunction(fn) }}
-                                className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer text-neutral-100 hover:bg-neutral-600', idx === activeIndex && 'bg-neutral-600')}
-                            >
-                                {fn}<span className="text-neutral-400">(</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                {autocompletePortal}
+            </>
         )
     }
 
     return (
-        <div className="relative w-full">
+        <>
             <input
                 ref={inputRef}
                 aria-label={t('grid.edit_cell', 'Edit cell value')}
@@ -872,19 +891,7 @@ function EditableCell({
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
             />
-            {showDropdown && (
-                <div className="absolute left-0 top-full mt-0.5 w-56 bg-popover border shadow-md rounded-md z-50 max-h-48 overflow-y-auto">
-                    {autocompleteMatches.map((fn, idx) => (
-                        <div
-                            key={fn}
-                            onMouseDown={e => { e.preventDefault(); insertFunction(fn) }}
-                            className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer hover:bg-accent', idx === activeIndex && 'bg-accent')}
-                        >
-                            {fn}<span className="text-muted-foreground">(</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+            {autocompletePortal}
+        </>
     )
 }
