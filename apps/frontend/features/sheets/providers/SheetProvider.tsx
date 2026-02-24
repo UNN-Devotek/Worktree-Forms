@@ -27,6 +27,15 @@ interface SheetContextType {
   setFocusedCell: (cell: { rowId: string, columnId: string } | null) => void;
   editingCell: { rowId: string, columnId: string, initialValue?: string } | null;
   setEditingCell: (cell: { rowId: string, columnId: string, initialValue?: string } | null) => void;
+  /** True while the user is composing a formula in the formula bar or a cell input */
+  isFormulaEditing: boolean;
+  setIsFormulaEditing: (v: boolean) => void;
+  /**
+   * Callback ref populated by the active formula input (FormulaBar or EditableCell).
+   * When isFormulaEditing is true, clicking a cell calls this with the cell ref string
+   * (e.g. "A1" or "A1:C3") to insert it at the cursor position.
+   */
+  insertCellRefCallback: React.MutableRefObject<((ref: string) => void) | null>;
   isDetailPanelOpen: boolean;
   detailPanelTab: string;
   openDetailPanel: (rowId: string, tab?: string) => void;
@@ -128,6 +137,8 @@ export function SheetProvider({
   const [isCut, setIsCut] = useState(false);
   const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
   const [selectedFormattingRowId, setSelectedFormattingRowId] = useState<string | null>(null);
+  const [isFormulaEditing, setIsFormulaEditing] = useState(false);
+  const insertCellRefCallback = useRef<((ref: string) => void) | null>(null);
 
   // Finding #10 (R3): useCallback so MobileScheduleView and other consumers don't re-render
   const openDetailPanel = useCallback((rowId: string, tab = 'fields') => {
@@ -327,17 +338,21 @@ export function SheetProvider({
   // Finding #3 (R9): wrapped in useCallback for stable context reference
   const getCellResult = useCallback((rowId: string, columnId: string) => {
     if (!doc) return null;
+    const sheetIndex = hf.getSheetId('Sheet1');
+    if (sheetIndex === undefined) return null; // Sheet not initialised yet
+
     const yOrder = doc.getArray('order');
     const yColumns = doc.getArray('columns');
-    
+
     const rowIndex = yOrder.toArray().indexOf(rowId);
     const colIndex = yColumns.toArray().findIndex((c: any) => c.id === columnId);
-    
+
     if (rowIndex === -1 || colIndex === -1) return null;
-    
-    const cellValue = hf.getCellValue({ sheet: hf.getSheetId('Sheet1')!, row: rowIndex, col: colIndex });
+
+    const cellValue = hf.getCellValue({ sheet: sheetIndex, row: rowIndex, col: colIndex });
     if (cellValue instanceof Error) return '#ERROR!';
-    return cellValue;
+    // Ensure we never return undefined (which would cause raw formula to be displayed)
+    return cellValue ?? null;
   }, [doc, hf]);
 
   // Finding #10: memoized column label lookup — avoids O(n) scan on every cell edit
@@ -954,6 +969,10 @@ export function SheetProvider({
         setSelectedFormattingRowId,
         applyColumnStyle,
         applyRowStyle,
+        // Formula editing coordination
+        isFormulaEditing,
+        setIsFormulaEditing,
+        insertCellRefCallback,
       }}>
 
         {children}

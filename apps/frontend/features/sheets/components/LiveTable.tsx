@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef, useCallback, useEffect } from "react"
+import React, { useMemo, useRef, useCallback, useEffect, useState } from "react"
 import { t } from "@/lib/i18n"
 import {
   ColumnDef,
@@ -37,6 +37,32 @@ import {
 // Fixed width of the row-meta column (number + actions)
 const ROW_META_WIDTH = 140
 
+// ---------------------------------------------------------------------------
+// Cell reference helpers for formula editing
+// ---------------------------------------------------------------------------
+
+function colIndexToLetter(idx: number): string {
+  return String.fromCharCode(65 + idx)
+}
+
+function cellRef(rowIndex: number, colIndex: number): string {
+  return `${colIndexToLetter(colIndex)}${rowIndex + 1}`
+}
+
+function rangeRef(r1: number, c1: number, r2: number, c2: number): string {
+  const minR = Math.min(r1, r2), maxR = Math.max(r1, r2)
+  const minC = Math.min(c1, c2), maxC = Math.max(c1, c2)
+  if (minR === maxR && minC === maxC) return cellRef(minR, minC)
+  return `${cellRef(minR, minC)}:${cellRef(maxR, maxC)}`
+}
+
+interface DragState {
+  startRowIndex: number
+  startColIndex: number
+  endRowIndex: number
+  endColIndex: number
+}
+
 interface LiveTableProps {
   documentId?: string
   containerClassName?: string
@@ -70,7 +96,11 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     selectedFormattingRowId,
     setSelectedFormattingRowId,
     collaborators,
+    isFormulaEditing,
+    insertCellRefCallback,
   } = useSheet()
+
+  const [refDragState, setRefDragState] = useState<DragState | null>(null)
 
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -183,6 +213,15 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [setSelectedColumnId, setSelectedFormattingRowId])
+
+  // Clear ref drag state when mouse is released outside the grid
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (!isFormulaEditing) setRefDragState(null)
+    }
+    document.addEventListener('mouseup', handleGlobalMouseUp)
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp)
+  }, [isFormulaEditing])
 
   return (
     <div ref={parentRef} className={cn("h-full w-full overflow-auto border relative", containerClassName)}>
@@ -333,47 +372,97 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                             </div>
 
                             {/* Data cells */}
-                            {row.getVisibleCells().map((cell) => {
-                                const colId = cell.column.id
-                                const isFocused =
-                                    focusedCell?.rowId === row.original.id &&
-                                    focusedCell?.columnId === colId
-                                const isColSelected = selectedColumnId === colId
-                                const isRowSelected = selectedFormattingRowId === row.original.id
+                            {(() => {
+                                const visibleCols = columns.filter((c: any) => !c.hidden)
+                                return row.getVisibleCells().map((cell) => {
+                                    const colId = cell.column.id
+                                    const colIndex = visibleCols.findIndex((c: any) => c.id === colId)
+                                    const isFocused =
+                                        focusedCell?.rowId === row.original.id &&
+                                        focusedCell?.columnId === colId
+                                    const isColSelected = selectedColumnId === colId
+                                    const isRowSelected = selectedFormattingRowId === row.original.id
 
-                                return (
-                                    <div
-                                        key={cell.id}
-                                        className={cn(
-                                            "px-2 border-r flex items-center relative min-h-[40px] transition-colors",
-                                            (isFocused || isColSelected || isRowSelected) && "outline outline-2 outline-primary outline-offset-[-1px] z-10",
-                                            (isColSelected || isRowSelected) && "bg-primary/10"
-                                        )}
-                                        style={{ width: cell.column.getSize() }}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        {/* Collaborator presence indicator */}
-                                        {(() => {
-                                          const cellKey = `${row.original.id}:${cell.column.id}`
-                                          const collabs = collaboratorCellMap.get(cellKey)
-                                          if (!collabs || collabs.length === 0) return null
-                                          return (
-                                            <div className="absolute top-0 right-0 flex pointer-events-none">
-                                              {collabs.slice(0, 3).map((c, i) => (
-                                                <div
-                                                  key={i}
-                                                  className="w-2 h-2 rounded-full border border-white -ml-0.5"
-                                                  style={{ backgroundColor: c.color, zIndex: 10 - i }}
-                                                  title={c.name}
-                                                />
-                                              ))}
-                                            </div>
-                                          )
-                                        })()}
-                                    </div>
-                                )
-                            })}
+                                    const isInRefDrag = isFormulaEditing && refDragState !== null && (() => {
+                                        const minR = Math.min(refDragState.startRowIndex, refDragState.endRowIndex)
+                                        const maxR = Math.max(refDragState.startRowIndex, refDragState.endRowIndex)
+                                        const minC = Math.min(refDragState.startColIndex, refDragState.endColIndex)
+                                        const maxC = Math.max(refDragState.startColIndex, refDragState.endColIndex)
+                                        return virtualRow.index >= minR && virtualRow.index <= maxR &&
+                                               colIndex >= minC && colIndex <= maxC
+                                    })()
+
+                                    return (
+                                        <div
+                                            key={cell.id}
+                                            className={cn(
+                                                "px-2 border-r flex items-center relative min-h-[40px] transition-colors",
+                                                (isFocused || isColSelected || isRowSelected) && "outline outline-2 outline-primary outline-offset-[-1px] z-10",
+                                                (isColSelected || isRowSelected) && "bg-primary/10",
+                                                isInRefDrag && "bg-blue-200/50 outline outline-2 outline-blue-400",
+                                                isFormulaEditing && "cursor-crosshair"
+                                            )}
+                                            style={{ width: cell.column.getSize() }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onMouseDown={(e) => {
+                                                if (isFormulaEditing) {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    setRefDragState({
+                                                        startRowIndex: virtualRow.index,
+                                                        startColIndex: colIndex,
+                                                        endRowIndex: virtualRow.index,
+                                                        endColIndex: colIndex,
+                                                    })
+                                                } else {
+                                                    e.stopPropagation()
+                                                }
+                                            }}
+                                            onMouseEnter={() => {
+                                                if (isFormulaEditing && refDragState) {
+                                                    setRefDragState(prev => prev
+                                                        ? { ...prev, endRowIndex: virtualRow.index, endColIndex: colIndex }
+                                                        : null
+                                                    )
+                                                }
+                                            }}
+                                            onMouseUp={(e) => {
+                                                if (isFormulaEditing && refDragState) {
+                                                    e.preventDefault()
+                                                    const refStr = rangeRef(
+                                                        refDragState.startRowIndex,
+                                                        refDragState.startColIndex,
+                                                        refDragState.endRowIndex,
+                                                        refDragState.endColIndex,
+                                                    )
+                                                    insertCellRefCallback.current?.(refStr)
+                                                    setRefDragState(null)
+                                                }
+                                            }}
+                                        >
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            {/* Collaborator presence indicator */}
+                                            {(() => {
+                                              const cellKey = `${row.original.id}:${cell.column.id}`
+                                              const collabs = collaboratorCellMap.get(cellKey)
+                                              if (!collabs || collabs.length === 0) return null
+                                              return (
+                                                <div className="absolute top-0 right-0 flex pointer-events-none">
+                                                  {collabs.slice(0, 3).map((c, i) => (
+                                                    <div
+                                                      key={i}
+                                                      className="w-2 h-2 rounded-full border border-white -ml-0.5"
+                                                      style={{ backgroundColor: c.color, zIndex: 10 - i }}
+                                                      title={c.name}
+                                                    />
+                                                  ))}
+                                                </div>
+                                              )
+                                            })()}
+                                        </div>
+                                    )
+                                })
+                            })()}
                         </div>
                     </CellContextMenu>
                 )
