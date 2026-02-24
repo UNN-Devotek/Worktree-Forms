@@ -308,22 +308,22 @@ export function FormulaBar() {
 
         {/* Formula autocomplete dropdown — lives inside data-formula-bar so blur guard works */}
         {showDropdown && (
-          <div className="absolute left-0 top-full mt-0.5 w-64 bg-popover border shadow-md rounded-md z-50 max-h-48 overflow-y-auto">
+          <div className="absolute left-0 top-full mt-0.5 w-64 bg-neutral-800 dark:bg-neutral-800 border border-neutral-600 shadow-lg rounded-md z-[100] max-h-48 overflow-y-auto">
             {autocompleteMatches.map((fn, idx) => (
               <div
                 key={fn}
                 onMouseDown={(e) => {
-                  // Prevent blur from firing before we insert
                   e.preventDefault();
+                  e.stopPropagation();
                   insertFunction(fn);
                 }}
                 className={cn(
-                  'px-3 py-1.5 text-sm font-mono cursor-pointer hover:bg-accent',
-                  idx === activeIndex && 'bg-accent',
+                  'px-3 py-1.5 text-sm font-mono cursor-pointer text-neutral-100 hover:bg-neutral-600',
+                  idx === activeIndex && 'bg-neutral-600',
                 )}
               >
                 {fn}
-                <span className="text-muted-foreground">(</span>
+                <span className="text-neutral-400">(</span>
               </div>
             ))}
           </div>

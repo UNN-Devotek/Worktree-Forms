@@ -831,14 +831,14 @@ function EditableCell({
                     onKeyDown={handleKeyDown}
                 />
                 {showDropdown && (
-                    <div className="absolute left-0 top-full mt-0.5 w-56 bg-popover border shadow-md rounded-md z-50 max-h-48 overflow-y-auto">
+                    <div className="absolute left-0 top-full mt-0.5 w-56 bg-neutral-800 dark:bg-neutral-800 border border-neutral-600 shadow-lg rounded-md z-[100] max-h-48 overflow-y-auto">
                         {autocompleteMatches.map((fn, idx) => (
                             <div
                                 key={fn}
-                                onMouseDown={e => { e.preventDefault(); insertFunction(fn) }}
-                                className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer hover:bg-accent', idx === activeIndex && 'bg-accent')}
+                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); insertFunction(fn) }}
+                                className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer text-neutral-100 hover:bg-neutral-600', idx === activeIndex && 'bg-neutral-600')}
                             >
-                                {fn}<span className="text-muted-foreground">(</span>
+                                {fn}<span className="text-neutral-400">(</span>
                             </div>
                         ))}
                     </div>
