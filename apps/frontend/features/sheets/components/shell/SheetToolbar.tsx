@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,7 @@ import {
   Download,
   FileSpreadsheet,
   Loader2,
+  Star,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -62,6 +63,11 @@ import { TextFormattingToolbar } from '../toolbar/TextFormattingToolbar';
 import { AlignmentSelector } from '../toolbar/AlignmentSelector';
 import { ColorPicker } from '../toolbar/ColorPicker';
 import { WrapToggle } from '../toolbar/WrapToggle';
+import { FontFamilySelector } from '../toolbar/FontFamilySelector';
+import { FontSizeSelector } from '../toolbar/FontSizeSelector';
+import { BackgroundColorPicker } from '../toolbar/BackgroundColorPicker';
+import { ClearFormatting } from '../toolbar/ClearFormatting';
+import { FormatPainter } from '../toolbar/FormatPainter';
 import { FilterModal } from '../filters/FilterModal';
 import { SettingsModal, SheetSettings } from '../modals/SettingsModal';
 
@@ -84,6 +90,7 @@ const VIEW_OPTIONS: { value: ViewType; label: string; icon: React.ElementType }[
 
 interface SheetToolbarProps {
   title: string;
+  onTitleChange?: (title: string) => void;
 }
 
 interface SearchResult {
@@ -97,7 +104,7 @@ interface SearchResult {
 // SheetToolbar
 // ---------------------------------------------------------------------------
 
-export function SheetToolbar({ title }: SheetToolbarProps) {
+export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
   const {
     addRow, indentRow, outdentRow, selectedRowId,
     activeView, setActiveView,
@@ -105,6 +112,21 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
     columns, data,
     setSelectedColumnId, setSelectedFormattingRowId,
   } = useSheet();
+
+  // ---- title editing --------------------------------------------------------
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(title);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setTitleDraft(title); }, [title]);
+
+  const commitTitleEdit = () => {
+    const trimmed = titleDraft.trim() || title;
+    setTitleDraft(trimmed);
+    setTitleEditing(false);
+    if (trimmed !== title) onTitleChange?.(trimmed);
+  };
 
   // ---- search ---------------------------------------------------------------
   const [searchQuery,       setSearchQuery      ] = useState('');
@@ -281,14 +303,63 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
       />
 
       {/* ── Row 1: title bar ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 h-9 border-b bg-background shrink-0">
-        <h2 className="font-semibold text-sm truncate">{title}</h2>
-        <ShareModal>
-          <Button size="sm" className="h-7 px-3 text-xs gap-1.5">
-            <Share2 className="h-3.5 w-3.5" />
-            {t('toolbar.share', 'Share')}
-          </Button>
-        </ShareModal>
+      <div className="relative flex items-center px-4 h-9 border-b bg-background shrink-0">
+        {/* Left: empty spacer (room for breadcrumb in future) */}
+        <div className="flex-1" />
+
+        {/* Center: sheet name (absolutely centered) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 max-w-[40%]">
+          {titleEditing ? (
+            <input
+              ref={titleInputRef}
+              autoFocus
+              value={titleDraft}
+              onChange={e => setTitleDraft(e.target.value)}
+              onBlur={commitTitleEdit}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); commitTitleEdit(); titleInputRef.current?.blur(); }
+                if (e.key === 'Escape') { setTitleDraft(title); setTitleEditing(false); }
+              }}
+              className="font-semibold text-sm bg-transparent border-0 border-b border-primary outline-none focus:outline-none text-center min-w-[60px] max-w-[280px] w-auto"
+              style={{ width: `${Math.max(60, titleDraft.length * 8)}px` }}
+            />
+          ) : (
+            <button
+              onClick={() => { setTitleEditing(true); setTitleDraft(title); }}
+              className="font-semibold text-sm truncate hover:bg-muted/50 rounded px-1.5 py-0.5 transition-colors cursor-text max-w-[240px]"
+              title="Click to rename"
+            >
+              {title}
+            </button>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsFavorite(f => !f)}
+                className={cn(
+                  "h-6 w-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50 shrink-0",
+                  isFavorite ? "text-yellow-400" : "text-muted-foreground"
+                )}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-yellow-400")} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Right: share button */}
+        <div className="flex items-center ml-auto">
+          <ShareModal>
+            <Button size="sm" className="h-7 px-3 text-xs gap-1.5">
+              <Share2 className="h-3.5 w-3.5" />
+              {t('toolbar.share', 'Share')}
+            </Button>
+          </ShareModal>
+        </div>
       </div>
 
       {/* ── Row 2: dense toolbar ─────────────────────────────────────────── */}
@@ -349,17 +420,22 @@ export function SheetToolbar({ title }: SheetToolbarProps) {
         <Separator orientation="vertical" className="h-5 hidden sm:block shrink-0 mx-0.5" />
 
         {/* Text formatting ── hidden below sm ────────────────────────── */}
-        <div className="hidden sm:block shrink-0">
+        <div className="hidden sm:flex items-center shrink-0">
           <TextFormattingToolbar />
+          <FontFamilySelector />
+          <FontSizeSelector />
         </div>
 
         <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
 
-        {/* Color / Alignment / Wrap ── hidden below md ────────────────── */}
+        {/* Color / Alignment / Wrap / Format ── hidden below md ────────────────── */}
         <div className="hidden md:flex items-center shrink-0">
           <AlignmentSelector />
+          <BackgroundColorPicker />
           <ColorPicker />
           <WrapToggle />
+          <ClearFormatting />
+          <FormatPainter />
         </div>
 
         <Separator orientation="vertical" className="h-5 hidden lg:block shrink-0 mx-0.5" />

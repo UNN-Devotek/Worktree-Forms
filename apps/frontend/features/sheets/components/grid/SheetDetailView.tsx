@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { SheetShell } from '../shell/SheetShell';
+import { renameSheet } from '../../server/sheet-actions';
 import { LiveTable } from '../LiveTable';
 import { SheetProvider, useSheet } from '../../providers/SheetProvider';
 import { RowDetailPanel } from '../panels/RowDetailPanel';
@@ -24,6 +25,17 @@ export function SheetDetailView({ sheetId, title, token, user }: SheetDetailView
 
 function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string }) {
   const { activeView, doc } = useSheet();
+  const [currentTitle, setCurrentTitle] = useState(title);
+
+  const handleTitleChange = useCallback(async (newTitle: string) => {
+    setCurrentTitle(newTitle);
+    try {
+      await renameSheet(sheetId, newTitle);
+    } catch (err) {
+      console.error('Failed to rename sheet:', err);
+      setCurrentTitle(title); // revert on error
+    }
+  }, [sheetId, title]);
 
   const renderView = () => {
     switch (activeView) {
@@ -50,7 +62,7 @@ function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string
 
   return (
     <>
-      <SheetShell title={title}>
+      <SheetShell title={currentTitle} onTitleChange={handleTitleChange}>
         {renderView()}
       </SheetShell>
       <RowDetailPanel />

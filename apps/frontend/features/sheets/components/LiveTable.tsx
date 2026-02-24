@@ -87,6 +87,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     isCut,
     focusedCell,
     setFocusedCell,
+    setEditingCell,
     getCellStyle,
     getCellResult,
     updateColumnWidth,
@@ -229,6 +230,95 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     document.addEventListener('mouseup', handleGlobalMouseUp)
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp)
   }, [isFormulaEditing])
+
+  // Grid-level keyboard handler: fires when a cell is focused but NOT in text-edit mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!focusedCell) return
+      const active = document.activeElement
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
+      if (active?.closest('[role="dialog"], [role="menu"], [data-radix-popper-content-wrapper]')) return
+
+      const visibleCols = columns.filter((c: any) => !c.hidden)
+      const rowIndex = data.findIndex((r: any) => r.id === focusedCell.rowId)
+      const colIndex = visibleCols.findIndex((c: any) => c.id === focusedCell.columnId)
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        updateCell(focusedCell.rowId, focusedCell.columnId, '')
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'F2') {
+        e.preventDefault()
+        setEditingCell({ rowId: focusedCell.rowId, columnId: focusedCell.columnId })
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setFocusedCell(null)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (rowIndex > 0) setFocusedCell({ rowId: data[rowIndex - 1].id, columnId: focusedCell.columnId })
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (rowIndex < data.length - 1) setFocusedCell({ rowId: data[rowIndex + 1].id, columnId: focusedCell.columnId })
+        return
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        if (colIndex > 0) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex - 1].id })
+        return
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        if (colIndex < visibleCols.length - 1) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex + 1].id })
+        return
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          if (colIndex > 0) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex - 1].id })
+        } else {
+          if (colIndex < visibleCols.length - 1) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex + 1].id })
+        }
+        return
+      }
+      if (e.ctrlKey && e.key === 'c') {
+        e.preventDefault()
+        const row = data.find((r: any) => r.id === focusedCell.rowId)
+        const val = row?.[focusedCell.columnId] ?? ''
+        navigator.clipboard.writeText(String(val)).catch(() => {})
+        return
+      }
+      if (e.ctrlKey && e.key === 'x') {
+        e.preventDefault()
+        const row = data.find((r: any) => r.id === focusedCell.rowId)
+        const val = row?.[focusedCell.columnId] ?? ''
+        navigator.clipboard.writeText(String(val)).catch(() => {})
+        updateCell(focusedCell.rowId, focusedCell.columnId, '')
+        return
+      }
+      if (e.ctrlKey && e.key === 'v') {
+        e.preventDefault()
+        navigator.clipboard.readText().then(text => {
+          updateCell(focusedCell.rowId, focusedCell.columnId, text)
+        }).catch(() => {})
+        return
+      }
+      // Printable character: start editing with that character as the initial value
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        setEditingCell({ rowId: focusedCell.rowId, columnId: focusedCell.columnId, initialValue: e.key })
+        return
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [focusedCell, data, columns, updateCell, setFocusedCell, setEditingCell])
 
   return (
     <div ref={parentRef} className={cn("h-full w-full overflow-auto border relative", containerClassName)}>
@@ -410,7 +500,12 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                                 isFormulaEditing && "cursor-crosshair"
                                             )}
                                             style={{ width: cell.column.getSize() }}
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (!isFormulaEditing) {
+                                                    handleCellFocus(row.original.id, colId)
+                                                }
+                                            }}
                                             onMouseDown={(e) => {
                                                 if (isFormulaEditing) {
                                                     e.preventDefault()
@@ -584,7 +679,7 @@ function EditableCell({
   onBlur,
   getCellStyle,
 }: EditableCellProps) {
-    const { setIsFormulaEditing, insertCellRefCallback } = useSheet()
+    const { setIsFormulaEditing, insertCellRefCallback, editingCell, setEditingCell } = useSheet()
     const [value, setValue] = React.useState(initialValue)
     const [isEditing, setIsEditing] = React.useState(false)
     const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
@@ -601,6 +696,28 @@ function EditableCell({
         setValue(initialValue)
         valueRef.current = initialValue
     }, [initialValue])
+
+    // Enter edit mode when editingCell context points at this cell
+    useEffect(() => {
+        if (editingCell?.rowId === rowId && editingCell?.columnId === columnId) {
+            setIsEditing(true)
+            if (editingCell.initialValue !== undefined) {
+                setValue(editingCell.initialValue)
+                valueRef.current = editingCell.initialValue
+            }
+            requestAnimationFrame(() => {
+                const el = inputRef.current || textareaRef.current
+                if (!el) return
+                el.focus()
+                if (editingCell.initialValue !== undefined) {
+                    const len = editingCell.initialValue.length
+                    el.setSelectionRange(len, len)
+                } else {
+                    el.select()
+                }
+            })
+        }
+    }, [editingCell, rowId, columnId])
 
     /** Append closing parens to balance any unclosed ones in a formula */
     const autoClose = (v: any): any => {
@@ -681,6 +798,7 @@ function EditableCell({
 
     const handleBlur = () => {
         setIsEditing(false)
+        setEditingCell(null)
         setIsFormulaEditing(false)
         insertCellRefCallback.current = null
         setAutocompleteMatches([])
@@ -723,6 +841,7 @@ function EditableCell({
             const committed = autoClose(value)
             if (committed !== initialValue) onChange(committed)
             setIsEditing(false)
+            setEditingCell(null)
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
             setAutocompleteMatches([])
@@ -733,6 +852,7 @@ function EditableCell({
             setValue(initialValue)
             valueRef.current = initialValue
             setIsEditing(false)
+            setEditingCell(null)
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
             setAutocompleteMatches([])
@@ -893,6 +1013,21 @@ function EditableCell({
 
     // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
     if (cellStyle.wrap) {
+        if (!isEditing) {
+            return (
+                <div
+                    className="w-full min-h-[24px] p-1 cursor-default select-none whitespace-pre-wrap break-words leading-normal"
+                    style={inputStyle}
+                    onDoubleClick={() => {
+                        setIsEditing(true)
+                        setEditingCell({ rowId, columnId })
+                        onFocus(rowId, columnId)
+                    }}
+                >
+                    {renderedDisplay != null && renderedDisplay !== '' ? String(renderedDisplay) : ''}
+                </div>
+            )
+        }
         return (
             <>
                 <textarea
@@ -900,7 +1035,7 @@ function EditableCell({
                     aria-label={t('grid.edit_cell', 'Edit cell value')}
                     className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 resize-none overflow-hidden leading-normal"
                     style={{ ...inputStyle, minHeight: '24px' }}
-                    value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
+                    value={value ?? ''}
                     rows={1}
                     onChange={e => {
                         const v = e.target.value
@@ -913,7 +1048,6 @@ function EditableCell({
                         else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
                     }}
                     onFocus={(e) => {
-                        setIsEditing(true)
                         onFocus(rowId, columnId)
                         if (String(value ?? '').startsWith('=')) {
                             activateFormulaMode(e.target)
@@ -924,6 +1058,7 @@ function EditableCell({
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     onSelect={handleSelect}
+                    autoFocus
                 />
                 {autocompletePortal}
                 {signaturePortal}
@@ -931,6 +1066,24 @@ function EditableCell({
         )
     }
 
+    // View mode — single click selects the cell, double click enters edit mode
+    if (!isEditing) {
+        return (
+            <div
+                className="w-full h-full min-h-[24px] p-1 cursor-default select-none truncate"
+                style={inputStyle}
+                onDoubleClick={() => {
+                    setIsEditing(true)
+                    setEditingCell({ rowId, columnId })
+                    onFocus(rowId, columnId)
+                }}
+            >
+                {renderedDisplay != null && renderedDisplay !== '' ? String(renderedDisplay) : ''}
+            </div>
+        )
+    }
+
+    // Edit mode — double click or keyboard triggered
     return (
         <>
             <input
@@ -938,7 +1091,7 @@ function EditableCell({
                 aria-label={t('grid.edit_cell', 'Edit cell value')}
                 className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
                 style={inputStyle}
-                value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
+                value={value ?? ''}
                 onChange={e => {
                     const v = e.target.value
                     valueRef.current = v
@@ -950,7 +1103,6 @@ function EditableCell({
                     else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
                 }}
                 onFocus={(e) => {
-                    setIsEditing(true)
                     onFocus(rowId, columnId)
                     if (String(value ?? '').startsWith('=')) {
                         activateFormulaMode(e.target)
@@ -961,6 +1113,7 @@ function EditableCell({
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
                 onSelect={handleSelect}
+                autoFocus
             />
             {autocompletePortal}
             {signaturePortal}
