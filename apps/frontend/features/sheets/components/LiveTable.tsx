@@ -1,7 +1,12 @@
 "use client"
 
 import React, { useMemo, useRef, useCallback, useEffect, useState } from "react"
+import { HyperFormula } from "hyperformula"
+import { cn as _cn } from "@/lib/utils"
 import { t } from "@/lib/i18n"
+
+// Loaded once at module level — same list as FormulaBar
+const FORMULA_FUNCTIONS = HyperFormula.getRegisteredFunctionNames('enGB')
 import {
   ColumnDef,
   flexRender,
@@ -580,6 +585,8 @@ function EditableCell({
     const { setIsFormulaEditing, insertCellRefCallback } = useSheet()
     const [value, setValue] = React.useState(initialValue)
     const [isEditing, setIsEditing] = React.useState(false)
+    const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
+    const [activeIndex, setActiveIndex] = useState(-1)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     // Keep a ref so the insertCellRefCallback closure is never stale
@@ -616,10 +623,54 @@ function EditableCell({
         }
     }
 
+    const computeAutocomplete = (v: string, cursorPos: number) => {
+        if (!v.startsWith('=')) { setAutocompleteMatches([]); return }
+        const textToCursor = v.slice(0, cursorPos)
+        const lastDelim = Math.max(
+            textToCursor.lastIndexOf('='),
+            textToCursor.lastIndexOf('('),
+            textToCursor.lastIndexOf(','),
+            textToCursor.lastIndexOf(' '),
+        )
+        const token = textToCursor.slice(lastDelim + 1).replace(/^[^a-zA-Z]+/, '')
+        if (token.length < 1) { setAutocompleteMatches([]); return }
+        const matches = FORMULA_FUNCTIONS.filter(fn => fn.startsWith(token.toUpperCase())).slice(0, 10)
+        setAutocompleteMatches(matches)
+        setActiveIndex(-1)
+    }
+
+    const insertFunction = (fnName: string) => {
+        const el = (inputRef.current || textareaRef.current) as HTMLInputElement | null
+        const pos = el?.selectionStart ?? String(valueRef.current ?? '').length
+        const v = String(valueRef.current ?? '')
+        const textToCursor = v.slice(0, pos)
+        const lastDelim = Math.max(
+            textToCursor.lastIndexOf('='),
+            textToCursor.lastIndexOf('('),
+            textToCursor.lastIndexOf(','),
+            textToCursor.lastIndexOf(' '),
+        )
+        const rawStart = lastDelim + 1
+        const leadingNonAlpha = textToCursor.slice(rawStart).match(/^[^a-zA-Z]*/)?.[0].length ?? 0
+        const tokenStart = rawStart + leadingNonAlpha
+        const insertion = fnName + '('
+        const newVal = v.slice(0, tokenStart) + insertion + v.slice(pos)
+        valueRef.current = newVal
+        setValue(newVal)
+        setAutocompleteMatches([])
+        setActiveIndex(-1)
+        const newCursor = tokenStart + insertion.length
+        requestAnimationFrame(() => {
+            if (el) { el.focus(); el.setSelectionRange(newCursor, newCursor) }
+        })
+    }
+
     const handleBlur = () => {
         setIsEditing(false)
         setIsFormulaEditing(false)
         insertCellRefCallback.current = null
+        setAutocompleteMatches([])
+        setActiveIndex(-1)
         const committed = autoClose(value)
         if (committed !== initialValue) {
             onChange(committed)
@@ -628,6 +679,30 @@ function EditableCell({
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        // Autocomplete navigation
+        if (autocompleteMatches.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setActiveIndex(prev => Math.min(prev + 1, autocompleteMatches.length - 1))
+                return
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setActiveIndex(prev => Math.max(prev - 1, -1))
+                return
+            }
+            if ((e.key === 'Enter' || e.key === 'Tab') && activeIndex >= 0) {
+                e.preventDefault()
+                insertFunction(autocompleteMatches[activeIndex])
+                return
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                setAutocompleteMatches([])
+                setActiveIndex(-1)
+                return
+            }
+        }
         if (e.key === 'Enter') {
             e.preventDefault()
             const committed = autoClose(value)
@@ -635,6 +710,7 @@ function EditableCell({
             setIsEditing(false)
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
+            setAutocompleteMatches([])
             ;(e.target as HTMLElement).blur()
         }
         if (e.key === 'Escape') {
@@ -643,6 +719,7 @@ function EditableCell({
             setIsEditing(false)
             setIsFormulaEditing(false)
             insertCellRefCallback.current = null
+            setAutocompleteMatches([])
             ;(e.target as HTMLElement).blur()
         }
         e.stopPropagation()
@@ -723,20 +800,67 @@ function EditableCell({
     // otherwise fall back to the raw value.
     const renderedDisplay = isEditing ? undefined : (displayValue !== undefined ? displayValue : value)
 
+    const showDropdown = autocompleteMatches.length > 0
+
     // Text cell: use textarea when wrap is enabled so content can flow to multiple lines
     if (cellStyle.wrap) {
         return (
-            <textarea
-                ref={textareaRef}
+            <div className="relative w-full">
+                <textarea
+                    ref={textareaRef}
+                    aria-label={t('grid.edit_cell', 'Edit cell value')}
+                    className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 resize-none overflow-hidden leading-normal"
+                    style={{ ...inputStyle, minHeight: '24px' }}
+                    value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
+                    rows={1}
+                    onChange={e => {
+                        const v = e.target.value
+                        valueRef.current = v
+                        setValue(v)
+                        const pos = e.target.selectionStart ?? v.length
+                        computeAutocomplete(v, pos)
+                        if (v.startsWith('=')) activateFormulaMode(e.target)
+                        else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
+                    }}
+                    onFocus={(e) => {
+                        setIsEditing(true)
+                        onFocus(rowId, columnId)
+                        if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
+                    }}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                />
+                {showDropdown && (
+                    <div className="absolute left-0 top-full mt-0.5 w-56 bg-popover border shadow-md rounded-md z-50 max-h-48 overflow-y-auto">
+                        {autocompleteMatches.map((fn, idx) => (
+                            <div
+                                key={fn}
+                                onMouseDown={e => { e.preventDefault(); insertFunction(fn) }}
+                                className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer hover:bg-accent', idx === activeIndex && 'bg-accent')}
+                            >
+                                {fn}<span className="text-muted-foreground">(</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    return (
+        <div className="relative w-full">
+            <input
+                ref={inputRef}
                 aria-label={t('grid.edit_cell', 'Edit cell value')}
-                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1 resize-none overflow-hidden leading-normal"
-                style={{ ...inputStyle, minHeight: '24px' }}
+                className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
+                style={inputStyle}
                 value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
-                rows={1}
                 onChange={e => {
                     const v = e.target.value
                     valueRef.current = v
                     setValue(v)
+                    const pos = e.target.selectionStart ?? v.length
+                    computeAutocomplete(v, pos)
                     if (v.startsWith('=')) activateFormulaMode(e.target)
                     else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
                 }}
@@ -748,30 +872,19 @@ function EditableCell({
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
             />
-        )
-    }
-
-    return (
-        <input
-            ref={inputRef}
-            aria-label={t('grid.edit_cell', 'Edit cell value')}
-            className="w-full bg-transparent outline-none focus-visible:outline-none focus-visible:ring-0 border-none p-1"
-            style={inputStyle}
-            value={isEditing ? (value ?? '') : (renderedDisplay ?? '')}
-            onChange={e => {
-                const v = e.target.value
-                valueRef.current = v
-                setValue(v)
-                if (v.startsWith('=')) activateFormulaMode(e.target)
-                else { setIsFormulaEditing(false); insertCellRefCallback.current = null }
-            }}
-            onFocus={(e) => {
-                setIsEditing(true)
-                onFocus(rowId, columnId)
-                if (String(value ?? '').startsWith('=')) activateFormulaMode(e.target)
-            }}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-        />
+            {showDropdown && (
+                <div className="absolute left-0 top-full mt-0.5 w-56 bg-popover border shadow-md rounded-md z-50 max-h-48 overflow-y-auto">
+                    {autocompleteMatches.map((fn, idx) => (
+                        <div
+                            key={fn}
+                            onMouseDown={e => { e.preventDefault(); insertFunction(fn) }}
+                            className={_cn('px-3 py-1.5 text-sm font-mono cursor-pointer hover:bg-accent', idx === activeIndex && 'bg-accent')}
+                        >
+                            {fn}<span className="text-muted-foreground">(</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     )
 }
