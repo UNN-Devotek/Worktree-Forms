@@ -32,7 +32,7 @@ const buttonVariants = cva(
           "bg-slate-700 text-white shadow-sm hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500",
         /** Muted — dark grey, for inactive / unavailable actions */
         muted:
-          "bg-zinc-500 text-white shadow-sm cursor-not-allowed hover:bg-zinc-500",
+          "bg-zinc-500 text-white shadow-sm cursor-not-allowed pointer-events-none hover:bg-zinc-500",
       },
       size: {
         default: "h-9 px-4 text-sm",
@@ -57,10 +57,16 @@ const contentVariants = {
 
 const contentTransition = { duration: 0.15, ease: "easeOut" as const }
 
+type Layer = "label" | "spinner" | "check"
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /**
+   * isLoading and isLoaded are mutually exclusive.
+   * If both are true, isLoading takes priority.
+   */
   isLoading?: boolean
   isLoaded?: boolean
 }
@@ -72,7 +78,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const [showSuccess, setShowSuccess] = React.useState(false)
 
     // Width lock: freeze button width while loading
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
       if (isLoading && innerRef.current) {
         setLockedWidth(innerRef.current.offsetWidth)
       } else if (!isLoading) {
@@ -82,13 +88,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Success flash
     React.useEffect(() => {
-      if (isLoaded) {
+      if (isLoaded && !isLoading) {
         setShowSuccess(true)
-        const timer = setTimeout(() => setShowSuccess(false), 600)
-        return () => clearTimeout(timer)
+        const t = setTimeout(() => setShowSuccess(false), 600)
+        return () => clearTimeout(t)
       }
-      return undefined
-    }, [isLoaded])
+    }, [isLoaded, isLoading])
 
     // asChild path: no animations, pass through as before
     if (asChild) {
@@ -106,7 +111,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const isMuted = variant === "muted"
     const isInteractive = !isMuted && !isLoading && !isLoaded
 
-    type Layer = "label" | "spinner" | "check"
     const layer: Layer = isLoading ? "spinner" : isLoaded ? "check" : "label"
 
     const motionTransition = isLoading
@@ -120,6 +124,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       onDragStart: _onDragStart,
       onDragEnd: _onDragEnd,
       onAnimationStart: _onAnimationStart,
+      onTransitionEnd: _onTransitionEnd,
       ...restProps
     } = props
 
@@ -157,7 +162,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             : undefined
         }
         transition={motionTransition}
-        {...(restProps as Omit<typeof restProps, "onTransitionEnd">)}
+        {...restProps}
       >
         <AnimatePresence mode="wait" initial={false}>
           {layer === "label" && (
@@ -170,7 +175,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit="exit"
               transition={contentTransition}
             >
-              {children as React.ReactNode}
+              {children}
             </motion.span>
           )}
 
