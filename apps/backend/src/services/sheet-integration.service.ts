@@ -12,28 +12,15 @@ export class SheetIntegrationService {
     console.log(`Integrating submission to sheet ${sheetId}`);
 
     try {
-      // 1. Ensure columns exist for all fields in submission
+      // 1. Verify sheet exists — columns are already defined by the form schema
+      // (created when the form was saved). Never auto-create columns from submission
+      // data keys, which would add polluting metadata columns.
       const sheet = await prisma.sheet.findUnique({
         where: { id: sheetId },
-        include: { columns: true }
+        select: { id: true }
       });
 
       if (!sheet) return;
-
-      const fieldKeys = Object.keys(submissionData);
-      for (const key of fieldKeys) {
-        const exists = sheet.columns.find(c => c.id === key);
-        if (!exists) {
-          await prisma.sheetColumn.create({
-            data: {
-              sheetId,
-              id: key,
-              header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-              type: 'TEXT'
-            }
-          });
-        }
-      }
 
       // 2. Create the row in SQL (for persistence and snapshots)
       const newRow = await prisma.sheetRow.create({
@@ -107,6 +94,81 @@ export class SheetIntegrationService {
     } catch (error) {
       console.error('Sync Sheet to Route failed:', error);
     }
+  }
+
+  /**
+   * Syncs columns from a form schema into the Yjs document for a sheet.
+   * Clears existing columns and replaces them with the new set.
+   */
+  async syncColumnsToYjs(sheetId: string, columns: Array<{ id: string; label: string; type: string }>) {
+    return new Promise((resolve, reject) => {
+      const doc = new Y.Doc();
+      const provider = new HocuspocusProvider({
+        url: process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234',
+        name: sheetId,
+        document: doc,
+        WebSocketPolyfill: ws,
+        parameters: {
+          token: jwt.sign(
+            { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
+            process.env.JWT_SECRET!,
+            { algorithm: 'HS256', expiresIn: '5m' },
+          ),
+        },
+        onConnect: () => {
+          console.log(`Backend Yjs: syncing ${columns.length} columns to sheet ${sheetId}`);
+          const yColumns = doc.getArray('columns');
+
+          doc.transact(() => {
+            // Clear existing columns
+            if (yColumns.length > 0) {
+              yColumns.delete(0, yColumns.length);
+            }
+            // Push new columns
+            for (const col of columns) {
+              yColumns.push([{
+                id: col.id,
+                label: col.label,
+                type: col.type.toUpperCase(),
+                width: 150,
+              }]);
+            }
+          });
+
+          setTimeout(() => {
+            provider.destroy();
+            resolve(true);
+          }, 500);
+        },
+        onConnectError: (err: any) => {
+          console.error('Backend Yjs column sync error:', err);
+          reject(err);
+        }
+      } as any);
+    });
+  }
+
+  /**
+   * Creates an initial Yjs document binary with columns pre-populated.
+   * Use this when creating a new sheet (no active connections yet).
+   * Returns a Buffer to save as Sheet.content.
+   */
+  static createInitialYjsDoc(columns: Array<{ id: string; label: string; type: string }>): Buffer {
+    const doc = new Y.Doc();
+    const yColumns = doc.getArray('columns');
+
+    doc.transact(() => {
+      for (const col of columns) {
+        yColumns.push([{
+          id: col.id,
+          label: col.label,
+          type: col.type.toUpperCase(),
+          width: 150,
+        }]);
+      }
+    });
+
+    return Buffer.from(Y.encodeStateAsUpdate(doc));
   }
 
   private async injectRowIntoYjs(sheetId: string, row: any) {

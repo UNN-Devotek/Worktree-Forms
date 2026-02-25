@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table2, ExternalLink } from 'lucide-react'
 import { GeneralSettings } from './GeneralSettings'
 import { ThemeSettings } from './ThemeSettings'
 import { NotificationSettings } from './NotificationSettings'
@@ -18,11 +19,35 @@ interface FormSettingsModalProps {
   groupId: number
   groupSlug?: string
   formId?: number
+  targetSheetId?: string | null
 }
 
 import { getSheets, getFormProjectSlug } from '@/features/sheets/server/sheet-actions'
 
-export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId }: FormSettingsModalProps) {
+function LinkedSheetRow({ sheetId, projectSlug, sheets }: { sheetId: string; projectSlug: string; sheets: any[] }) {
+  const sheet = sheets.find((s) => s.id === sheetId)
+  return (
+    <div className="mt-4 pt-4 border-t">
+      <a
+        href={`/project/${projectSlug}/sheets/${sheetId}`}
+        className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors group"
+      >
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+          <Table2 className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium leading-none">Output Table</p>
+          <p className="text-xs text-muted-foreground mt-1 truncate">
+            {sheet?.title ?? 'Linked live table'}
+          </p>
+        </div>
+        <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+      </a>
+    </div>
+  )
+}
+
+export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, targetSheetId }: FormSettingsModalProps) {
   const { formSchema, updateFormSettings, updateFormTheme } = useFormBuilderStore()
   const [activeTab, setActiveTab] = useState('general')
   const [sheets, setSheets] = useState<any[]>([])
@@ -114,6 +139,10 @@ export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId }:
           </TabsContent>
 
         </Tabs>
+
+        {targetSheetId && groupSlug && (
+          <LinkedSheetRow sheetId={targetSheetId} projectSlug={groupSlug} sheets={sheets} />
+        )}
       </DialogContent>
     </Dialog>
   )

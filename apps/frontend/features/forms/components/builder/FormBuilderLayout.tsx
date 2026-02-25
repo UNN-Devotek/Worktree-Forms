@@ -28,9 +28,12 @@ interface FormBuilderLayoutProps {
   initialSchema?: FormSchema
   isNewForm?: boolean
   isSIGRequestForm?: boolean  // When true, default fields are locked and cannot be edited
+  projectId?: string        // Project context for project-scoped forms
+  projectSlug?: string      // Project slug for project-scoped redirects
+  targetSheetId?: string | null // Linked output sheet (set after first save for project forms)
 }
 
-export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupName, formTitle, formType = 'general', initialSchema, isNewForm = false, isSIGRequestForm = false }: FormBuilderLayoutProps) {
+export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupName, formTitle, formType = 'general', initialSchema, isNewForm = false, isSIGRequestForm = false, projectId, projectSlug, targetSheetId }: FormBuilderLayoutProps) {
   const searchParams = useSearchParams()
   const {
     formSchema,
@@ -109,11 +112,12 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
         groupName={groupName}
         formTitle={formTitle}
         formType={formType}
+        projectId={projectId}
+        projectSlug={projectSlug}
         onTogglePalette={() => setIsPaletteCollapsed(!isPaletteCollapsed)}
         onToggleProperties={() => setIsPropertiesCollapsed(!isPropertiesCollapsed)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPreview={() => setIsPreviewOpen(true)}
-
       />
 
       {/* Form Settings Modal */}
@@ -121,8 +125,9 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
         open={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         groupId={groupId}
-        groupSlug={groupSlug}
+        groupSlug={groupSlug ?? projectSlug}
         formId={formId}
+        targetSheetId={targetSheetId}
       />
 
       {/* Preview Modal */}

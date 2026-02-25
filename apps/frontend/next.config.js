@@ -21,20 +21,27 @@ const nextConfig = {
   async rewrites() {
     // When running in the unified container, the backend is on local loopback
     const backendPort = process.env.BACKEND_PORT || 5005;
-    const backendHost = process.env.BACKEND_HOST || 'localhost';
+    const backendHost = process.env.BACKEND_HOST || '127.0.0.1';
     const backendUrl = `http://${backendHost}:${backendPort}`;
     
-    return [
-      {
-        source: '/api/:path((?!auth).*)',
-        destination: `${backendUrl}/api/:path`,
-      },
-      // Proxy uploads if needed (though usually these go to MinIO directly)
-      {
-        source: '/uploads/:path*',
-        destination: `${backendUrl}/uploads/:path*`,
-      },
-    ];
+    // Use fallback rewrites so they run AFTER all filesystem routes (including
+    // dynamic ones like app/api/auth/[...nextauth]). This ensures auth routes
+    // are handled by NextAuth, and only unmatched /api/* paths proxy to Express.
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          // :path* matches multi-segment paths (e.g. /api/projects/xxx/forms/2/sync-columns)
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+        {
+          source: '/uploads/:path*',
+          destination: `${backendUrl}/uploads/:path*`,
+        },
+      ],
+    };
   },
   images: {
     remotePatterns: [
@@ -47,6 +54,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'worktree.pro',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
         port: '',
         pathname: '/**',
       },
@@ -73,7 +86,7 @@ const nextConfig = {
     
     return config;
   },
-  transpilePackages: ['react-pdf', 'pdfjs-dist'],
+  transpilePackages: ['react-pdf', 'pdfjs-dist', 'yjs'],
 };
 
 module.exports = nextConfig;

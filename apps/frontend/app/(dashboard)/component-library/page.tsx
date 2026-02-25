@@ -60,6 +60,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ModeToggle } from '@/components/ui/mode-toggle';
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
     Table, TableHeader, TableBody,
     TableRow, TableHead, TableCell,
@@ -87,7 +89,7 @@ function DialogPreview() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" variant="neutral">Open Dialog</Button>
+                <Button size="sm">Open Dialog</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -127,7 +129,7 @@ function DropdownMenuPreview() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="neutral">Options <ChevronRight className="ml-1 h-3 w-3" /></Button>
+                <Button size="sm">Options <ChevronRight className="ml-1 h-3 w-3" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuLabel>Account</DropdownMenuLabel>
@@ -145,7 +147,7 @@ function PopoverPreview() {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button size="sm" variant="neutral">Open Popover</Button>
+                <Button size="sm">Open Popover</Button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
                 <div className="space-y-2">
@@ -199,7 +201,7 @@ function SheetPreview() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button size="sm" variant="neutral">Open Sheet</Button>
+                <Button size="sm">Open Sheet</Button>
             </SheetTrigger>
             <SheetContent>
                 <SheetHeader>
@@ -251,6 +253,8 @@ function ButtonPreview() {
                 <Button variant="destructive">Destructive</Button>
                 <Button variant="alternative">Alternative</Button>
                 <Button variant="warning">Warning</Button>
+                <Button variant="info">Info</Button>
+                <Button variant="purple">Purple</Button>
                 <Button variant="neutral">Neutral</Button>
                 <Button variant="muted">Muted</Button>
             </div>
@@ -328,13 +332,13 @@ function TooltipPreview() {
             <div className="flex gap-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button size="sm" variant="neutral">Hover me</Button>
+                        <Button size="sm">Hover me</Button>
                     </TooltipTrigger>
                     <TooltipContent>This is a tooltip!</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button size="icon" variant="neutral" className="h-8 w-8">
+                        <Button size="icon" className="h-8 w-8">
                             <Info className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
@@ -397,7 +401,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Button',
         exports: ['Button', 'buttonVariants'],
         importPath: '@/components/ui/button',
-        description: '7 solid variants, uniform h-9 height. default=blue, secondary=green, destructive=red, alternative=amber, warning=orange, neutral=slate, muted=greyed-out.',
+        description: '9 solid variants, uniform h-9 height. default=blue, secondary=green, destructive=red, alternative=amber, warning=orange, info=sky, purple=violet, neutral=slate, muted=greyed-out.',
         level: 'Atom',
         preview: <ButtonPreview />,
     },
@@ -405,7 +409,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Input',
         exports: ['Input'],
         importPath: '@/components/ui/input',
-        description: 'Single-line text input. Focus triggers primary-colored border + subtle glow ring.',
+        description: 'Single-line text input. Hover dims the border (primary/50); focus triggers a full primary border + ring-2 glow.',
         level: 'Atom',
         preview: (
             <div className="w-full max-w-xs space-y-2">
@@ -418,7 +422,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Textarea',
         exports: ['Textarea'],
         importPath: '@/components/ui/textarea',
-        description: 'Multi-line text input that grows and matches the input design token.',
+        description: 'Multi-line text input. Shares the same hover/focus design tokens as Input — primary/50 on hover, full primary ring on focus.',
         level: 'Atom',
         preview: <Textarea placeholder="Write your message…" className="w-full max-w-xs min-h-[80px]" />,
     },
@@ -470,7 +474,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Checkbox',
         exports: ['Checkbox'],
         importPath: '@/components/ui/checkbox',
-        description: 'Binary toggle tracking checked, unchecked, and indeterminate states.',
+        description: 'Binary toggle with primary focus ring (ring-2). Includes a 44px invisible touch target via before: pseudo-element on mobile (hidden on md+).',
         level: 'Atom',
         preview: (
             <div className="flex flex-col gap-3">
@@ -484,7 +488,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Switch',
         exports: ['Switch'],
         importPath: '@/components/ui/switch',
-        description: 'On/off toggle rendered as an animated slide control.',
+        description: 'On/off toggle with animated thumb slide. Hover emits a primary/20 glow ring; keyboard focus uses a full primary ring with offset.',
         level: 'Atom',
         preview: (
             <div className="flex flex-col gap-3">
@@ -532,7 +536,7 @@ const ATOMS: ComponentEntry[] = [
         name: 'Progress',
         exports: ['Progress'],
         importPath: '@/components/ui/progress',
-        description: 'Linear progress bar that communicates completion percentage.',
+        description: 'Animated progress bar powered by framer-motion. Smoothly interpolates from 0% to the target value on mount using a width animation (duration 0.6s, ease-in-out cubic).',
         level: 'Atom',
         preview: (
             <div className="w-full max-w-xs space-y-3">
@@ -574,12 +578,28 @@ const ATOMS: ComponentEntry[] = [
         ),
     },
     {
+        name: 'Animated Theme Toggler',
+        exports: ['AnimatedThemeToggler'],
+        importPath: '@/components/ui/animated-theme-toggler',
+        description: 'Sun/Moon toggle with a View Transitions API ripple animation expanding from the button outward. Falls back gracefully in Firefox/Safari.',
+        level: 'Atom',
+        preview: <AnimatedThemeToggler />,
+    },
+    {
         name: 'Mode Toggle',
         exports: ['ModeToggle'],
         importPath: '@/components/ui/mode-toggle',
-        description: 'Dropdown button that switches between light, dark, and system mode.',
+        description: 'Re-exports AnimatedThemeToggler as ModeToggle for backward compatibility.',
         level: 'Atom',
         preview: <ModeToggle />,
+    },
+    {
+        name: 'Theme Toggle',
+        exports: ['ThemeToggle'],
+        importPath: '@/components/ui/theme-toggle',
+        description: 'Borderless, shadowless variant of AnimatedThemeToggler — designed for embedding inside sidebars or toolbars where a subtle toggle is preferred over a bordered button.',
+        level: 'Atom',
+        preview: <ThemeToggle />,
     },
     {
         name: 'Alert',
@@ -802,7 +822,7 @@ const MOLECULES: ComponentEntry[] = [
                     <p className="text-xs text-muted-foreground">+12% from last month</p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                    <Button size="sm" variant="neutral" className="w-full">View all</Button>
+                    <Button size="sm" className="w-full">View all</Button>
                 </CardFooter>
             </Card>
         ),
@@ -883,7 +903,7 @@ const MOLECULES: ComponentEntry[] = [
         name: 'Select',
         exports: ['Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem', 'SelectLabel', 'SelectGroup', 'SelectSeparator'],
         importPath: '@/components/ui/select',
-        description: 'Styleable single-value dropdown built on Radix Select primitive.',
+        description: 'Styleable single-value dropdown built on Radix Select. Hover dims border (primary/50); open state uses primary border + ring-2 — consistent with Input/Textarea.',
         level: 'Molecule',
         preview: <SelectPreview />,
     },
@@ -918,7 +938,7 @@ const MOLECULES: ComponentEntry[] = [
         description: 'Custom-styled scrollable container with visible scrollbar track.',
         level: 'Molecule',
         preview: (
-            <ScrollArea className="h-28 w-full rounded-md border p-3">
+            <ScrollArea className="h-28 w-full border p-3">
                 {Array.from({ length: 10 }, (_, i) => (
                     <div key={i} className="py-1 text-xs text-muted-foreground border-b last:border-0">
                         List item {i + 1}
@@ -931,7 +951,7 @@ const MOLECULES: ComponentEntry[] = [
         name: 'Radio Group',
         exports: ['RadioGroup', 'RadioGroupItem'],
         importPath: '@/components/ui/radio-group',
-        description: 'Accessible single-select option group using styled radio buttons.',
+        description: 'Single-select radio group with primary focus ring (ring-2). Includes 44px touch target on mobile via before: pseudo-element, same as Checkbox.',
         level: 'Molecule',
         preview: (
             <RadioGroup defaultValue="option1" className="space-y-2">
@@ -1083,7 +1103,7 @@ const MOLECULES: ComponentEntry[] = [
         preview: (
             <div className="w-full max-w-xs space-y-1">
                 <Label className="text-xs">Due Date</Label>
-                <Button variant="neutral" size="sm" className="w-full justify-start text-xs font-normal h-8">
+                <Button variant="default" size="sm" className="w-full justify-start text-xs font-normal h-8">
                     <ChevronRight className="mr-2 h-3.5 w-3.5 text-muted-foreground rotate-90" />
                     Dec 31, 2025
                 </Button>
@@ -1223,6 +1243,43 @@ const MOLECULES: ComponentEntry[] = [
                 {['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#000000','#ffffff'].map(c => (
                     <div key={c} className="w-5 h-5 rounded cursor-pointer border border-border/50 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
                 ))}
+            </div>
+        ),
+    },
+    // Navigation
+    {
+        name: 'Team Switcher',
+        exports: ['TeamSwitcher'],
+        importPath: '@/components/ui/team-switcher',
+        description: 'Workspace/team selector dropdown with avatar, name, and plan badge — lives in the sidebar header.',
+        level: 'Molecule',
+        group: 'Navigation',
+        preview: (
+            <div className="flex items-center gap-2 p-2 rounded-lg border bg-card w-full max-w-xs cursor-pointer hover:bg-muted/40 transition-colors">
+                <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">W</div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">Worktree Pro</p>
+                    <p className="text-[10px] text-muted-foreground truncate">Enterprise</p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </div>
+        ),
+    },
+    {
+        name: 'Context Menu',
+        exports: ['ContextMenu', 'ContextMenuTrigger', 'ContextMenuContent', 'ContextMenuItem', 'ContextMenuSeparator', 'ContextMenuLabel', 'ContextMenuCheckboxItem', 'ContextMenuRadioGroup', 'ContextMenuRadioItem', 'ContextMenuSub', 'ContextMenuSubTrigger', 'ContextMenuSubContent', 'ContextMenuShortcut'],
+        importPath: '@/components/ui/context-menu',
+        description: 'Right-click context menu built on Radix ContextMenu primitive with keyboard navigation.',
+        level: 'Molecule',
+        group: 'Navigation',
+        preview: (
+            <div className="w-44 rounded-md border bg-popover text-popover-foreground shadow-md p-1 text-[11px]">
+                <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground">Actions</div>
+                {['Open', 'Rename', 'Duplicate'].map(item => (
+                    <div key={item} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-default">{item}</div>
+                ))}
+                <div className="my-1 border-t" />
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive cursor-default">Delete</div>
             </div>
         ),
     },
@@ -1514,7 +1571,7 @@ const ORGANISMS: ComponentEntry[] = [
             <div className="w-full space-y-2">
                 <div className="flex gap-2">
                     <Input placeholder="Search projects…" className="h-7 text-xs" />
-                    <Button size="sm" variant="neutral" className="h-7 text-xs px-2">Filter</Button>
+                    <Button size="sm" className="h-7 text-xs px-2">Filter</Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                     {['Highway Ext.', 'Bridge Repair'].map((p, i) => (
@@ -1934,7 +1991,7 @@ const ORGANISMS: ComponentEntry[] = [
                     <p className="text-xs font-semibold text-destructive">Something went wrong</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">An unexpected error occurred while rendering.</p>
                 </div>
-                <Button variant="neutral" size="sm" className="text-xs h-6">Try again</Button>
+                <Button size="sm" className="text-xs h-6">Try again</Button>
             </div>
         ),
     },
@@ -1972,6 +2029,123 @@ const ORGANISMS: ComponentEntry[] = [
                 <button className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white/10 border border-white/20 text-white text-xs flex items-center justify-center">›</button>
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                     {[0,1,2].map(i=><div key={i} className={`h-1 w-1 rounded-full ${i===0?'bg-white':'bg-white/30'}`}/>)}
+                </div>
+            </div>
+        ),
+    },
+    // UI Primitives (newly registered)
+    {
+        name: 'Sidebar',
+        exports: ['AppSidebar'],
+        importPath: '@/components/ui/sidebar',
+        description: 'Full application sidebar with nav links, project switcher, user profile, and collapsible groups.',
+        level: 'Organism',
+        group: 'Navigation',
+        preview: (
+            <div className="w-40 h-28 rounded-lg border bg-card flex flex-col overflow-hidden text-[10px]">
+                <div className="px-2 py-1.5 border-b bg-muted/30 flex items-center gap-1.5">
+                    <div className="h-4 w-4 rounded bg-primary/20" />
+                    <span className="font-semibold text-xs">Worktree</span>
+                </div>
+                <div className="flex-1 p-1 space-y-0.5">
+                    {['Dashboard', 'Projects', 'Tasks', 'Settings'].map((item, i) => (
+                        <div key={item} className={cn('flex items-center gap-1.5 px-2 py-1 rounded', i === 0 ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted/40')}>
+                            <span className="h-2.5 w-2.5 rounded-sm bg-current opacity-50 shrink-0" />
+                            {item}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ),
+    },
+    {
+        name: 'Data Table',
+        exports: ['DataTable'],
+        importPath: '@/components/ui/data-table',
+        description: 'TanStack Table powered data grid with sorting, filtering, pagination, and column visibility controls.',
+        level: 'Organism',
+        group: 'Data',
+        preview: (
+            <div className="w-full rounded-md border overflow-hidden text-[10px]">
+                <div className="flex items-center gap-1 px-2 py-1.5 border-b bg-muted/30">
+                    <div className="flex-1 h-4 rounded bg-muted/50 max-w-[120px]" />
+                    <div className="h-4 w-12 rounded bg-muted/50" />
+                </div>
+                <table className="w-full">
+                    <thead className="bg-muted/40 text-muted-foreground"><tr>
+                        {['Name','Status','Date'].map(h => <th key={h} className="px-2 py-1 text-left font-medium">{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                        {[['Alice','Active','Jan 5'],['Bob','Pending','Jan 8']].map(([n,s,d]) => (
+                            <tr key={n} className="border-t hover:bg-muted/20">
+                                <td className="px-2 py-1 font-medium">{n}</td>
+                                <td className="px-2 py-1"><span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 rounded text-[9px]">{s}</span></td>
+                                <td className="px-2 py-1 text-muted-foreground">{d}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <div className="flex items-center justify-between px-2 py-1 border-t text-[9px] text-muted-foreground">
+                    <span>2 of 48 rows</span>
+                    <div className="flex gap-1">
+                        <button className="h-4 w-4 rounded border flex items-center justify-center">‹</button>
+                        <button className="h-4 w-4 rounded border flex items-center justify-center">›</button>
+                    </div>
+                </div>
+            </div>
+        ),
+    },
+    {
+        name: 'Map',
+        exports: ['Map'],
+        importPath: '@/components/ui/map',
+        description: 'Leaflet-based interactive map component with marker support and configurable tile layers.',
+        level: 'Organism',
+        group: 'Maps',
+        preview: (
+            <div className="w-full h-24 rounded-lg border bg-muted/20 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 opacity-10">
+                    <svg width="100%" height="100%">
+                        <defs><pattern id="uimapgrid" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M 16 0 L 0 0 0 16" fill="none" stroke="currentColor" strokeWidth="0.5"/></pattern></defs>
+                        <rect width="100%" height="100%" fill="url(#uimapgrid)" />
+                    </svg>
+                </div>
+                <div className="absolute left-12 top-8 h-4 w-4 rounded-full bg-primary border-2 border-background shadow flex items-center justify-center">
+                    <span className="text-[8px] text-primary-foreground font-bold">A</span>
+                </div>
+                <div className="absolute right-10 top-10 h-3 w-3 rounded-full bg-red-500 border-2 border-background shadow" />
+                <div className="absolute bottom-2 right-2 flex gap-0.5">
+                    <button className="h-4 w-4 rounded border bg-background text-[10px] flex items-center justify-center">+</button>
+                    <button className="h-4 w-4 rounded border bg-background text-[10px] flex items-center justify-center">−</button>
+                </div>
+            </div>
+        ),
+    },
+    {
+        name: 'ProjectFormBrowser',
+        exports: ['ProjectFormBrowser'],
+        importPath: '@/features/forms/components/ProjectFormBrowser',
+        description: 'Project-scoped file browser for forms. Shows a folder sidebar (only when folders exist) alongside a tile grid of forms. Supports drag-and-drop, folder creation, and navigating directly to project forms.',
+        level: 'Organism',
+        preview: (
+            <div className="border rounded-lg p-4 bg-background w-full">
+                <div className="flex items-center justify-between mb-4">
+                    <span className="text-base font-semibold">Forms</span>
+                    <div className="flex gap-2">
+                        <div className="h-7 w-28 rounded-md border bg-muted/30 text-xs flex items-center justify-center text-muted-foreground">+ New Folder</div>
+                        <div className="h-7 w-24 rounded-md bg-primary text-xs flex items-center justify-center text-primary-foreground">+ New Form</div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                    {['Safety Inspection', 'Field Report', 'Daily Checklist'].map((name) => (
+                        <div key={name} className="border rounded-lg p-3 bg-card flex items-start gap-3">
+                            <div className="h-8 w-8 shrink-0 rounded-md bg-blue-100 flex items-center justify-center text-blue-500 text-xs">F</div>
+                            <div>
+                                <p className="text-xs font-medium truncate">{name}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">2 days ago</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         ),

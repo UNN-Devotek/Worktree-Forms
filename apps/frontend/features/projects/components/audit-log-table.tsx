@@ -150,7 +150,7 @@ export function AuditLogTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border border-table-border bg-table-canvas">
         <Table>
           <TableHeader>
             <TableRow>

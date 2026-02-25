@@ -24,8 +24,12 @@ export async function getSheetToken(sheetId: string) {
   );
 }
 
-// Create a new sheet
-export async function createSheet(projectSlugOrId: string, title?: string) {
+// Create a new sheet with optional title and visibility config
+export async function createSheet(
+    projectSlugOrId: string,
+    title?: string,
+    visibilityConfig?: { type: 'all' | 'selected'; memberIds?: string[] }
+) {
   try {
     // Check if it's a slug or ID
     let projectId = projectSlugOrId;
@@ -99,9 +103,11 @@ export async function createSheet(projectSlugOrId: string, title?: string) {
     const sheet = await db.sheet.create({
       data: {
         projectId,
-        title: title || 'Untitled Sheet',
+        title: title || 'Untitled Table',
         content,
+        visibilityConfig: visibilityConfig ?? { type: 'all' },
       },
+      select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true },
     });
 
     revalidatePath(`/project/${project.slug}/sheets`);
@@ -132,8 +138,28 @@ export async function getSheets(projectSlug: string) {
         const sheets = await db.sheet.findMany({
             where: { projectId: project.id },
             orderBy: { createdAt: 'desc' },
-            select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
+            select: {
+                id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true,
+            }
         });
+
+        // Attempt to enrich with owner data (requires migration 20260224_add_sheet_owner to be applied)
+        try {
+            const sheetsWithOwner = await db.sheet.findMany({
+                where: { projectId: project.id },
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    ownerId: true,
+                    owner: { select: { id: true, name: true, email: true, image: true } }
+                }
+            });
+            const ownerMap = new Map(sheetsWithOwner.map(s => [s.id, { ownerId: s.ownerId, owner: s.owner }]));
+            return sheets.map(s => ({ ...s, ...(ownerMap.get(s.id) ?? { ownerId: null, owner: null }) }));
+        } catch {
+            // Migration not yet applied — return without owner data
+            return sheets.map(s => ({ ...s, ownerId: null, owner: null }));
+        }
         console.log('[getSheets] Found sheets:', sheets.length);
 
         return sheets;
@@ -173,6 +199,65 @@ export async function saveSheet(sheetId: string, content: number[]) {
        return true;
     } catch (error) {
         console.error('Failed to save sheet:', error);
+        return false;
+    }
+}
+
+// Get project members for ownership transfer picker
+export async function getProjectMembers(projectSlug: string) {
+    try {
+        const project = await db.project.findUnique({
+            where: { slug: projectSlug },
+            include: {
+                members: {
+                    include: {
+                        user: { select: { id: true, name: true, email: true, image: true } }
+                    }
+                }
+            }
+        });
+        if (!project) return [];
+        return project.members.map(m => m.user);
+    } catch (error) {
+        console.error('Failed to get project members:', error);
+        return [];
+    }
+}
+
+// Transfer sheet ownership to another user
+// Requires migration 20260224_add_sheet_owner to be applied first.
+export async function transferSheetOwnership(sheetId: string, newOwnerId: string) {
+    try {
+        await (db.sheet as any).update({
+            where: { id: sheetId },
+            data: { ownerId: newOwnerId }
+        });
+        revalidatePath(`/project/[slug]/sheets`);
+        return true;
+    } catch (error: any) {
+        if (error?.code === 'P2009' || error?.message?.includes('ownerId')) {
+            console.error('Transfer ownership requires migration 20260224_add_sheet_owner to be applied.');
+        } else {
+            console.error('Failed to transfer sheet ownership:', error);
+        }
+        return false;
+    }
+}
+
+// Delete a sheet and all its data
+export async function deleteSheet(sheetId: string) {
+    try {
+        const sheet = await db.sheet.findUnique({
+            where: { id: sheetId },
+            select: { project: { select: { slug: true } } }
+        });
+        await db.sheet.delete({ where: { id: sheetId } });
+        if (sheet?.project?.slug) {
+            revalidatePath(`/project/${sheet.project.slug}/sheets`);
+        }
+        return true;
+    } catch (error) {
+        console.error('Failed to delete sheet:', error);
         return false;
     }
 }

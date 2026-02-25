@@ -29,7 +29,7 @@ function formatPhoneNumber(value: string): string {
 const PhoneFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
   ({ field }, _ref) => {
     const form = useFormContext()
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
     const [displayValue, setDisplayValue] = useState('')
 
     // Register field with form (for validation and value tracking)

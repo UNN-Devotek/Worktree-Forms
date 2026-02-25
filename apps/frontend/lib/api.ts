@@ -152,11 +152,9 @@ export async function apiRequest<T = any>(
     }
 
     if (!response.ok) {
-      console.error(`[apiRequest] Request failed: status=${response.status}, statusText="${response.statusText}", error="${responseData?.error || 'none'}", fullResponse=`, responseData);
-
       const errorMessage = responseData?.error || `HTTP ${response.status}: ${response.statusText}`;
 
-      // On 401, attempt to refresh the backend token and retry once.
+      // On 401, attempt to refresh the backend token and retry once before logging.
       // The /api/auth/backend-token endpoint signs a backend-compatible JWT from the
       // NextAuth session and sets it as the access_token httpOnly cookie.
       if (response.status === 401 && typeof window !== 'undefined') {
@@ -175,9 +173,12 @@ export async function apiRequest<T = any>(
             }
           }
         } catch {
-          // Token refresh failed — fall through and throw the original error
+          // Token refresh failed — fall through and log the original error
         }
       }
+
+      // Only log after retry has been attempted (or for non-401 errors)
+      console.error(`[apiRequest] Request failed: status=${response.status}, statusText="${response.statusText}", error="${responseData?.error || 'none'}", fullResponse=`, responseData);
 
       throw new Error(errorMessage);
     }

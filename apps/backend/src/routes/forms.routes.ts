@@ -13,6 +13,7 @@ import archiver from 'archiver';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../storage.js';
 import { parsePaginationParam } from '../utils/query.js';
+import { extractColumnsFromSchema, mapFieldTypeToColumnType } from '../utils/form-schema.js';
 
 const createFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -306,6 +307,44 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
        if (updates.is_active !== undefined) dataToUpdate.is_active = updates.is_active;
        if (updates.folderId !== undefined) dataToUpdate.folderId = updates.folderId ? parseInt(updates.folderId) : null;
        if (updates.targetSheetId !== undefined) dataToUpdate.targetSheetId = updates.targetSheetId;
+
+      // Sheet sync: title and schema changes
+      if (existingForm.targetSheetId) {
+        // Sync title
+        if (updates.title) {
+          await prisma.sheet.update({
+            where: { id: existingForm.targetSheetId },
+            data: { title: updates.title },
+          });
+        }
+
+        // Sync schema columns (add-only, never remove)
+        if (updates.form_json) {
+          const existingColumns = await prisma.sheetColumn.findMany({
+            where: { sheetId: existingForm.targetSheetId },
+            select: { header: true, order: true },
+          });
+          const existingHeaders = new Set(existingColumns.map((c: { header: string }) => c.header));
+          const maxOrder = existingColumns.reduce(
+            (m: number, c: { order: number }) => Math.max(m, c.order),
+            existingColumns.length - 1
+          );
+          const toAdd = extractColumnsFromSchema(updates.form_json).filter(
+            (col) => !existingHeaders.has(col.label)
+          );
+          if (toAdd.length > 0) {
+            await prisma.sheetColumn.createMany({
+              data: toAdd.map((col, i) => ({
+                sheetId: existingForm.targetSheetId as string,
+                header: col.label,
+                type: mapFieldTypeToColumnType(col.type),
+                order: maxOrder + 1 + i,
+                options: { fieldName: col.id },
+              })),
+            });
+          }
+        }
+      }
 
       const updatedForm = await prisma.form.update({
           where: { id: formId }, // Note: In real app, better ensure group_id matches too
@@ -678,8 +717,62 @@ router.post('/:formId/submissions', async (req: Request, res: Response) => {
     }
 });
 
-// Get Submissions
-router.get('/:formId/submissions', async (req: Request, res: Response) => {
+// Form Analytics — dual-path so /api/forms/:formId/analytics also works (authenticated)
+router.get(['/forms/:formId/analytics', '/:formId/analytics'], async (req: Request, res: Response) => {
+  const formId = parseInt(req.params.formId);
+  if (isNaN(formId)) {
+    return res.status(400).json({ success: false, error: 'Invalid form ID' });
+  }
+
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [total, recentSubmissions, statusGroups] = await Promise.all([
+      prisma.submission.count({ where: { form_id: formId } }),
+      prisma.submission.findMany({
+        where: { form_id: formId, createdAt: { gte: thirtyDaysAgo } },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.submission.groupBy({
+        by: ['status'],
+        where: { form_id: formId },
+        _count: { _all: true },
+      }),
+    ]);
+
+    // Build daily buckets for last 30 days
+    const buckets: Record<string, number> = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (29 - i));
+      buckets[d.toISOString().slice(0, 10)] = 0;
+    }
+    for (const s of recentSubmissions) {
+      const day = s.createdAt.toISOString().slice(0, 10);
+      if (day in buckets) buckets[day]++;
+    }
+    const submissionsPerDay = Object.entries(buckets).map(([date, count]) => ({ date, count }));
+
+    // Status breakdown
+    const statusBreakdown: Record<string, number> = {};
+    for (const g of statusGroups) {
+      statusBreakdown[g.status || 'unknown'] = g._count._all;
+    }
+
+    res.json({
+      success: true,
+      data: { total, submissionsPerDay, statusBreakdown },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch analytics' });
+  }
+});
+
+// Get Submissions — dual-path so /api/forms/:formId/submissions also works (authenticated)
+router.get(['/forms/:formId/submissions', '/:formId/submissions'], async (req: Request, res: Response) => {
   const formId = parseInt(req.params.formId);
   if (isNaN(formId)) {
     return res.status(400).json({ success: false, error: 'Invalid form ID' });
@@ -687,7 +780,10 @@ router.get('/:formId/submissions', async (req: Request, res: Response) => {
   const take = parsePaginationParam(req.query.take, 20, 100);
   const skip = parsePaginationParam(req.query.skip, 0, 100000);
 
-  const userId = (req as any).user.id;
+  const userId = (req as any).user?.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Authentication required' });
+  }
 
   // Verify caller has access to the form's project
   const form = await prisma.form.findUnique({

@@ -17,13 +17,13 @@ export function ClearFormatting({ className }: ClearFormattingProps) {
   const {
     focusedCell,
     applyCellStyle,
-    selectedColumnId,
-    selectedFormattingRowId,
+    selectedColumnIds,
+    selectedFormattingRowIds,
     applyColumnStyle,
     applyRowStyle,
   } = useSheet();
 
-  const isDisabled = !focusedCell && !selectedColumnId && !selectedFormattingRowId;
+  const isDisabled = !focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0;
 
   const handleClearFormatting = () => {
     // Spread all fields of DEFAULT_CELL_STYLE so every property is explicitly
@@ -32,10 +32,10 @@ export function ClearFormatting({ className }: ClearFormattingProps) {
 
     if (focusedCell) {
       applyCellStyle(focusedCell.rowId, focusedCell.columnId, resetStyle);
-    } else if (selectedColumnId) {
-      applyColumnStyle(selectedColumnId, resetStyle);
-    } else if (selectedFormattingRowId) {
-      applyRowStyle(selectedFormattingRowId, resetStyle);
+    } else if (selectedColumnIds.size > 0) {
+      selectedColumnIds.forEach(colId => applyColumnStyle(colId, resetStyle));
+    } else if (selectedFormattingRowIds.size > 0) {
+      selectedFormattingRowIds.forEach(rowId => applyRowStyle(rowId, resetStyle));
     }
   };
 

@@ -37,11 +37,12 @@ model User {
   assignedRoutes     Route[]
   preferences        UserPreference[]
 
-  createdRfis           Rfi[]                @relation("CreatedRfis")
-  assignedRfis          Rfi[]                @relation("AssignedRfis")
+  createdTasks          Task[]               @relation("CreatedTasks")
+  assignedTasks         Task[]               @relation("AssignedTasks")
   uploadedSpecs         Specification[]      @relation("UploadedSpecs")
   assignedScheduleTasks ScheduleTask[]       @relation("AssignedScheduleTasks")
   apiKeys               ApiKey[]
+  ownedSheets           Sheet[]              @relation("SheetOwner")
   webhooks              Webhook[]
   helpArticles          HelpArticle[]
   helpArticleVersions   HelpArticleVersion[]
@@ -110,7 +111,7 @@ model Project {
   routes           Route[]
   preferences      UserPreference[]
   sheets           Sheet[]
-  rfis             Rfi[]
+  tasks            Task[]
   specifications   Specification[]
   scheduleTasks    ScheduleTask[]
   vectorEmbeddings       VectorEmbedding[]
@@ -348,6 +349,9 @@ model Sheet {
   // Latest binary snapshot of the Yjs doc
   content Bytes?
 
+  ownerId String?
+  owner   User?   @relation("SheetOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   visibilityConfig Json?
@@ -404,26 +408,31 @@ model SheetSnapshot {
   createdAt DateTime @default(now())
 }
 
-model Rfi {
+model Task {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  number Int @default(autoincrement()) // Sequential RFI # per system (or scoped if we complexify) - making global likely safer for simple MVP, OR use cuid/uuid and display ID separately. 
-  // Actually, standard is project-scoped sequential ID. But global autoincrement int is easiest unique ID if we don't care about gaps per project. 
-  // Let's stick to CUID for ID and maybe use a visual ID later.
+  number Int @default(autoincrement())
 
   title            String
   question         String  @db.Text
   proposedSolution String? @db.Text
 
-  status String @default("DRAFT") // DRAFT, OPEN, CLOSED
+  taskType  String    @default("GENERAL") // RFI, GENERAL, PUNCH_LIST, INSPECTION, SUBMITTAL, CHANGE_ORDER, SAFETY, DEFICIENCY
+  status    String    @default("ACTIVE")  // DRAFT, ACTIVE, IN_PROGRESS, COMPLETED
+  priority  String    @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
+  startDate DateTime?
+  endDate   DateTime?
+  assignees   Json?   // [{ id, name }]
+  attachments Json?   // [{ url, name, type, objectKey }]
+  mentions    Json?   // [{ type: 'sheet'|'spec', id, label }]
 
   createdById String
-  createdBy   User   @relation("CreatedRfis", fields: [createdById], references: [id])
+  createdBy   User   @relation("CreatedTasks", fields: [createdById], references: [id])
 
   assignedToId String?
-  assignedTo   User?   @relation("AssignedRfis", fields: [assignedToId], references: [id])
+  assignedTo   User?   @relation("AssignedTasks", fields: [assignedToId], references: [id])
 
   images Json? // Array of objects { url, caption }
 

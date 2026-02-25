@@ -67,14 +67,15 @@ const server = new Server({
 
 const WS_PORT = Number(process.env.WS_PORT) || 1234;
 
-(server as any).on('error', (err: NodeJS.ErrnoException) => {
+console.log(`🚀 Starting Hocuspocus WebSocket server on port ${WS_PORT}...`);
+
+server.listen().then(() => {
+  console.log(`✅ WebSocket server listening on port ${WS_PORT}`);
+}).catch((err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ WebSocket port ${WS_PORT} is already in use. Exiting.`);
-    process.exit(1);
   } else {
-    console.error('WebSocket server error:', err);
-    throw err;
+    console.error('❌ WebSocket server failed to start:', err);
   }
+  process.exit(1);
 });
-
-server.listen();

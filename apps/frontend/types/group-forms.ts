@@ -331,6 +331,7 @@ export interface GroupForm {
   id: number
   group_id: number
   slug: string                   // URL-friendly identifier (unique per group)
+  targetSheetId?: string | null  // Linked live table (project-scoped forms)
   title: string
   description?: string
   form_type: FormType
@@ -421,6 +422,7 @@ export interface CreateFormData {
   target_sub_group_id?: number
   sig_ids?: number[]  // SIG visibility restriction
   folderId?: number
+  groupSlug?: string  // Optional project slug for project-scoped association
 }
 
 export interface UpdateFormData {

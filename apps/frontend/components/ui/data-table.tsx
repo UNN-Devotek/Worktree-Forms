@@ -72,7 +72,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border border-table-border bg-table-canvas">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -100,7 +100,7 @@ export function DataTable<TData, TValue>({
                 data-state={row.getIsSelected() && "selected"}
                 onClick={() => onRowClick?.(row.original)}
                 className={cn(
-                  onRowClick ? "cursor-pointer hover:bg-muted/50" : "",
+                  onRowClick ? "cursor-pointer hover:bg-table-row-hover" : "",
                   rowClassName?.(row.original)
                 )}
               >

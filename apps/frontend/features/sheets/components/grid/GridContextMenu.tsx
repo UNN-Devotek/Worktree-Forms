@@ -26,19 +26,18 @@ import {
   Copy,
   ClipboardPaste,
   Eraser,
-  ArrowUp,
-  ArrowDown,
   Trash2,
   CopyPlus,
   MessageSquare,
-  PanelLeft,
-  PanelRight,
   Pencil,
   ArrowUpAZ,
   ArrowDownAZ,
   EyeOff,
   Eye,
+  Settings,
 } from 'lucide-react';
+import { AddColumnDialog, type EditableColumn } from '../controls/ColumnManagerDialog';
+import { AddRowIcon, AddColumnIcon } from '../icons/SheetIcons';
 
 // ---------------------------------------------------------------------------
 // CellContextMenu — right-click on a data row
@@ -97,14 +96,14 @@ export function CellContextMenu({ rowId, children }: CellContextMenuProps) {
 
         {/* Row operations */}
         <ContextMenuItem onSelect={() => insertRowAbove(rowId)}>
-          <ArrowUp className="mr-2 h-4 w-4" />
+          <AddRowIcon className="mr-2 h-4 w-4" />
           Insert Row Above
         </ContextMenuItem>
         <ContextMenuItem onSelect={() => addRow({
           id: crypto.randomUUID(),
           parentId: null,
         }, rowId)}>
-          <ArrowDown className="mr-2 h-4 w-4" />
+          <AddRowIcon className="mr-2 h-4 w-4" />
           Insert Row Below
         </ContextMenuItem>
         <ContextMenuItem
@@ -137,10 +136,11 @@ export function CellContextMenu({ rowId, children }: CellContextMenuProps) {
 
 interface ColumnContextMenuProps {
   columnId: string;
+  column: EditableColumn;
   children: React.ReactNode;
 }
 
-export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps) {
+export function ColumnContextMenu({ columnId, column, children }: ColumnContextMenuProps) {
   const {
     deleteColumn,
     insertColumnLeft,
@@ -153,6 +153,7 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
 
   const openRenameDialog = () => {
     setRenameValue('');
@@ -175,11 +176,11 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
         <ContextMenuContent className="w-52">
           {/* Column insert/delete */}
           <ContextMenuItem onSelect={() => insertColumnLeft(columnId)}>
-            <PanelLeft className="mr-2 h-4 w-4" />
+            <AddColumnIcon className="mr-2 h-4 w-4" />
             Insert Column Left
           </ContextMenuItem>
           <ContextMenuItem onSelect={() => insertColumnRight(columnId)}>
-            <PanelRight className="mr-2 h-4 w-4" />
+            <AddColumnIcon className="mr-2 h-4 w-4" />
             Insert Column Right
           </ContextMenuItem>
           <ContextMenuItem
@@ -192,6 +193,10 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
           <ContextMenuItem onSelect={openRenameDialog}>
             <Pencil className="mr-2 h-4 w-4" />
             Rename Column...
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => setEditOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            Edit Column...
           </ContextMenuItem>
 
           <ContextMenuSeparator />
@@ -246,7 +251,7 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameOpen(false)}>
+            <Button variant="neutral" onClick={() => setRenameOpen(false)}>
               Cancel
             </Button>
             <Button onClick={commitRename} disabled={!renameValue.trim()}>
@@ -255,6 +260,13 @@ export function ColumnContextMenu({ columnId, children }: ColumnContextMenuProps
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Column dialog */}
+      <AddColumnDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        editColumn={column}
+      />
     </>
   );
 }

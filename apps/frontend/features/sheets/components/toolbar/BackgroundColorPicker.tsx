@@ -40,8 +40,8 @@ export function BackgroundColorPicker({ className }: BackgroundColorPickerProps)
     focusedCell,
     getCellStyle,
     applyCellStyle,
-    selectedColumnId,
-    selectedFormattingRowId,
+    selectedColumnIds,
+    selectedFormattingRowIds,
     applyColumnStyle,
     applyRowStyle,
     data,
@@ -52,8 +52,8 @@ export function BackgroundColorPicker({ className }: BackgroundColorPickerProps)
 
   const currentStyle = (() => {
     if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
-    if (selectedColumnId && data[0]) return getCellStyle(data[0].id, selectedColumnId);
-    if (selectedFormattingRowId && columns[0]) return getCellStyle(selectedFormattingRowId, columns[0].id);
+    if (selectedColumnIds.size > 0 && data[0]) return getCellStyle(data[0].id, [...selectedColumnIds][0]);
+    if (selectedFormattingRowIds.size > 0 && columns[0]) return getCellStyle([...selectedFormattingRowIds][0], columns[0].id);
     return null;
   })();
 
@@ -63,10 +63,10 @@ export function BackgroundColorPicker({ className }: BackgroundColorPickerProps)
     const style = { backgroundColor: color };
     if (focusedCell) {
       applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
-    } else if (selectedColumnId) {
-      applyColumnStyle(selectedColumnId, style);
-    } else if (selectedFormattingRowId) {
-      applyRowStyle(selectedFormattingRowId, style);
+    } else if (selectedColumnIds.size > 0) {
+      selectedColumnIds.forEach(colId => applyColumnStyle(colId, style));
+    } else if (selectedFormattingRowIds.size > 0) {
+      selectedFormattingRowIds.forEach(rowId => applyRowStyle(rowId, style));
     }
   };
 
@@ -86,7 +86,7 @@ export function BackgroundColorPicker({ className }: BackgroundColorPickerProps)
     setIsOpen(false);
   };
 
-  const isDisabled = !focusedCell && !selectedColumnId && !selectedFormattingRowId;
+  const isDisabled = !focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0;
 
   // Bar beneath the icon reflects the current background (checkered when transparent/none)
   const barStyle: React.CSSProperties =

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import * as Y from 'yjs';
 import { useYjsStore } from '../stores/useYjsStore';
 import { HyperFormula } from 'hyperformula';
 import type { CellStyleConfig, FilterRule, ConditionalFormatRule, HighlightChangesConfig } from '../types/cell-styles';
@@ -51,6 +52,7 @@ interface SheetContextType {
   toggleExpand: (rowId: string) => void;
   getCellResult: (rowId: string, columnId: string) => any;
   getCellStyle: (rowId: string, columnId: string) => CellStyleConfig;
+  cellsRevision: number;
   applyCellStyle: (rowId: string, columnId: string, style: Partial<CellStyleConfig>) => void;
   toggleCellStyle: (styleKey: 'bold' | 'italic' | 'strike') => void;
   activeFilters: FilterRule[];
@@ -85,15 +87,16 @@ interface SheetContextType {
   insertColumnLeft: (columnId: string) => void;
   insertColumnRight: (columnId: string) => void;
   renameColumn: (columnId: string, newLabel: string) => void;
+  updateColumn: (columnId: string, updates: Record<string, unknown>) => void;
   hideColumn: (columnId: string) => void;
   unhideAllColumns: () => void;
   updateColumnWidth: (columnId: string, width: number) => void;
 
-  // Bulk selection for formatting
-  selectedColumnId: string | null;
-  setSelectedColumnId: (id: string | null) => void;
-  selectedFormattingRowId: string | null;
-  setSelectedFormattingRowId: (id: string | null) => void;
+  // Bulk selection for formatting (multi-select with Ctrl+Click)
+  selectedColumnIds: Set<string>;
+  setSelectedColumnIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  selectedFormattingRowIds: Set<string>;
+  setSelectedFormattingRowIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   applyColumnStyle: (columnId: string, style: Partial<CellStyleConfig>) => void;
   applyRowStyle: (rowId: string, style: Partial<CellStyleConfig>) => void;
 
@@ -107,6 +110,12 @@ interface SheetContextType {
 
   /** getCellStyle + conditional formats + highlight changes, in priority order */
   getEffectiveStyle: (rowId: string, columnId: string) => CellStyleConfig;
+
+  // Undo / Redo via Y.UndoManager
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const SheetContext = createContext<SheetContextType | null>(null);
@@ -146,10 +155,37 @@ export function SheetProvider({
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
   const [copiedRow, setCopiedRow] = useState<CopiedRowState | null>(null);
   const [isCut, setIsCut] = useState(false);
-  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
-  const [selectedFormattingRowId, setSelectedFormattingRowId] = useState<string | null>(null);
+  const [selectedColumnIds, setSelectedColumnIds] = useState<Set<string>>(new Set());
+  const [selectedFormattingRowIds, setSelectedFormattingRowIds] = useState<Set<string>>(new Set());
   const [isFormulaEditing, setIsFormulaEditing] = useState(false);
   const insertCellRefCallback = useRef<((ref: string) => void) | null>(null);
+
+  // Undo / Redo via Y.UndoManager
+  const undoManagerRef = useRef<Y.UndoManager | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  useEffect(() => {
+    if (!doc) return;
+    const tracked = [doc.getMap('rows'), doc.getMap('cells')];
+    const mgr = new Y.UndoManager(tracked as Y.AbstractType<any>[], { captureTimeout: 500 });
+    undoManagerRef.current = mgr;
+    const onStack = () => {
+      setCanUndo(mgr.undoStack.length > 0);
+      setCanRedo(mgr.redoStack.length > 0);
+    };
+    mgr.on('stack-item-added', onStack);
+    mgr.on('stack-item-popped', onStack);
+    return () => {
+      mgr.off('stack-item-added', onStack);
+      mgr.off('stack-item-popped', onStack);
+      mgr.destroy();
+      undoManagerRef.current = null;
+    };
+  }, [doc]);
+
+  const undo = useCallback(() => { undoManagerRef.current?.undo(); }, []);
+  const redo = useCallback(() => { undoManagerRef.current?.redo(); }, []);
 
   // Conditional formatting rules (synced via Yjs)
   const [conditionalFormats, setConditionalFormatsState] = useState<ConditionalFormatRule[]>([]);
@@ -241,6 +277,8 @@ export function SheetProvider({
   // don't cause observer teardown/re-registration (which creates a gap where
   // Yjs updates can be silently dropped).
   const [rawData, setRawData] = useState<{ rows: any[]; cols: any[] }>({ rows: [], cols: [] });
+  // Incremented whenever cell styles change so consumers (LiveTable) re-render.
+  const [cellsRevision, setCellsRevision] = useState(0);
 
   useEffect(() => {
     if (!doc) return;
@@ -248,6 +286,7 @@ export function SheetProvider({
     const yRows = doc.getMap('rows');
     const yOrder = doc.getArray('order');
     const yColumns = doc.getArray('columns');
+    const yCells = doc.getMap('cells');
 
     const updateState = () => {
       const order = yOrder.toArray() as string[];
@@ -255,16 +294,19 @@ export function SheetProvider({
       const cols = yColumns.toArray() as any[];
       setRawData({ rows: allRows, cols });
     };
+    const updateCellsRevision = () => setCellsRevision(v => v + 1);
 
     yRows.observeDeep(updateState);
     yOrder.observe(updateState);
     yColumns.observe(updateState);
+    yCells.observe(updateCellsRevision);
     updateState();
 
     return () => {
       yRows.unobserveDeep(updateState);
       yOrder.unobserve(updateState);
       yColumns.unobserve(updateState);
+      yCells.unobserve(updateCellsRevision);
     };
   }, [doc]); // Finding #3: no activeFilters here — observer is stable
 
@@ -701,7 +743,7 @@ export function SheetProvider({
 
   const toggleCellStyle = useCallback((styleKey: 'bold' | 'italic' | 'strike') => {
     if (!doc) return;
-    if (!focusedCell && !selectedColumnId && !selectedFormattingRowId) return;
+    if (!focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0) return;
 
     const { prop, on, off } = STYLE_KEY_MAP[styleKey];
 
@@ -716,25 +758,30 @@ export function SheetProvider({
         const newStyle = { ...(cell?.style || {}), [prop]: isActive ? off : on };
         cellsMap.set(cellKey, cell ? { ...cell, style: newStyle } : { value: null, type: 'TEXT', style: newStyle });
       });
-    } else if (selectedColumnId) {
-      // Read current state from first row to determine toggle direction
+    } else if (selectedColumnIds.size > 0) {
       const cellsMap = doc.getMap('cells');
       const yOrder = doc.getArray('order');
       const firstRowId = (yOrder.toArray() as string[])[0];
-      const firstKey = firstRowId ? `${firstRowId}:${selectedColumnId}` : null;
+      const firstColId = [...selectedColumnIds][0];
+      const firstKey = firstRowId ? `${firstRowId}:${firstColId}` : null;
       const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
       const isActive = firstCell?.style?.[prop] === on;
-      applyColumnStyle(selectedColumnId, { [prop]: isActive ? off : on } as any);
-    } else if (selectedFormattingRowId) {
+      selectedColumnIds.forEach(colId => {
+        applyColumnStyle(colId, { [prop]: isActive ? off : on } as any);
+      });
+    } else if (selectedFormattingRowIds.size > 0) {
       const cellsMap = doc.getMap('cells');
       const yColumns = doc.getArray('columns');
       const firstCol = (yColumns.toArray() as Array<{ id: string }>)[0];
-      const firstKey = firstCol ? `${selectedFormattingRowId}:${firstCol.id}` : null;
+      const firstRowId = [...selectedFormattingRowIds][0];
+      const firstKey = firstCol ? `${firstRowId}:${firstCol.id}` : null;
       const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
       const isActive = firstCell?.style?.[prop] === on;
-      applyRowStyle(selectedFormattingRowId, { [prop]: isActive ? off : on } as any);
+      selectedFormattingRowIds.forEach(rowId => {
+        applyRowStyle(rowId, { [prop]: isActive ? off : on } as any);
+      });
     }
-  }, [doc, focusedCell, selectedColumnId, selectedFormattingRowId, applyColumnStyle, applyRowStyle]);
+  }, [doc, focusedCell, selectedColumnIds, selectedFormattingRowIds, applyColumnStyle, applyRowStyle]);
 
   // Finding #9 (R3): sortRows now preserves hierarchy.
   // Previously it sorted the flat order array, breaking parent-child grouping.
@@ -975,6 +1022,19 @@ export function SheetProvider({
     });
   }, [doc]);
 
+  const updateColumn = useCallback((columnId: string, updates: Record<string, unknown>) => {
+    if (!doc) return;
+    const yColumns = doc.getArray('columns');
+    const cols = yColumns.toArray() as Array<Record<string, unknown>>;
+    const idx = cols.findIndex(c => c.id === columnId);
+    if (idx === -1) return;
+    doc.transact(() => {
+      const col = cols[idx];
+      yColumns.delete(idx, 1);
+      yColumns.insert(idx, [{ ...col, ...updates }]);
+    });
+  }, [doc]);
+
   const hideColumn = useCallback((columnId: string) => {
     if (!doc) return;
     const yColumns = doc.getArray('columns');
@@ -1042,6 +1102,7 @@ export function SheetProvider({
         toggleExpand,
         getCellResult,
         getCellStyle,
+        cellsRevision,
         applyCellStyle,
         toggleCellStyle,
         activeFilters,
@@ -1068,14 +1129,15 @@ export function SheetProvider({
         insertColumnLeft,
         insertColumnRight,
         renameColumn,
+        updateColumn,
         hideColumn,
         unhideAllColumns,
         updateColumnWidth,
         // Bulk selection
-        selectedColumnId,
-        setSelectedColumnId,
-        selectedFormattingRowId,
-        setSelectedFormattingRowId,
+        selectedColumnIds,
+        setSelectedColumnIds,
+        selectedFormattingRowIds,
+        setSelectedFormattingRowIds,
         applyColumnStyle,
         applyRowStyle,
         // Formula editing coordination
@@ -1089,6 +1151,11 @@ export function SheetProvider({
         highlightChanges,
         setHighlightChanges,
         getEffectiveStyle,
+        // Undo / Redo
+        undo,
+        redo,
+        canUndo,
+        canRedo,
       }}>
 
         {children}

@@ -303,6 +303,11 @@ Worktree-Forms/
 - **Server Components**: Use in Next.js 14 by default (mark `'use client'` only when needed)
 - **API Routes**: Use route handlers in `app/api/`
 
+### Component Library
+
+> [!IMPORTANT]
+> **Every new component must be registered in the Component Library.** When creating any new UI component (atoms, molecules, or organisms), add it to `apps/frontend/app/(dashboard)/component-library/page.tsx` in the appropriate `ATOMS`, `MOLECULES`, or `ORGANISMS` array. Include a static live preview using hard-coded dummy data — no API calls or context providers required in the preview.
+
 ### Backend (Express)
 
 - **Middleware Chain**: Auth → RBAC → Validation → Handler → Error

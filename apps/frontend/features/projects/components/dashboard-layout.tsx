@@ -6,6 +6,7 @@ import { MobileNav } from "./mobile-nav";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { motion } from "framer-motion";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -13,7 +14,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  const isSheetPage = pathname?.includes('/sheets/');
+  const isFullScreen = pathname?.includes('/sheets/') || pathname?.includes('/forms/builder/');
 
   return (
     <div className="flex w-full h-screen bg-background overflow-hidden main-dashboard-layout">
@@ -31,16 +32,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Scrollable Page Content — key triggers fade-in on route change */}
-        <div
+        <motion.div
           key={pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className={cn(
-            "flex-1 animate-fade-in",
-            isSheetPage ? "p-0 overflow-hidden" : "p-4 md:p-8 overflow-y-auto"
+            "flex-1",
+            isFullScreen ? "p-0 overflow-hidden" : "p-4 md:p-8 overflow-y-auto"
           )}
         >
-            {!isSheetPage && <Breadcrumbs />}
+            {!isFullScreen && <Breadcrumbs />}
             {children}
-        </div>
+        </motion.div>
       </main>
     </div>
   );

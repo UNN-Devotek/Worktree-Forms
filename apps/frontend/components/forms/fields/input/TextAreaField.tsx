@@ -15,7 +15,7 @@ const TextAreaFieldRender = forwardRef<HTMLTextAreaElement, { field: FormFieldBa
   ({ field }, _ref) => {
     const form = useFormContext()
     const { ref: formRef, ...formField } = form.register(field.name)
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
 
     return (
       <FieldWrapper

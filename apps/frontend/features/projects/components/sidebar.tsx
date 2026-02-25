@@ -3,23 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHome,
-  faFileAlt,
   faCog,
   faSignOutAlt,
   faBars,
-  faMoon,
-  faSun,
   faChevronLeft,
   faBuilding,
+  faCubes,
 } from "@fortawesome/free-solid-svg-icons";
 import { signOut } from "next-auth/react";
-import { updateTheme } from "@/actions/user";
 
 
 
@@ -29,7 +26,6 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const { setTheme, resolvedTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -47,16 +43,10 @@ export function Sidebar({ className }: SidebarProps) {
     localStorage.setItem("sidebar-collapsed", String(newState));
   };
 
-  const toggleTheme = () => {
-      const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-      setTheme(newTheme);
-      updateTheme(newTheme).catch(console.error);
-  };
-
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: faHome },
     { name: "Projects", href: "/projects", icon: faBuilding },
-    { name: "Forms", href: "/forms", icon: faFileAlt },
+    { name: "Component Library", href: "/component-library", icon: faCubes },
     { name: "Settings", href: "/settings", icon: faCog },
   ];
 
@@ -151,14 +141,9 @@ export function Sidebar({ className }: SidebarProps) {
 
         {/* Footer actions */}
         <div className="mt-auto space-y-2 pb-4">
-            <Button
-                variant="ghost"
-                onClick={toggleTheme}
-                className={cn("w-full justify-start", isCollapsed && "justify-center px-0")}
-            >
-                <FontAwesomeIcon icon={resolvedTheme === "dark" ? faSun : faMoon} className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-                {!isCollapsed && <span>Toggle Theme</span>}
-            </Button>
+            <div className={cn("flex", isCollapsed ? "justify-center" : "justify-start")}>
+                <AnimatedThemeToggler className="border-0 shadow-none hover:bg-accent" />
+            </div>
 
             <Button
                 variant="ghost"

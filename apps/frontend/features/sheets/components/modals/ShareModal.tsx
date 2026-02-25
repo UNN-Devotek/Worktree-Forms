@@ -20,8 +20,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Share2, Copy, Check, Link, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { t } from '@/lib/i18n';
+import { toast } from 'sonner';
 import { useSheet } from '../../providers/SheetProvider';
 
 interface ShareModalProps {
@@ -37,7 +37,6 @@ export function ShareModal({ children }: ShareModalProps) {
   const [shareLink, setShareLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
   const { sheetId } = useSheet();
 
   // Store timer in ref so we can clean it on unmount.
@@ -82,20 +81,13 @@ export function ShareModal({ children }: ShareModalProps) {
     try {
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
-      toast({
-        title: 'Link copied!',
-        description: 'Share link has been copied to clipboard.',
-      });
+      toast.success('Link copied!', { description: 'Share link has been copied to clipboard.' });
 
       // Reset copied state after 2 seconds — store ref for cleanup.
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({
-        title: 'Failed to copy',
-        description: 'Could not copy link to clipboard.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to copy', { description: 'Could not copy link to clipboard.' });
     }
   };
 

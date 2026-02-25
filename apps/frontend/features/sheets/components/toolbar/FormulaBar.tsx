@@ -21,13 +21,23 @@ export function FormulaBar() {
     insertCellRefCallback,
   } = useSheet();
 
-  // Find the raw value of the focused cell
+  // Find the display value of the focused cell.
+  // For DROPDOWN columns with multi-select (stored as JSON array), show as comma-separated.
   const cellValue = (() => {
     if (!focusedCell) return '';
     const row = data.find((r: any) => r.id === focusedCell.rowId);
     if (!row) return '';
     const val = row[focusedCell.columnId];
-    return val != null ? String(val) : '';
+    if (val == null) return '';
+    const str = String(val);
+    const col = columns.find((c: any) => c.id === focusedCell.columnId);
+    if (col?.type === 'DROPDOWN' && str.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) return parsed.join(', ');
+      } catch {}
+    }
+    return str;
   })();
 
   const cellLabel = (() => {
@@ -316,10 +326,10 @@ export function FormulaBar() {
     <div
       data-formula-bar
       className={cn(
-        'flex items-center gap-2 px-3 py-1 bg-background relative',
+        'flex items-center gap-2 px-3 py-1 bg-table-toolbar relative',
         isFormulaEditing
-          ? 'border-b border-blue-400 bg-blue-50/30'
-          : 'border-b',
+          ? 'border-b border-blue-400 bg-blue-50/30 dark:bg-blue-950/30'
+          : 'border-b border-table-border',
       )}
     >
       {/* Cell reference indicator */}

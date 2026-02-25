@@ -110,6 +110,19 @@ const config = {
           5: 'var(--chart-5)',
         },
 
+        // Table / Grid design tokens
+        table: {
+          canvas:       'var(--table-canvas)',
+          header:       'var(--table-header)',
+          'row-actions':'var(--table-row-actions)',
+          toolbar:      'var(--table-toolbar)',
+          'row-hover':  'var(--table-row-hover)',
+          'row-selected':'var(--table-row-selected)',
+          border:       'var(--table-border)',
+          'row-actions-border': 'var(--table-row-actions-border)',
+          'header-fg':  'var(--table-header-fg)',
+        },
+
         // Sidebar colors
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',

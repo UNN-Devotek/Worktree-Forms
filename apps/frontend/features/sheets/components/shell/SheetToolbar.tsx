@@ -4,7 +4,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
-  Plus,
   Indent,
   Outdent,
   Search,
@@ -29,11 +28,17 @@ import {
   Star,
   ListFilter,
   History,
+  Save,
+  Printer,
+  Undo2,
+  Redo2,
+  ImagePlus,
+  Link2,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { ColumnManagerDialog } from '../controls/ColumnManagerDialog';
+import { AddColumnDialog } from '../controls/ColumnManagerDialog';
 import { useSheet } from '../../providers/SheetProvider';
 import { t } from '@/lib/i18n';
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -74,6 +79,7 @@ import { FilterModal } from '../filters/FilterModal';
 import { SettingsModal, SheetSettings } from '../modals/SettingsModal';
 import { ConditionalFormattingModal } from '../modals/ConditionalFormattingModal';
 import { HighlightChangesModal } from '../modals/HighlightChangesModal';
+import { AddRowIcon, AddColumnIcon } from '../icons/SheetIcons';
 
 // ---------------------------------------------------------------------------
 // View options
@@ -114,7 +120,9 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
     activeView, setActiveView,
     doc, setFocusedCell,
     columns, data,
-    setSelectedColumnId, setSelectedFormattingRowId,
+    setSelectedColumnIds, setSelectedFormattingRowIds,
+    undo, redo, canUndo, canRedo,
+    focusedCell, updateCell,
   } = useSheet();
 
   // ---- title editing --------------------------------------------------------
@@ -142,6 +150,7 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [conditionalFormattingOpen, setConditionalFormattingOpen] = useState(false);
   const [highlightChangesOpen, setHighlightChangesOpen] = useState(false);
+  const [addColumnOpen, setAddColumnOpen] = useState(false);
   const [settings, setSettings] = useState<SheetSettings>({
     defaultColumnWidth: 120,
     rowHeight: 'normal',
@@ -152,6 +161,15 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
   // ---- import ---------------------------------------------------------------
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+
+  // ---- image insert ---------------------------------------------------------
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+
+  // ---- link insert ----------------------------------------------------------
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkText, setLinkText] = useState('');
 
   // ---- derived --------------------------------------------------------------
   const currentView    = VIEW_OPTIONS.find(v => v.value === activeView) ?? VIEW_OPTIONS[0];
@@ -228,15 +246,6 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
   // Row handlers
   // ---------------------------------------------------------------------------
 
-  const handleAddRow = useCallback(() => {
-    addRow({
-      id: crypto.randomUUID(),
-      title:    t('sheet.new_task',    'New Task'),
-      status:   t('sheet.planned',     'Planned'),
-      assignee: t('sheet.unassigned',  'Unassigned'),
-    });
-  }, [addRow]);
-
   // ---------------------------------------------------------------------------
   // Import / Export
   // ---------------------------------------------------------------------------
@@ -278,11 +287,11 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
       toast.error(`Import failed: ${err?.message ?? 'Unknown error'}`);
     } finally {
       setImporting(false);
-      setSelectedColumnId(null);
-      setSelectedFormattingRowId(null);
+      setSelectedColumnIds(new Set());
+      setSelectedFormattingRowIds(new Set());
       e.target.value = '';
     }
-  }, [columns, addRow, setSelectedColumnId, setSelectedFormattingRowId]);
+  }, [columns, addRow, setSelectedColumnIds, setSelectedFormattingRowIds]);
 
   const handleExport = useCallback((type: 'csv' | 'excel') => {
     const exportData = data.map((row: any) => {
@@ -292,6 +301,65 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
     });
     type === 'csv' ? exportToCsv(exportData, title || 'sheet') : exportToExcel(exportData, title || 'sheet');
   }, [data, columns, title]);
+
+  // ---------------------------------------------------------------------------
+  // Image insert
+  // ---------------------------------------------------------------------------
+
+  const handleImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !focusedCell) return;
+    e.target.value = '';
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fieldName', 'sheet-image');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Upload failed');
+
+      const url: string = json.data.url;
+
+      // Detect natural dimensions then cap at 400px
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 400;
+        const w = Math.min(img.naturalWidth || MAX, MAX);
+        const h = img.naturalWidth
+          ? Math.round(w * (img.naturalHeight / img.naturalWidth))
+          : Math.round(w * 0.75);
+        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify({ url, width: w, height: h })}`);
+      };
+      img.onerror = () => {
+        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify({ url, width: 200, height: 150 })}`);
+      };
+      img.src = url;
+    } catch (err: any) {
+      toast.error(`Image upload failed: ${err?.message ?? 'Unknown error'}`);
+    } finally {
+      setImageUploading(false);
+    }
+  }, [focusedCell, updateCell]);
+
+  // ---------------------------------------------------------------------------
+  // Link insert
+  // ---------------------------------------------------------------------------
+
+  const handleInsertLink = useCallback(() => {
+    if (!focusedCell || !linkUrl.trim()) return;
+    const safe = linkUrl.trim().startsWith('http') ? linkUrl.trim() : `https://${linkUrl.trim()}`;
+    updateCell(focusedCell.rowId, focusedCell.columnId, `__link__${JSON.stringify({ url: safe, text: linkText.trim() })}`);
+    setLinkPopoverOpen(false);
+    setLinkUrl('');
+    setLinkText('');
+  }, [focusedCell, linkUrl, linkText, updateCell]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -308,10 +376,108 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
         onChange={handleFileChange}
       />
 
+      {/* Hidden file input for image insert */}
+      <input
+        ref={imageFileInputRef}
+        type="file"
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageFileChange}
+      />
+
       {/* ── Row 1: title bar ─────────────────────────────────────────────── */}
-      <div className="relative flex items-center px-4 h-9 border-b bg-background shrink-0">
-        {/* Left: empty spacer (room for breadcrumb in future) */}
-        <div className="flex-1" />
+      <div className="relative flex items-center px-2 h-9 border-b border-table-border bg-table-toolbar shrink-0">
+        {/* Left: menu dropdowns */}
+        <div className="flex items-center gap-0.5">
+          {/* File */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
+                File <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing} className="gap-2 cursor-pointer">
+                <Upload className="h-4 w-4" />
+                Import CSV / Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+                <Download className="h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4" />
+                Export as Excel
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => window.print()} className="gap-2 cursor-pointer">
+                <Printer className="h-4 w-4" />
+                Print
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="gap-2 cursor-pointer">
+                <Settings className="h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Automation */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
+                Automation <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Automation</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Forms */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
+                Forms <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Forms</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Connections */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
+                Connections <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Connections</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Dynamic View */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
+                Dynamic View <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Dynamic View</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Center: sheet name (absolutely centered) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 max-w-[40%]">
@@ -369,7 +535,46 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
       </div>
 
       {/* ── Row 2: dense toolbar ─────────────────────────────────────────── */}
-      <div className="flex items-center px-2 h-10 border-b bg-muted/30 shrink-0 gap-0.5 overflow-hidden">
+      <div className="flex items-center px-2 h-10 border-b border-table-border bg-table-toolbar shrink-0 gap-0.5 overflow-hidden">
+
+        {/* Save / Print / Undo / Redo ──────────────────────────────────── */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toast.success('Saved')}>
+              <Save className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Save</p></TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => window.print()}>
+              <Printer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Print</p></TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={undo} disabled={!canUndo}>
+              <Undo2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Undo</p></TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={redo} disabled={!canRedo}>
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Redo</p></TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
 
         {/* View dropdown ───────────────────────────────────────────────── */}
         <DropdownMenu>
@@ -390,6 +595,37 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
+
+        {/* Add Row / Add Column ────────────────────────────────────────── */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => addRow({ id: crypto.randomUUID(), parentId: null })}
+            >
+              <AddRowIcon className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Add Row</p></TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setAddColumnOpen(true)}
+            >
+              <AddColumnIcon className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>Add Column</p></TooltipContent>
+        </Tooltip>
 
         <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
 
@@ -444,11 +680,69 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
           <FormatPainter />
         </div>
 
-        <Separator orientation="vertical" className="h-5 hidden lg:block shrink-0 mx-0.5" />
+        <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
 
-        {/* Column manager ── hidden below lg ─────────────────────────── */}
-        <div className="hidden lg:block shrink-0">
-          <ColumnManagerDialog />
+        {/* Insert Image / Link ─────────────────────────────────────────── */}
+        <div className="hidden md:flex items-center shrink-0">
+          {/* Insert Image */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                disabled={!focusedCell || imageUploading}
+                onClick={() => imageFileInputRef.current?.click()}
+              >
+                {imageUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Insert Image</p></TooltipContent>
+          </Tooltip>
+
+          {/* Insert Link */}
+          <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={!focusedCell}
+                    onClick={() => { setLinkUrl(''); setLinkText(''); }}
+                  >
+                    <Link2 className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Insert Link</p></TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-72 p-3 space-y-2" align="start">
+              <p className="text-sm font-medium">Insert Link</p>
+              <Input
+                placeholder="URL (e.g. https://example.com)"
+                value={linkUrl}
+                onChange={e => setLinkUrl(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }}
+                autoFocus
+              />
+              <Input
+                placeholder="Display text (optional)"
+                value={linkText}
+                onChange={e => setLinkText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }}
+              />
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={!linkUrl.trim()}
+                onClick={handleInsertLink}
+              >
+                Insert
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
@@ -562,40 +856,9 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onClick={handleAddRow} className="gap-2 cursor-pointer">
-              <Plus className="h-4 w-4" />
-              {t('toolbar.add_row', 'Add Row')}
-            </DropdownMenuItem>
-
             {/* Sort — always available in overflow */}
             <SortMenuItem />
 
-            <DropdownMenuSeparator />
-
-            {/* Import / Export */}
-            <DropdownMenuItem
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-              className="gap-2 cursor-pointer"
-            >
-              <Upload className="h-4 w-4" />
-              {t('toolbar.import', 'Import CSV / Excel')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
-              <Download className="h-4 w-4" />
-              {t('toolbar.export_csv', 'Export as CSV')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
-              <FileSpreadsheet className="h-4 w-4" />
-              {t('toolbar.export_excel', 'Export as Excel')}
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="gap-2 cursor-pointer">
-              <Settings className="h-4 w-4" />
-              {t('toolbar.settings', 'Settings')}
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -618,6 +881,12 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
       <HighlightChangesModal
         open={highlightChangesOpen}
         onOpenChange={setHighlightChangesOpen}
+      />
+
+      {/* Add Column dialog */}
+      <AddColumnDialog
+        open={addColumnOpen}
+        onOpenChange={setAddColumnOpen}
       />
     </TooltipProvider>
   );

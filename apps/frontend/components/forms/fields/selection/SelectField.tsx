@@ -14,7 +14,7 @@ interface SelectFieldProps {
 const SelectFieldRender = forwardRef<HTMLButtonElement, { field: FormFieldBase }>(
   ({ field }, ref) => {
     const form = useFormContext()
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
 
     return (
       <FieldWrapper

@@ -23,8 +23,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2, MoreHorizontal, Eye, Trash, Check, X, FileDown, Image as ImageIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
     AlertDialog,
@@ -45,9 +45,11 @@ import { saveAs } from 'file-saver'
 interface SubmissionsTableProps {
     formId: number
     formSchema?: FormSchema // Passed to render details
+    /** Override the API path used to fetch submissions. Defaults to /api/forms/:formId/submissions */
+    submissionsApiPath?: string
 }
 
-export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) {
+export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: SubmissionsTableProps) {
     interface Submission {
         id: number;
         form_id: number;
@@ -61,7 +63,6 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
 
     const [submissions, setSubmissions] = useState<Submission[]>([])
     const [loading, setLoading] = useState(true)
-    const { toast } = useToast()
     const [viewSubmission, setViewSubmission] = useState<Submission | null>(null)
     const [isViewOpen, setIsViewOpen] = useState(false)
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
@@ -79,14 +80,15 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
         setLoading(true)
         const skip = (page - 1) * pageSize
         try {
-            const res = await apiClient<ApiResponse<{ submissions: Submission[] }> & { meta?: { total: number } }>(`/api/forms/${formId}/submissions?take=${pageSize}&skip=${skip}`)
+            const basePath = submissionsApiPath ?? `/api/forms/${formId}/submissions`
+        const res = await apiClient<ApiResponse<{ submissions: Submission[] }> & { meta?: { total: number } }>(`${basePath}?take=${pageSize}&skip=${skip}`)
             if (res.success && res.data) {
                 setSubmissions(res.data.submissions)
                 if (res.meta) setTotalCount(res.meta.total)
             }
         } catch (error) {
             console.error(error)
-            toast({ title: "Error", description: "Failed to load submissions", variant: "destructive" })
+            toast.error("Error", { description: "Failed to load submissions" })
         } finally {
             setLoading(false)
         }
@@ -100,11 +102,11 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
         try {
             const res = await apiClient(`/api/submissions/${id}`, { method: 'DELETE' })
             if (res.success) {
-                toast({ title: "Deleted", description: "Submission deleted." })
+                toast.success("Deleted", { description: "Submission deleted." })
                 fetchSubmissions()
             }
         } catch (error) {
-            toast({ title: "Error", variant: "destructive" })
+            toast.error("Error")
         }
     }
 
@@ -115,11 +117,11 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                 body: JSON.stringify({ status })
             })
             if (res.success) {
-                toast({ title: "Updated", description: `Submission marked as ${status}.` })
+                toast.success("Updated", { description: `Submission marked as ${status}.` })
                 fetchSubmissions()
             }
         } catch (error) {
-            toast({ title: "Error", variant: "destructive" })
+            toast.error("Error")
         }
     }
     
@@ -166,10 +168,10 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
                     pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
                     pdf.save(`submission-${exportingPdfId}.pdf`)
                     
-                    toast({ title: "Success", description: "PDF downloaded successfully." })
+                    toast.success("Success", { description: "PDF downloaded successfully." })
                 } catch (error) {
                     console.error("PDF generation failed DETAILS:", error)
-                    toast({ title: "Error", description: "Failed to generate PDF. Check console.", variant: "destructive" })
+                    toast.error("Error", { description: "Failed to generate PDF. Check console." })
                 } finally {
                     setExportingPdfId(null)
                 }
@@ -184,7 +186,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
         
         if (!formSchema) {
             console.warn("No form schema available")
-            toast({ title: "Info", description: "No schema to export." })
+            toast("Info", { description: "No schema to export." })
             return
         }
         
@@ -213,7 +215,7 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
             console.log("File fields identified:", fileFieldNames)
             
             if (fileFieldNames.length === 0) {
-                 toast({ title: "Info", description: "No file/image fields found in this form." })
+                 toast("Info", { description: "No file/image fields found in this form." })
                  setExportingPhotosId(null)
                  return
             }
@@ -257,18 +259,18 @@ export function SubmissionsTable({ formId, formSchema }: SubmissionsTableProps) 
             
             if (photoCount === 0) {
                 console.log("No photos successfully fetched")
-                toast({ title: "Info", description: "No photos found (or failed to download)." })
+                toast("Info", { description: "No photos found (or failed to download)." })
                 return
             }
             
             console.log(`Zipping ${photoCount} photos...`)
             const content = await zip.generateAsync({ type: "blob" })
             saveAs(content, `submission-${submissionId}-photos.zip`)
-            toast({ title: "Success", description: `Exported ${photoCount} photos.` })
+            toast.success("Success", { description: `Exported ${photoCount} photos.` })
 
         } catch (error) {
             console.error("Export photos failed:", error)
-            toast({ title: "Error", description: "Failed to export photos", variant: "destructive" })
+            toast.error("Error", { description: "Failed to export photos" })
         } finally {
             setExportingPhotosId(null)
         }

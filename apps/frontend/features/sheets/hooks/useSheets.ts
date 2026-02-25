@@ -26,7 +26,7 @@ export function useSheets(projectSlug: string) {
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error('Failed to fetch sheets:', error);
-        toast.error('Failed to load sheets');
+        toast.error('Failed to load tables');
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -42,18 +42,16 @@ export function useSheets(projectSlug: string) {
     };
   }, [fetchSheets]);
 
-  const createNewSheet = async (title?: string) => {
+  const createNewSheet = async (title?: string, visibilityConfig?: { type: 'all' | 'selected'; memberIds?: string[] }) => {
     try {
-      // We need project ID from slug or have the action handle it.
-      // The current action handles it.
-      const sheet = await createSheet(projectSlug, title);
+      const sheet = await createSheet(projectSlug, title, visibilityConfig);
       if (sheet) {
-        toast.success('Sheet created');
+        toast.success('Table created');
         fetchSheets();
         return sheet;
       }
     } catch (error) {
-      toast.error('Failed to create sheet');
+      toast.error('Failed to create table');
     }
   };
 

@@ -1,9 +1,8 @@
-
 import { getProject } from "@/features/projects/server/project-actions";
 import { notFound } from "next/navigation";
-import { RfiList } from "@/features/rfi/components/RfiList";
+import { ProjectFormBrowser } from "@/features/forms/components/ProjectFormBrowser";
 
-export default async function ProjectRfisPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProjectFormsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const project = await getProject(slug);
 
@@ -13,7 +12,7 @@ export default async function ProjectRfisPage({ params }: { params: Promise<{ sl
 
   return (
     <div className="p-6 h-full flex flex-col overflow-hidden">
-       <RfiList projectId={project.id} />
+      <ProjectFormBrowser projectId={project.id} projectSlug={project.slug} />
     </div>
   );
 }

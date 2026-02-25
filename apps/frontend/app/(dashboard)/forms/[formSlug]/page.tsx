@@ -14,15 +14,14 @@ import { SessionChart } from '@/components/admin/SessionChart'
 import { UserDistributionChart } from '@/components/admin/UserDistributionChart'
 import { FormSubmitView } from '@/components/groups/forms/FormSubmitView'
 import { SubmissionsTable } from '@/components/groups/forms/SubmissionsTable'
-import { useToast } from '@/hooks/use-toast'
 import { PublicShareModal } from '@/features/share/PublicShareModal'
 import { Share } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function FormLandingPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [form, setForm] = useState<GroupForm | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -41,14 +40,14 @@ export default function FormLandingPage() {
         if (response.success && response.data) {
           setForm(response.data)
         } else {
-          toast({ title: "Form not found", variant: "destructive" })
+          toast.error("Form not found")
           router.push('/forms')
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') return
         const message = error instanceof Error ? error.message : 'Failed to load form'
         console.error('Error fetching form:', error)
-        toast({ title: 'Error loading form', description: message, variant: 'destructive' })
+        toast.error('Error loading form', { description: message })
       } finally {
         setLoading(false)
       }
@@ -56,7 +55,7 @@ export default function FormLandingPage() {
 
     if (formSlug) fetchForm()
     return () => controller.abort()
-  }, [formSlug, router, toast])
+  }, [formSlug, router])
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>
   

@@ -7,12 +7,11 @@ import { apiClient } from '@/lib/api'
 import { GroupForm } from '@/types/group-forms'
 import { ApiResponse } from '@/types/api'
 import { Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 export default function EditFormPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [form, setForm] = useState<GroupForm | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -28,20 +27,12 @@ export default function EditFormPage() {
         if (response.success && response.data) {
           setForm(response.data)
         } else {
-          toast({
-            title: "Form not found",
-            description: "The requested form could not be found.",
-            variant: "destructive"
-          })
+          toast.error("Form not found", { description: "The requested form could not be found." })
           router.push('/forms')
         }
       } catch (error) {
         console.error('Error fetching form:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load form data.",
-          variant: "destructive"
-        })
+        toast.error("Error", { description: "Failed to load form data." })
       } finally {
         setLoading(false)
       }
@@ -50,7 +41,7 @@ export default function EditFormPage() {
     if (formSlug) {
       fetchForm()
     }
-  }, [formSlug, router, toast])
+  }, [formSlug, router])
 
   if (loading) {
     return (
@@ -74,6 +65,7 @@ export default function EditFormPage() {
       initialSchema={form.form_schema}
       isNewForm={false}
       isSIGRequestForm={form.is_sig_request_form}
+      targetSheetId={form.targetSheetId}
     />
   )
 }

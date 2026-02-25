@@ -8,6 +8,7 @@ const router = Router();
 const createFolderSchema = z.object({
   name: z.string().min(1, 'Folder name is required'),
   parentId: z.union([z.string(), z.number()]).optional().nullable(),
+  projectId: z.string().optional().nullable(),
 });
 
 // ==========================================
@@ -15,11 +16,31 @@ const createFolderSchema = z.object({
 // ==========================================
 
 // Get folders — scoped to projects the authenticated user is a member of
+// If ?projectId= is provided, return only folders for that project (after verifying membership)
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const projectIdFilter = req.query.projectId as string | undefined;
 
-    // Collect project IDs the user belongs to
+    if (projectIdFilter) {
+      // Verify user is a member of the requested project
+      const member = await prisma.projectMember.findFirst({
+        where: { projectId: projectIdFilter, userId },
+        select: { id: true },
+      });
+      const systemRole = (req as any).user?.systemRole;
+      if (!member && systemRole !== 'ADMIN') {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      const folders = await prisma.folder.findMany({
+        where: { projectId: projectIdFilter },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json({ success: true, data: { folders } });
+    }
+
+    // Default: return all folders across user's projects
     const userProjects = await prisma.projectMember.findMany({
       where: { userId },
       select: { projectId: true },
@@ -43,12 +64,13 @@ router.post('/', async (req: Request, res: Response) => {
     if (!parsed.success) {
         return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
     }
-    const { name, parentId } = parsed.data;
+    const { name, parentId, projectId } = parsed.data;
     try {
         const folder = await prisma.folder.create({
             data: {
                 name,
-                parentId: parentId ? parseInt(String(parentId)) : null
+                parentId: parentId ? parseInt(String(parentId)) : null,
+                projectId: projectId ?? null,
             }
         });
         res.json({ success: true, data: { folder } });

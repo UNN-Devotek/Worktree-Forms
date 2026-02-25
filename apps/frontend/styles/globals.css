@@ -18,10 +18,12 @@
   --muted-foreground: oklch(0.2048 0.0191 266.0472);
   --accent: oklch(0.9201 0.0237 272.81);
   --accent-foreground: oklch(0.5626 0.2269 261.0893);
-  --destructive: oklch(0.6472 0.2275 32.9101);
+  --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
+  --alternative: oklch(0.6472 0.2275 32.9101);
+  --alternative-foreground: oklch(1 0 0);
   --border: oklch(0.8 0.0151 260.7291);
-  --input: oklch(0.85 0.0034 247.8581);
+  --input: oklch(0.52 0.006 265);
   --ring: oklch(0.571 0.2237 260.4078);
   --chart-1: oklch(0.5626 0.2269 261.0893);
   --chart-2: oklch(0.6965 0.1248 181.9224);
@@ -69,6 +71,30 @@
   --color-brand-blue: #0055B8;
   --color-brand-red: #B31B1B;
   --color-brand-red-light: #ff6b6b;
+
+  /* ── Table / Grid design tokens ──────────────────────────────────────────
+   * Depth system. Use these everywhere: LiveTable, shadcn Table,
+   * SimpleTable, dropdowns, toolbar. Never hardcode table bg colors.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  /* Canvas — pure white data area */
+  --table-canvas:       oklch(1 0 0);
+  /* Column headers + row-actions — matches shadcn muted (TabsList) */
+  --table-header:       oklch(0.9161 0.0013 286.3735);
+  /* Row meta column — matches header */
+  --table-row-actions:  oklch(0.9161 0.0013 286.3735);
+  /* Toolbar rows — matches background */
+  --table-toolbar:      oklch(1 0 0);
+  /* Full-row hover — light grey */
+  --table-row-hover:    oklch(0.920 0 0);
+  /* Selected row — slightly darker */
+  --table-row-selected: oklch(0.900 0 0);
+  /* Grid lines */
+  --table-border:       oklch(0.820 0.006 264);
+  /* Row-actions column divider — same as grid lines in light mode */
+  --table-row-actions-border: oklch(0.820 0.006 264);
+  /* Header column label text — matches shadcn muted-foreground (TabsList text) */
+  --table-header-fg:    oklch(0.2048 0.0191 266.0472);
 }
 
 .dark {
@@ -76,7 +102,7 @@
   --foreground: oklch(0.924 0.0035 247.8606);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.8853 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.30 0.012 265);
   --popover-foreground: oklch(0.924 0.0035 247.8606);
   --primary: oklch(0.5595 0.2271 261.046);
   --primary-foreground: oklch(1 0 0);
@@ -86,16 +112,42 @@
   --muted-foreground: oklch(1 0 0);
   --accent: oklch(0.1924 0.0535 262.704);
   --accent-foreground: oklch(0.5595 0.2271 261.046);
-  --destructive: oklch(0.6472 0.2275 32.9101);
+  --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
+  --alternative: oklch(0.6472 0.2275 32.9101);
+  --alternative-foreground: oklch(1 0 0);
   --border: oklch(0.2646 0.0057 271.196);
-  --input: oklch(0.2825 0.037 266.4962);
+  --input: oklch(0.38 0.008 265);
   --ring: oklch(0.571 0.2237 260.4078);
   --chart-1: oklch(0.5626 0.2269 261.0893);
   --chart-2: oklch(0.6965 0.1248 181.9224);
   --chart-3: oklch(0.9318 0.1928 104.786);
   --chart-4: oklch(0.7218 0.1515 163.8818);
   --chart-5: oklch(0.5889 0.2274 25.4621);
+  /* ── Table / Grid design tokens (dark mode) ────────────────────────────
+   * 5-layer blue-grey hierarchy. Keeps colored text, badges, and
+   * highlighted cells clearly legible against neutral dark backgrounds.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  /* Canvas — matches background */
+  --table-canvas:       oklch(0 0 0);
+  /* Column headers — matches shadcn muted (TabsList) */
+  --table-header:       oklch(0.2264 0 0);
+  /* Row meta column — matches header */
+  --table-row-actions:  oklch(0.2264 0 0);
+  /* Toolbar rows (title bar + icon bar + formula bar) — matches background */
+  --table-toolbar:      oklch(0 0 0);
+  /* Full-row hover — light grey against black canvas */
+  --table-row-hover:    oklch(0.185 0 0);
+  /* Selected row — slightly lighter grey */
+  --table-row-selected: oklch(0.200 0 0);
+  /* Grid lines */
+  --table-border:       oklch(0.320 0.008 264);
+  /* Row-actions column divider — lighter grey, clearly visible against dark bg */
+  --table-row-actions-border: oklch(0.440 0.006 264);
+  /* Header column label text — matches tab text (muted-foreground = white in dark) */
+  --table-header-fg:    oklch(1 0 0);
+
   --sidebar: #17171c;
   --sidebar-foreground: #d9d9d9;
   --sidebar-primary: #146cf8;
@@ -151,6 +203,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-alternative: var(--alternative);
+  --color-alternative-foreground: var(--alternative-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -167,6 +221,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Table / Grid color utilities */
+  --color-table-canvas:       var(--table-canvas);
+  --color-table-header:       var(--table-header);
+  --color-table-row-actions:  var(--table-row-actions);
+  --color-table-toolbar:      var(--table-toolbar);
+  --color-table-row-hover:    var(--table-row-hover);
+  --color-table-row-selected: var(--table-row-selected);
+  --color-table-border:       var(--table-border);
+  --color-table-header-fg:    var(--table-header-fg);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -191,10 +255,12 @@ body {
   letter-spacing: var(--tracking-normal);
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-brand-blue);
-  outline-offset: 2px;
-  border-radius: 2px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -505,6 +571,16 @@ body {
   50% {
     border-color: transparent;
   }
+}
+
+/* ── View Transitions: animated theme toggler ripple ─────────────────────────
+ * Disables the browser's default cross-fade so only our custom clip-path
+ * circle animation runs when switching themes.
+ * ─────────────────────────────────────────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 html {

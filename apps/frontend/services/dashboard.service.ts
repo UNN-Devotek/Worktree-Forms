@@ -1,4 +1,4 @@
-// Utility import removed as fetch is relative
+import { apiClient } from '@/lib/api';
 
 export interface DashboardMetrics {
     totalSubmissions: number;
@@ -24,22 +24,17 @@ export interface ActivityItem {
 export const DashboardService = {
     async getProjectMetrics(projectId: string): Promise<DashboardMetrics> {
         try {
-            const res = await fetch(`/api/projects/${projectId}/metrics`, { credentials: 'include' });
-            if (!res.ok) throw new Error('Failed to fetch metrics');
-            const json = await res.json();
+            const json = await apiClient<{ success: boolean; data: DashboardMetrics }>(`/api/projects/${projectId}/metrics`);
             return json.success ? json.data : { totalSubmissions: 0, statsByForm: [], plan: 'FREE', storageUsage: 0, submissionCount: 0 };
         } catch (error) {
             console.error('getProjectMetrics error:', error);
-            // Return empty fallback
             return { totalSubmissions: 0, statsByForm: [], plan: 'FREE', storageUsage: 0, submissionCount: 0 };
         }
     },
 
     async getActivityFeed(projectId: string): Promise<ActivityItem[]> {
         try {
-            const res = await fetch(`/api/projects/${projectId}/activity`, { credentials: 'include' });
-            if (!res.ok) throw new Error('Failed to fetch activity');
-            const json = await res.json();
+            const json = await apiClient<{ success: boolean; data: ActivityItem[] }>(`/api/projects/${projectId}/activity`);
             return json.success ? json.data : [];
         } catch (error) {
             console.error('getActivityFeed error:', error);

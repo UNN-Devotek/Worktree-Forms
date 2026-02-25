@@ -15,7 +15,7 @@ interface RadioFieldProps {
 export const RadioField = forwardRef<HTMLDivElement, RadioFieldProps>(
   ({ field, mode = 'render' }, ref) => {
     const form = useFormContext()
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
 
     // Builder mode
     if (mode === 'builder') {

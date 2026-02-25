@@ -60,7 +60,7 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
   ({ field }, _ref) => { // Removed ref parameter
     // Common state and refs for render and preview modes
     const form = useFormContext()
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
     const { uploadFile, isConfigured } = useFormUpload()
     const params = useParams()
     const projectSlug = params.slug as string || 'global'

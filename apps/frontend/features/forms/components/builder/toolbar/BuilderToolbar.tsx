@@ -16,11 +16,12 @@ interface BuilderToolbarProps {
   groupName?: string
   formTitle?: string
   formType?: FormType
+  projectId?: string
+  projectSlug?: string
   onTogglePalette: () => void
   onToggleProperties: () => void
   onOpenSettings: () => void
   onOpenPreview: () => void
-
 }
 
 export function BuilderToolbar({
@@ -29,11 +30,12 @@ export function BuilderToolbar({
   groupSlug,
   formTitle,
   formType = 'general',
+  projectId,
+  projectSlug,
   onTogglePalette,
   onToggleProperties,
   onOpenSettings,
   onOpenPreview,
-
 }: BuilderToolbarProps) {
   const { formSchema } = useFormBuilderStore()
 
@@ -91,7 +93,7 @@ export function BuilderToolbar({
           Preview
         </Button>
 
-        <SaveButton formId={formId} groupId={groupId} groupSlug={groupSlug} formType={formType} />
+        <SaveButton formId={formId} groupId={groupId} groupSlug={groupSlug} formType={formType} projectId={projectId} projectSlug={projectSlug} />
       </div>
     </div>
   )

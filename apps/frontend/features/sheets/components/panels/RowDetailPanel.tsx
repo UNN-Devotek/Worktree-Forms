@@ -120,15 +120,17 @@ export function RowDetailPanel() {
 
   return (
     <Sheet open={isDetailPanelOpen} onOpenChange={(open) => !open && closeDetailPanel()}>
-      <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b">
+      <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col h-full overflow-hidden">
+        <SheetHeader className="px-6 py-4 border-b shrink-0">
           <SheetTitle className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <span>{t('row_detail.title', 'Row Detail')}</span>
-            <span className="text-muted-foreground font-mono text-xs ml-2">
-              {selectedRow?.id}
-            </span>
           </SheetTitle>
+          {selectedRow?.id && (
+            <p className="text-[11px] text-muted-foreground font-mono mt-0.5 leading-none">
+              {selectedRow.id}
+            </p>
+          )}
         </SheetHeader>
 
         {/*
@@ -137,99 +139,97 @@ export function RowDetailPanel() {
           selected row changes, resetting both the active tab and all uncontrolled inputs.
         */}
         <Tabs key={selectedRowId ?? 'none'} value={activeRowTab} onValueChange={setActiveRowTab} className="flex-1 flex flex-col min-h-0">
-          <div className="px-6 border-b bg-muted/20 shrink-0">
-            <TabsList className="bg-transparent h-12 gap-4">
-              <TabsTrigger
-                value="fields"
-                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'fields' && "bg-transparent border-b-2 border-primary")}
-              >
+          {/* Centered tab bar */}
+          <div className="border-b bg-muted/20 shrink-0 flex justify-center">
+            <TabsList className="bg-transparent h-12 gap-6">
+              <TabsTrigger value="fields" className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'fields' && "bg-transparent border-b-2 border-primary")}>
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.fields', 'Fields')}
               </TabsTrigger>
-              <TabsTrigger
-                value="chat"
-                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'chat' && "bg-transparent border-b-2 border-primary")}
-              >
+              <TabsTrigger value="chat" className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'chat' && "bg-transparent border-b-2 border-primary")}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.chat', 'Chat')}
               </TabsTrigger>
-              <TabsTrigger
-                value="files"
-                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'files' && "bg-transparent border-b-2 border-primary")}
-              >
+              <TabsTrigger value="files" className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'files' && "bg-transparent border-b-2 border-primary")}>
                 <Paperclip className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.files', 'Files')}
               </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'history' && "bg-transparent border-b-2 border-primary")}
-              >
+              <TabsTrigger value="history" className={cn("rounded-none h-full px-0 shadow-none", activeRowTab === 'history' && "bg-transparent border-b-2 border-primary")}>
                 <History className="h-4 w-4 mr-2" />
                 {t('row_detail.tab.history', 'History')}
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* Fields Tab */}
-          <TabsContent value="fields" className="flex-1 min-h-0 m-0">
-            {/*
-              Finding #6 (R3): guard against deleted-row case.
-              If the row is deleted while the panel is open, selectedRow becomes undefined.
-              Without this guard, columns.map would render inputs with defaultValue=undefined,
-              showing stale data from the previous render cycle.
-            */}
-            {!selectedRow ? (
-              <EmptyState
-                icon={<LayoutGrid className="h-12 w-12 opacity-20" />}
-                text={t('row_detail.fields.row_deleted', 'This row no longer exists.')}
-              />
-            ) : (
-              <ScrollArea className="h-full">
-                <div className="p-6 space-y-6">
-                  {columns.map(col => (
-                    <div key={col.id} className="space-y-2">
-                      <Label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        <ColumnTypeIcon type={col.type} />
-                        {col.label}
-                      </Label>
-                      <Input
-                        defaultValue={selectedRow[col.id]}
-                        onBlur={(e) => updateCell(selectedRow.id, col.id, e.target.value)}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-          </TabsContent>
+          {/*
+            Content area: relative container so each TabsContent can use absolute inset-0.
+            This sidesteps the Radix flex-1 inheritance issue — each panel always fills
+            exactly this container regardless of how many panels Radix keeps in the DOM.
+          */}
+          <div className="flex-1 min-h-0 relative">
 
-          {/* Chat Tab */}
-          <TabsContent value="chat" className="flex-1 min-h-0 m-0 flex flex-col">
-            {safeRowId ? (
-              <RowChat rowId={safeRowId} user={user} />
-            ) : (
-              <EmptyState icon={<MessageSquare className="h-12 w-12 opacity-20" />} text={t('row_detail.chat.empty', 'Select a row to view its chat.')} />
-            )}
-          </TabsContent>
+            {/* Fields Tab */}
+            <TabsContent value="fields" className="absolute inset-0 m-0 overflow-hidden">
+              {/*
+                Finding #6 (R3): guard against deleted-row case.
+                If the row is deleted while the panel is open, selectedRow becomes undefined.
+              */}
+              {!selectedRow ? (
+                <EmptyState
+                  icon={<LayoutGrid className="h-12 w-12 opacity-20" />}
+                  text={t('row_detail.fields.row_deleted', 'This row no longer exists.')}
+                />
+              ) : (
+                <ScrollArea className="h-full">
+                  <div className="p-6 space-y-5">
+                    {columns.map(col => (
+                      <div key={col.id} className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                          {col.label}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <ColumnTypeIcon type={col.type} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <Input
+                            defaultValue={selectedRow[col.id]}
+                            onBlur={(e) => updateCell(selectedRow.id, col.id, e.target.value)}
+                            className="text-sm flex-1"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
 
-          {/* Files Tab */}
-          <TabsContent value="files" className="flex-1 min-h-0 m-0 flex flex-col">
-            {safeRowId ? (
-              <RowFiles rowId={safeRowId} user={user} />
-            ) : (
-              <EmptyState icon={<Paperclip className="h-12 w-12 opacity-20" />} text={t('row_detail.files.empty', 'Select a row to attach files.')} />
-            )}
-          </TabsContent>
+            {/* Chat Tab */}
+            <TabsContent value="chat" className="absolute inset-0 m-0 flex flex-col overflow-hidden">
+              {safeRowId ? (
+                <RowChat rowId={safeRowId} user={user} />
+              ) : (
+                <EmptyState icon={<MessageSquare className="h-12 w-12 opacity-20" />} text={t('row_detail.chat.empty', 'Select a row to view its chat.')} />
+              )}
+            </TabsContent>
 
-          {/* History Tab */}
-          <TabsContent value="history" className="flex-1 min-h-0 m-0">
-            {safeRowId ? (
-              <RowHistory rowId={safeRowId} />
-            ) : (
-              <EmptyState icon={<History className="h-12 w-12 opacity-20" />} text={t('row_detail.history.empty', 'Select a row to view its history.')} />
-            )}
-          </TabsContent>
+            {/* Files Tab */}
+            <TabsContent value="files" className="absolute inset-0 m-0 flex flex-col overflow-hidden">
+              {safeRowId ? (
+                <RowFiles rowId={safeRowId} user={user} />
+              ) : (
+                <EmptyState icon={<Paperclip className="h-12 w-12 opacity-20" />} text={t('row_detail.files.empty', 'Select a row to attach files.')} />
+              )}
+            </TabsContent>
+
+            {/* History Tab */}
+            <TabsContent value="history" className="absolute inset-0 m-0 overflow-hidden">
+              {safeRowId ? (
+                <RowHistory rowId={safeRowId} />
+              ) : (
+                <EmptyState icon={<History className="h-12 w-12 opacity-20" />} text={t('row_detail.history.empty', 'Select a row to view its history.')} />
+              )}
+            </TabsContent>
+
+          </div>
         </Tabs>
       </SheetContent>
     </Sheet>
@@ -320,9 +320,9 @@ function RowChat({ rowId, user }: { rowId: string; user: { name: string; color: 
     : [];
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      {/* Message list */}
-      <ScrollArea className="flex-1">
+    <div className="flex flex-col h-full">
+      {/* Message list — scrollable, fills all space above the input */}
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-3">
           {messages.length === 0 && (
             <p className="text-center text-xs text-muted-foreground mt-8">
@@ -503,8 +503,8 @@ function RowFiles({ rowId, user }: { rowId: string; user: { name: string; color:
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <ScrollArea className="flex-1">
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-2">
           {files.length === 0 && (
             <div className="text-center py-8">
@@ -564,43 +564,42 @@ function RowHistory({ rowId }: { rowId: string }) {
     return () => arr.unobserve(update);
   }, [doc, rowId]);
 
+  // Newest first: arr is append-only so index 0 = oldest; .reverse() puts newest at top.
+  const sorted = [...entries].reverse();
+
   return (
-    <ScrollArea className="h-full">
-      <div className="p-4 space-y-3">
-        {/*
-          Finding #13: empty state is in a normal flow container, not flex-col-reverse.
-          The history entries are reversed in JS (cheap — history lists are short) so the
-          empty state renders centered as intended. flex-col-reverse pushed the empty state
-          to the bottom of the scroll area when there were no entries.
-        */}
-        {entries.length === 0 && (
-          <div className="text-center py-8">
-            <Clock className="h-10 w-10 mx-auto mb-3 opacity-20" />
-            <p className="text-xs text-muted-foreground">{t('row_detail.history.empty_list', 'No changes recorded yet.')}</p>
-            <p className="text-xs text-muted-foreground mt-1">{t('row_detail.history.empty_hint', 'Changes to fields will appear here.')}</p>
-          </div>
-        )}
-        {[...entries].reverse().map(entry => (
-          <div key={entry.id} className="flex gap-3 text-xs">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-medium text-foreground">
-                <span className="text-muted-foreground">{entry.changedBy}</span>
-                {' '}{t('row_detail.history.changed', 'changed')}{' '}
-                <span className="font-semibold">{entry.columnLabel}</span>
-              </p>
-              <p className="text-muted-foreground mt-0.5">
-                {entry.oldValue ? `"${entry.oldValue}" → ` : ''}
-                <span className="text-foreground">"{entry.newValue}"</span>
-              </p>
-              <p className="text-muted-foreground/60 mt-0.5">
-                {new Date(entry.timestamp).toLocaleString()}
-              </p>
+    <div className="flex flex-col h-full">
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-3">
+          {sorted.length === 0 && (
+            <div className="text-center py-8">
+              <Clock className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="text-xs text-muted-foreground">{t('row_detail.history.empty_list', 'No changes recorded yet.')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('row_detail.history.empty_hint', 'Changes to fields will appear here.')}</p>
             </div>
-          </div>
-        ))}
-      </div>
-    </ScrollArea>
+          )}
+          {sorted.map(entry => (
+            <div key={entry.id} className="flex gap-3 text-xs pb-3 border-b border-border/50 last:border-0 last:pb-0">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground">
+                  <span className="text-muted-foreground">{entry.changedBy}</span>
+                  {' '}{t('row_detail.history.changed', 'changed')}{' '}
+                  <span className="font-semibold">{entry.columnLabel}</span>
+                </p>
+                <p className="text-muted-foreground mt-0.5 break-words">
+                  {entry.oldValue ? `"${entry.oldValue}" → ` : ''}
+                  <span className="text-foreground">"{entry.newValue}"</span>
+                </p>
+                <p className="text-muted-foreground/60 mt-0.5">
+                  {new Date(entry.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
 

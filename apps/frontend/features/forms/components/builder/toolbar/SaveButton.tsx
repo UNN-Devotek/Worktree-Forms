@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Save, Loader2, Globe, Lock } from 'lucide-react'
 import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
 import { apiClient } from '@/lib/api'
-import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ApiResponse } from '@/types/api'
 import { GroupForm, CreateFormData, FormType } from '@/types/group-forms'
 import {
@@ -26,15 +26,16 @@ interface SaveButtonProps {
   groupId: number
   groupSlug?: string
   formType?: FormType
+  projectId?: string
+  projectSlug?: string
 }
 
-export function SaveButton({ formId, groupId, formType = 'general' }: SaveButtonProps) {
+export function SaveButton({ formId, groupId, groupSlug, formType = 'general', projectId, projectSlug }: SaveButtonProps) {
   const { formSchema, isDirty, setDirty } = useFormBuilderStore()
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [isPublished, setIsPublished] = useState(false)
   const [showPublishDialog, setShowPublishDialog] = useState(false)
-  const { toast } = useToast()
   const router = useRouter()
 
   // Fetch current publish status on mount
@@ -95,22 +96,46 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
         }
 
         setDirty(false)
-        toast({
-          title: 'Form saved',
-          description: 'Your changes have been saved successfully.'
-        })
+        toast.success('Form saved', { description: 'Your changes have been saved successfully.' })
         return true
       } else {
         // Create new form
+        const title = formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form'
+        const folderIdParam = new URLSearchParams(window.location.search).get('folderId')
+        const folderId = folderIdParam ? parseInt(folderIdParam) : undefined
+
+        if (projectId) {
+          // Project-scoped create — auto-creates linked Sheet
+          const response = await apiClient<ApiResponse<{ form: GroupForm; sheet: any }>>(
+            `/api/projects/${projectId}/forms`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title,
+                form_json: formSchema,
+                folderId,
+              }),
+            }
+          )
+
+          if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to create form')
+          }
+
+          toast.success('Form created', { description: 'Your form and linked table have been created.' })
+          const createdSlug = response.data.form.slug
+          router.push(`/project/${projectSlug}/forms/${createdSlug}`)
+          return true
+        }
+
+        // Global (non-project) create
         const oneResponsePerUser = formSchema.settings?.oneResponsePerUser ?? false
         const allowMultiple = !oneResponsePerUser
         const sigIds = formSchema.settings?.sig_ids || []
 
-        const folderIdParam = new URLSearchParams(window.location.search).get('folderId')
-        const folderId = folderIdParam ? parseInt(folderIdParam) : undefined
-
         const createData: CreateFormData = {
-          title: formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form',
+          title,
           description: formSchema.pages[0]?.description || '',
           form_type: formType,
           form_json: formSchema,
@@ -121,12 +146,10 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
           visible_to_non_members: false,
           visible_to_members: true,
           sig_ids: sigIds,
-          visible_to_members: true,
-          sig_ids: sigIds,
           folderId: folderId,
-          groupSlug: groupSlug // Send slug to help backend find the project
+          groupSlug: groupSlug,
         }
-        
+
         console.log('Sending POST request to', `/api/groups/${groupId}/forms`, createData)
 
         const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
@@ -134,7 +157,7 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(createData)
+            body: JSON.stringify(createData),
           }
         )
 
@@ -144,10 +167,7 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
           throw new Error(response.error || 'Failed to create form')
         }
 
-        toast({
-          title: 'Form created',
-          description: 'Your form has been created successfully.'
-        })
+        toast.success('Form created', { description: 'Your form has been created successfully.' })
 
         const formSlug = response.data.form.slug
         router.push(`/forms/${formSlug}/edit`)
@@ -160,17 +180,9 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
       
       // Handle specific error cases
       if (errorMessage.includes('404')) {
-          toast({
-              title: 'Form not found',
-              description: 'This form may have been deleted. Please try refreshing the page.',
-              variant: 'destructive'
-          })
+          toast.error('Form not found', { description: 'This form may have been deleted. Please try refreshing the page.' })
       } else {
-          toast({
-            title: 'Error',
-            description: errorMessage,
-            variant: 'destructive'
-          })
+          toast.error('Error', { description: errorMessage })
       }
       return false
     } finally {
@@ -180,11 +192,7 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
 
   const handlePublish = async () => {
     if (!formId) {
-      toast({
-        title: 'Save first',
-        description: 'Please save the form before publishing.',
-        variant: 'destructive'
-      })
+      toast.error('Save first', { description: 'Please save the form before publishing.' })
       return
     }
 
@@ -214,17 +222,10 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
       }
 
       setIsPublished(true)
-      toast({
-        title: 'Form published',
-        description: 'Your form is now visible to members.'
-      })
+      toast.success('Form published', { description: 'Your form is now visible to members.' })
     } catch (error) {
       console.error('Publish error:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to publish form',
-        variant: 'destructive'
-      })
+      toast.error('Error', { description: error instanceof Error ? error.message : 'Failed to publish form' })
     } finally {
       setIsPublishing(false)
       setShowPublishDialog(false)
@@ -250,17 +251,10 @@ export function SaveButton({ formId, groupId, formType = 'general' }: SaveButton
       }
 
       setIsPublished(false)
-      toast({
-        title: 'Form unpublished',
-        description: 'Your form is now a draft and hidden from members.'
-      })
+      toast.success('Form unpublished', { description: 'Your form is now a draft and hidden from members.' })
     } catch (error) {
       console.error('Unpublish error:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to unpublish form',
-        variant: 'destructive'
-      })
+      toast.error('Error', { description: error instanceof Error ? error.message : 'Failed to unpublish form' })
     } finally {
       setIsPublishing(false)
     }

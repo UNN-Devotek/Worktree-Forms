@@ -15,7 +15,7 @@ interface RatingFieldProps {
 const RatingFieldRender = forwardRef<HTMLDivElement, { field: FormFieldBase }>(
   ({ field }, ref) => {
     const form = useFormContext()
-    const error = form.formState.errors[field.name]?.message as string
+    const error = form?.formState?.errors[field.name]?.message as string
 
     // Register field with form on mount/unmount
     useEffect(() => {

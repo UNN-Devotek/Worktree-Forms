@@ -28,6 +28,12 @@ const buttonVariants = cva(
         /** Warning — orange */
         warning:
           "bg-orange-500 text-white shadow-sm hover:bg-orange-600",
+        /** Info — sky blue, informational actions */
+        info:
+          "bg-sky-500 text-white shadow-sm hover:bg-sky-600",
+        /** Purple — violet, for special/unique actions */
+        purple:
+          "bg-violet-600 text-white shadow-sm hover:bg-violet-700",
         /** Neutral — slate, for low-semantic solid actions */
         neutral:
           "bg-slate-700 text-white shadow-sm hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500",

@@ -25,7 +25,7 @@ import folderRoutes from './routes/folders.routes.js';
 import formRoutes from './routes/forms.routes.js';
 import mobileRoutes from './routes/mobile.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
-import rfiRoutes from './routes/rfi.routes.js';
+import taskRoutes from './routes/task.routes.js';
 import specRoutes from './routes/spec.routes.js';
 import scheduleRoutes from './routes/schedule.routes.js';
 import aiRoutes from './routes/ai.routes.js';
@@ -89,7 +89,7 @@ app.use([
   '/api/folders',
   '/api/forms',
   '/api/groups',
-  '/api/rfi',
+  '/api/tasks',
   '/api/specs',
   '/api/schedule',
   '/api/dashboard',
@@ -169,7 +169,7 @@ app.use('/api/folders', folderRoutes);      // GET /api/folders, POST /api/folde
 
 // Routes mounted at /api because they define prefixed paths internally
 app.use('/api', formRoutes);                // /api/forms, /api/groups/:id/forms
-app.use('/api', rfiRoutes);                 // /api/projects/:id/rfis
+app.use('/api', taskRoutes);                // /api/projects/:id/tasks
 app.use('/api', specRoutes);                // /api/projects/:id/specs
 app.use('/api', scheduleRoutes);            // /api/projects/:id/schedule
 app.use('/api', mobileRoutes);              // /api/projects/:id/routes

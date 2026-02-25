@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +36,6 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -171,23 +170,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Check for 10 min warning (Toast)
       if (remaining <= 10 * 60 * 1000 && remaining > 5 * 60 * 1000 && warningLevelRef.current < 2) {
         warningLevelRef.current = 2;
-        toast({
-          title: 'Session Warning',
-          description: 'Your session will expire in 10 minutes.',
-          variant: 'default',
-          duration: 5000,
-        });
+        toast('Session Warning', { description: 'Your session will expire in 10 minutes.', duration: 5000 });
         return;
       }
 
       // Check for 15 min warning (Toast)
       if (remaining <= 15 * 60 * 1000 && remaining > 10 * 60 * 1000 && warningLevelRef.current < 1) {
         warningLevelRef.current = 1;
-        toast({
-          title: 'Session Check',
-          description: 'Your session will expire in 15 minutes.',
-          duration: 3000,
-        });
+        toast('Session Check', { description: 'Your session will expire in 15 minutes.', duration: 3000 });
         return;
       }
 
@@ -200,7 +190,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('scroll', handleActivity);
       clearInterval(intervalId);
     };
-  }, [handleLogout, resetTimer, toast, isSessionExpired]);
+  }, [handleLogout, resetTimer, isSessionExpired]);
 
   return (
     <SessionContext.Provider value={{ user, resetTimer, handleLogout }}>

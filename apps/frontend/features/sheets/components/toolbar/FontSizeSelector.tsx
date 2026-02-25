@@ -26,8 +26,8 @@ export function FontSizeSelector({ className }: FontSizeSelectorProps) {
     focusedCell,
     getCellStyle,
     applyCellStyle,
-    selectedColumnId,
-    selectedFormattingRowId,
+    selectedColumnIds,
+    selectedFormattingRowIds,
     applyColumnStyle,
     applyRowStyle,
     data,
@@ -36,8 +36,8 @@ export function FontSizeSelector({ className }: FontSizeSelectorProps) {
 
   const currentStyle = (() => {
     if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
-    if (selectedColumnId && data[0]) return getCellStyle(data[0].id, selectedColumnId);
-    if (selectedFormattingRowId && columns[0]) return getCellStyle(selectedFormattingRowId, columns[0].id);
+    if (selectedColumnIds.size > 0 && data[0]) return getCellStyle(data[0].id, [...selectedColumnIds][0]);
+    if (selectedFormattingRowIds.size > 0 && columns[0]) return getCellStyle([...selectedFormattingRowIds][0], columns[0].id);
     return null;
   })();
 
@@ -49,19 +49,19 @@ export function FontSizeSelector({ className }: FontSizeSelectorProps) {
   // Sync the input display value when the cell selection changes
   useEffect(() => {
     setInputValue(currentStyle ? String(currentStyle.fontSize ?? 13) : '—');
-  }, [focusedCell, selectedColumnId, selectedFormattingRowId, currentStyle]);
+  }, [focusedCell, selectedColumnIds, selectedFormattingRowIds, currentStyle]);
 
-  const isDisabled = !focusedCell && !selectedColumnId && !selectedFormattingRowId;
+  const isDisabled = !focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0;
 
   const applySize = (size: number) => {
     if (isNaN(size) || size < 1 || size > 400) return;
     const style = { fontSize: size };
     if (focusedCell) {
       applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
-    } else if (selectedColumnId) {
-      applyColumnStyle(selectedColumnId, style);
-    } else if (selectedFormattingRowId) {
-      applyRowStyle(selectedFormattingRowId, style);
+    } else if (selectedColumnIds.size > 0) {
+      selectedColumnIds.forEach(colId => applyColumnStyle(colId, style));
+    } else if (selectedFormattingRowIds.size > 0) {
+      selectedFormattingRowIds.forEach(rowId => applyRowStyle(rowId, style));
     }
   };
 

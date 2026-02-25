@@ -2,16 +2,17 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Map, 
-  FileText, 
-  ClipboardList, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Map,
+  FileText,
+  ClipboardList,
+  Settings,
   Calendar,
   MapPin,
   Table,
-  MessageCircle
+  MessageCircle,
+  FileStack
 } from "lucide-react";
 
 interface ProjectTabsProps {
@@ -27,7 +28,8 @@ export function ProjectTabs({ slug }: ProjectTabsProps) {
     if (pathname?.endsWith("/sheets") || pathname?.includes("/sheets/")) return "sheets";
     if (pathname?.endsWith("/chat")) return "chat";
     if (pathname?.endsWith("/route")) return "route";
-    if (pathname?.endsWith("/rfis")) return "rfis";
+    if (pathname?.endsWith("/tasks")) return "tasks";
+    if (pathname?.endsWith("/forms") || pathname?.includes("/forms/")) return "forms";
     if (pathname?.endsWith("/specs")) return "specs";
     if (pathname?.endsWith("/blueprints")) return "blueprints";
     if (pathname?.endsWith("/schedule")) return "schedule";
@@ -57,11 +59,15 @@ export function ProjectTabs({ slug }: ProjectTabsProps) {
           </TabsTrigger>
           <TabsTrigger value="route" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            <span>My Route</span>
+            <span>Routes</span>
           </TabsTrigger>
-          <TabsTrigger value="rfis" className="flex items-center gap-2">
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            <span>RFIs</span>
+            <span>Tasks</span>
+          </TabsTrigger>
+          <TabsTrigger value="forms" className="flex items-center gap-2">
+            <FileStack className="h-4 w-4" />
+            <span>Forms</span>
           </TabsTrigger>
           <TabsTrigger value="specs" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
