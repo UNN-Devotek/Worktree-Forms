@@ -76,7 +76,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, isLoading, isLoaded, children, ...props }, ref) => {
     const innerRef = React.useRef<HTMLButtonElement>(null)
     const [lockedWidth, setLockedWidth] = React.useState<number | undefined>(undefined)
-    const [showSuccess, setShowSuccess] = React.useState(false)
 
     // Width lock: freeze button width while loading
     React.useLayoutEffect(() => {
@@ -86,15 +85,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         setLockedWidth(undefined)
       }
     }, [isLoading])
-
-    // Success flash
-    React.useEffect(() => {
-      if (isLoaded && !isLoading) {
-        setShowSuccess(true)
-        const t = setTimeout(() => setShowSuccess(false), 600)
-        return () => clearTimeout(t)
-      }
-    }, [isLoaded, isLoading])
 
     // asChild path: no animations, pass through as before
     if (asChild) {
@@ -114,9 +104,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const layer: Layer = isLoading ? "spinner" : isLoaded ? "check" : "label"
 
-    const motionTransition = isLoading
-      ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" as const }
-      : { duration: 0.15, ease: "easeOut" as const }
+    const motionTransition = { duration: 0.15, ease: "easeOut" as const }
 
     // Separate style and conflicting drag handlers from rest props
     const {
@@ -135,7 +123,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           buttonVariants({ variant, size, className }),
           "overflow-hidden",
           isLoading && "cursor-wait pointer-events-none",
-          showSuccess && "!bg-emerald-500",
         )}
         ref={(node: HTMLButtonElement | null) => {
           innerRef.current = node
@@ -155,11 +142,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={
           isInteractive
             ? { scale: 0.97, y: 0 }
-            : undefined
-        }
-        animate={
-          isLoading
-            ? { opacity: [1, 0.82, 1] }
             : undefined
         }
         transition={motionTransition}
