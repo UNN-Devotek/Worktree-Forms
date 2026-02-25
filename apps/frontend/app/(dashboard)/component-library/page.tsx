@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     Check, Copy, Search, Atom, Layers, Boxes, LayoutGrid, EyeOff,
     Bold, Italic, AlignLeft, AlignCenter, AlignRight, Info, AlertTriangle,
@@ -225,15 +225,22 @@ function SheetPreview() {
 function ButtonPreview() {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleSave = () => {
         if (isLoading || isLoaded) return;
         setIsLoading(true);
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
             setIsLoading(false);
             setIsLoaded(true);
         }, 1800);
     };
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
 
     return (
         <div className="space-y-3">
