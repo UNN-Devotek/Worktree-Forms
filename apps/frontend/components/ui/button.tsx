@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { cn } from "@/lib/utils"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -180,27 +181,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
 
           {layer === "spinner" && (
-            <motion.svg
+            <motion.span
               key="spinner"
-              className="size-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
+              className="inline-flex items-center justify-center"
               variants={contentVariants}
               initial="enter"
               animate="center"
               exit="exit"
               transition={contentTransition}
             >
-              <motion.path
-                d="M12 2a10 10 0 0 1 10 10"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                style={{ transformOrigin: "center" }}
-              />
-            </motion.svg>
+              <LoadingSpinner size={16} className="[&_svg]:text-current" />
+            </motion.span>
           )}
 
           {layer === "check" && (
