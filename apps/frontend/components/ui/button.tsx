@@ -133,7 +133,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         className={cn(
           buttonVariants({ variant, size, className }),
-          "relative overflow-hidden",
+          "overflow-hidden",
           isLoading && "cursor-wait pointer-events-none",
           showSuccess && "!bg-emerald-500",
         )}

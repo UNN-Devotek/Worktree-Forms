@@ -100,7 +100,7 @@ export function AiAssistant() {
                 <Bot className="h-5 w-5 text-primary" />
                 <CardTitle className="text-base">Worktree AI</CardTitle>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
+            <Button variant="neutral" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
