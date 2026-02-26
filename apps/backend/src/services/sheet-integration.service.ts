@@ -4,6 +4,25 @@ import { HocuspocusProvider } from '@hocuspocus/provider';
 import ws from 'ws';
 import jwt from 'jsonwebtoken';
 
+// Polyfill the global WebSocket with the `ws` package so HocuspocusProvider
+// can open its own internal connection in Node.js. This removes the need for
+// an external HocuspocusProviderWebsocket instance and the undocumented
+// provider.attach() call that was previously required to make onSynced fire.
+if (typeof globalThis.WebSocket === 'undefined') {
+  (globalThis as any).WebSocket = ws;
+}
+
+const WS_URL = process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234';
+const SYNC_TIMEOUT_MS = 15_000;
+
+function makeSystemToken(): string {
+  return jwt.sign(
+    { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
+    process.env.JWT_SECRET!,
+    { algorithm: 'HS256', expiresIn: '5m' },
+  );
+}
+
 export class SheetIntegrationService {
   /**
    * Appends a submission data as a new row to a target sheet.
@@ -32,7 +51,6 @@ export class SheetIntegrationService {
       });
 
       // 3. Inject into Yjs document so active users see it instantly
-      // We use a temporary Yjs client to push the update
       await this.injectRowIntoYjs(sheetId, newRow);
 
     } catch (error) {
@@ -101,30 +119,50 @@ export class SheetIntegrationService {
    * Clears existing columns and replaces them with the new set.
    */
   async syncColumnsToYjs(sheetId: string, columns: Array<{ id: string; label: string; type: string }>) {
-    return new Promise((resolve, reject) => {
+    return new Promise<boolean>((resolve, reject) => {
+      let settled = false;
       const doc = new Y.Doc();
-      const provider = new HocuspocusProvider({
-        url: process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234',
+      let provider: HocuspocusProvider | undefined;
+
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        fn();
+      };
+
+      const cleanup = () => {
+        provider?.destroy();
+        doc.destroy();
+      };
+
+      // Guard against the WS server being unavailable or onSynced never firing.
+      const outerTimer = setTimeout(() => {
+        settle(() => reject(new Error(`syncColumnsToYjs timed out after ${SYNC_TIMEOUT_MS}ms for sheet ${sheetId}`)));
+        cleanup();
+      }, SYNC_TIMEOUT_MS);
+
+      provider = new HocuspocusProvider({
+        url: WS_URL,
         name: sheetId,
         document: doc,
-        WebSocketPolyfill: ws,
-        parameters: {
-          token: jwt.sign(
-            { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
-            process.env.JWT_SECRET!,
-            { algorithm: 'HS256', expiresIn: '5m' },
-          ),
-        },
-        onConnect: () => {
+        // Token sent as a Hocuspocus auth message — not embedded in the URL —
+        // so it does not appear in proxy access logs.
+        token: makeSystemToken(),
+        onSynced: ({ state }: { state: boolean }) => {
+          if (!state) {
+            // Connection dropped before sync completed.
+            clearTimeout(outerTimer);
+            settle(() => reject(new Error('Column sync failed: connection dropped before sync completed')));
+            cleanup();
+            return;
+          }
+
+          clearTimeout(outerTimer);
           console.log(`Backend Yjs: syncing ${columns.length} columns to sheet ${sheetId}`);
           const yColumns = doc.getArray('columns');
 
           doc.transact(() => {
-            // Clear existing columns
-            if (yColumns.length > 0) {
-              yColumns.delete(0, yColumns.length);
-            }
-            // Push new columns
+            if (yColumns.length > 0) yColumns.delete(0, yColumns.length);
             for (const col of columns) {
               yColumns.push([{
                 id: col.id,
@@ -135,16 +173,22 @@ export class SheetIntegrationService {
             }
           });
 
+          // Allow ~1 s for Hocuspocus to broadcast the update to connected
+          // clients before closing this temporary provider.
           setTimeout(() => {
-            provider.destroy();
-            resolve(true);
-          }, 500);
+            settle(() => resolve(true));
+            cleanup();
+          }, 1000);
         },
-        onConnectError: (err: any) => {
-          console.error('Backend Yjs column sync error:', err);
-          reject(err);
-        }
-      } as any);
+        onDisconnect: (data: any) => {
+          const code = data?.event?.code;
+          if (code && code !== 1000) {
+            clearTimeout(outerTimer);
+            settle(() => reject(new Error(`Column sync WebSocket closed with error code ${code}`)));
+            cleanup();
+          }
+        },
+      });
     });
   }
 
@@ -171,46 +215,65 @@ export class SheetIntegrationService {
     return Buffer.from(Y.encodeStateAsUpdate(doc));
   }
 
-  private async injectRowIntoYjs(sheetId: string, row: any) {
-    // In a real production app, we'd use a more robust way to communicate with the WS server
-    // (e.g. Redis Pub/Sub or a dedicated backend client).
-    // For MVP, we'll try a direct Yjs + Hocuspocus provider connection from backend.
-    
-    return new Promise((resolve, reject) => {
+  private async injectRowIntoYjs(sheetId: string, row: { id: string; data: any }) {
+    return new Promise<boolean>((resolve, reject) => {
+      let settled = false;
       const doc = new Y.Doc();
-      const provider = new HocuspocusProvider({
-        url: process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234',
+      let provider: HocuspocusProvider | undefined;
+
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        fn();
+      };
+
+      const cleanup = () => {
+        provider?.destroy();
+        doc.destroy();
+      };
+
+      const outerTimer = setTimeout(() => {
+        settle(() => reject(new Error(`injectRowIntoYjs timed out after ${SYNC_TIMEOUT_MS}ms for sheet ${sheetId}`)));
+        cleanup();
+      }, SYNC_TIMEOUT_MS);
+
+      provider = new HocuspocusProvider({
+        url: WS_URL,
         name: sheetId,
         document: doc,
-        WebSocketPolyfill: ws,
-        parameters: {
-          token: jwt.sign(
-            { sub: 'system', email: 'system@worktree.internal', systemRole: 'ADMIN' },
-            process.env.JWT_SECRET!,
-            { algorithm: 'HS256', expiresIn: '5m' },
-          ),
-        },
-        onConnect: () => {
-          console.log('Backend Yjs client connected');
+        token: makeSystemToken(),
+        onSynced: ({ state }: { state: boolean }) => {
+          if (!state) {
+            clearTimeout(outerTimer);
+            settle(() => reject(new Error('Row injection failed: connection dropped before sync completed')));
+            cleanup();
+            return;
+          }
+
+          clearTimeout(outerTimer);
+          console.log(`Backend Yjs: injecting row ${row.id} into sheet ${sheetId}`);
           const yRows = doc.getMap('rows');
           const yOrder = doc.getArray('order');
-          
+
           doc.transact(() => {
             yRows.set(row.id, { ...row.data, id: row.id, parentId: null });
             yOrder.push([row.id]);
           });
-          
-          // Wait for sync and disconnect
+
           setTimeout(() => {
-            provider.destroy();
-            resolve(true);
-          }, 500);
+            settle(() => resolve(true));
+            cleanup();
+          }, 1000);
         },
-        onConnectError: (err: any) => {
-          console.error('Backend Yjs sync error:', err);
-          reject(err);
-        }
-      } as any);
+        onDisconnect: (data: any) => {
+          const code = data?.event?.code;
+          if (code && code !== 1000) {
+            clearTimeout(outerTimer);
+            settle(() => reject(new Error(`Row injection WebSocket closed with error code ${code}`)));
+            cleanup();
+          }
+        },
+      });
     });
   }
 }

@@ -43,8 +43,8 @@ export const useYjsStore = create<YjsState>((set, get) => ({
     console.log('🔌 Connecting to WebSocket:', wsUrl);
 
     // HocuspocusProvider matches the @hocuspocus/server wire protocol exactly.
-    // Using y-websocket's WebsocketProvider caused "Unknown message type" and
-    // "Unexpected end of array" errors because they use different binary formats.
+    // Auth token is sent via the Hocuspocus auth message (token option) so it
+    // is never embedded in the URL and does not appear in server access logs.
     const provider = new HocuspocusProvider({
       url: wsUrl,
       name: sheetId,

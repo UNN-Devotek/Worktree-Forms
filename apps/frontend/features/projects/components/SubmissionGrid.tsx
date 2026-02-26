@@ -105,12 +105,6 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
           dataSummary: `${a.user} ${a.action}`
         }))
 
-        // Mock some failed items for demo
-        if (rows.length > 0) {
-            rows[0].status = 'failed'
-            rows[1].status = 'pending'
-        }
-
         setData(rows)
       } catch (e) {
         console.error("Failed to load grid data", e)

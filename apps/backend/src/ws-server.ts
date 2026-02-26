@@ -38,19 +38,17 @@ const server = new Server({
     }),
   ],
 
-  // Authentication
-  async onConnect(data) {
-    const { requestParameters } = data;
-    const token = requestParameters.get('token');
-
+  // Authentication via Hocuspocus auth message (sent by the client's `token`
+  // option). Token is never embedded in the URL, keeping it out of proxy logs.
+  async onAuthenticate({ token, documentName }) {
     if (!token) {
-      console.log(`Auth failed: No token provided.`);
+      console.log(`Auth failed: No token provided for ${documentName}`);
       throw new Error('Unauthorized');
     }
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      console.log(`User ${decoded.sub} connected to ${data.documentName}`);
+      console.log(`User ${decoded.sub} authenticated for ${documentName}`);
 
       return {
         user: {

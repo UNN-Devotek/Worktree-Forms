@@ -326,9 +326,10 @@ router.post('/:projectId/forms', auditMiddleware('form.create'), async (req: Req
 
     const columns = extractColumnsFromSchema(form_json ?? {});
 
-    // Build Yjs columns with stable UUIDs that match the SheetColumn records
+    // Yjs column id = form field name so that row data (keyed by field name)
+    // resolves correctly when the table renders cells via row[col.id].
     const yjsColumns = columns.map((col) => ({
-      id: crypto.randomUUID(),
+      id: col.id,
       label: col.label,
       type: mapFieldTypeToColumnType(col.type),
     }));
@@ -509,9 +510,10 @@ router.post('/:projectId/forms/:formId/sync-columns', async (req: Request, res: 
 
     const newColumns = extractColumnsFromSchema(form.form_schema);
 
-    // Build Yjs-compatible columns with UUIDs
+    // Yjs column id = form field name so that row data (keyed by field name)
+    // resolves correctly when the table renders cells via row[col.id].
     const yjsColumns = newColumns.map((col) => ({
-      id: crypto.randomUUID(),
+      id: col.id,
       label: col.label,
       type: mapFieldTypeToColumnType(col.type),
     }));
