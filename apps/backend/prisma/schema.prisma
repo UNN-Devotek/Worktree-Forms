@@ -3,7 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  binaryTargets   = ["native", "windows", "linux-musl", "linux-musl-openssl-3.0.x"]
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -234,6 +234,7 @@ model AuditLog {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
   action    String
   resource  String
   details   String?
@@ -275,7 +276,7 @@ model Invitation {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   inviter User    @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
-  @@index([projectId, email])  // Allow multiple invitations per email (revoke then re-invite)
+  @@unique([projectId, email])
   @@index([token])
 }
 
@@ -355,6 +356,9 @@ model Sheet {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   visibilityConfig Json?
+
+  nocodbTableId String?
+  nocodbViewId  String?
 
   columns       SheetColumn[]
   rows          SheetRow[]

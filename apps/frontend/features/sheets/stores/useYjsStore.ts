@@ -64,13 +64,15 @@ export const useYjsStore = create<YjsState>((set, get) => ({
     });
 
     // Awareness: track connected users
-    provider.awareness.on('change', () => {
-      const states = Array.from(provider.awareness.getStates().values());
-      set({ users: states });
-    });
+    if (provider.awareness) {
+      provider.awareness.on('change', () => {
+        const states = Array.from(provider.awareness!.getStates().values());
+        set({ users: states });
+      });
 
-    // Set local user info in awareness
-    provider.awareness.setLocalStateField('user', user);
+      // Set local user info in awareness
+      provider.awareness.setLocalStateField('user', user);
+    }
 
     set({ doc, provider, persistence });
   },

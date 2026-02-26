@@ -61,8 +61,8 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
       toast.info(`Syncing ${queue.length} items...`, { id: "sync-start" });
 
       const pending = [...queue];
-      const nextQueue = []; 
-      const processingBatch = [];
+      const nextQueue: any[] = [];
+      const processingBatch: any[] = [];
       let successCount = 0;
       let failureCount = 0;
 

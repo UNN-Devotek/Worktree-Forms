@@ -2,25 +2,15 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getProjects } from '@/features/projects/server/project-actions';
 import { ProjectList } from '@/features/projects/components/project-list';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, FileCheck, Users, TrendingUp } from 'lucide-react';
-
 export default async function DashboardPage() {
   console.log('[DashboardPage] Rendering FULL MODE...');
-  
+
   const session = await auth();
   if (!session?.user) {
     redirect('/login');
   }
 
   const projects = await getProjects();
-
-  const stats = {
-    totalForms: 12,
-    totalSubmissions: 1450,
-    activeUsers: 8,
-    completionRate: 87.5
-  };
 
   return (
     <div className="flex flex-col space-y-8">

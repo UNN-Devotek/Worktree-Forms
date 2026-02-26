@@ -26,7 +26,7 @@ export function useAutoSave({
   debounceMs = 3000,
   onSave,
 }: UseAutoSaveOptions) {
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastSavedRef = useRef<string | null>(null);
 
   useEffect(() => {

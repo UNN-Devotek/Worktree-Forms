@@ -4,7 +4,7 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../../node_modules/@prisma/client-frontend"
-  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
+  binaryTargets   = ["native", "windows", "linux-musl", "linux-musl-openssl-3.0.x"]
   previewFeatures = ["postgresqlExtensions"]
 }
 

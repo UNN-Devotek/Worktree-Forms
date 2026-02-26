@@ -18,7 +18,7 @@ export function getAuthenticatedDb(userId: string, projectId?: string) {
                const delegate = model.charAt(0).toLowerCase() + model.slice(1);
                return (tx as any)[delegate][operation](args);
             }
-            return query(args);
+            return (query as any)(args);
           });
         },
       },

@@ -250,7 +250,7 @@ export function SheetProvider({
 
   // Broadcast our focused cell to collaborators via Yjs awareness
   useEffect(() => {
-    if (!provider) return;
+    if (!provider || !provider.awareness) return;
     provider.awareness.setLocalStateField('focusedCell', focusedCell);
   }, [provider, focusedCell]);
 

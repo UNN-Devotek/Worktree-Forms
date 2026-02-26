@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// @ts-ignore
 export const GET = auth(async (req: any) => {
   if (!req.auth || !req.auth.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

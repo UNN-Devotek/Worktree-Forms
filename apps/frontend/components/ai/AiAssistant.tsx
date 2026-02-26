@@ -110,7 +110,7 @@ export function AiAssistant() {
                 {messages.length === 0 && (
                     <div className="text-center text-muted-foreground mt-20 text-sm">
                         <p>Ask me anything about your project.</p>
-                        <p className="mt-2 text-xs opacity-70">"What are the recent failures?"</p>
+                        <p className="mt-2 text-xs opacity-70">&quot;What are the recent failures?&quot;</p>
                     </div>
                 )}
                 

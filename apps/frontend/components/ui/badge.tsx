@@ -53,6 +53,9 @@ const badgeVariants = cva(
         /** Low priority */
         low:
           "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400",
+        /** Outline — bordered, transparent background */
+        outline:
+          "text-foreground",
       },
     },
     defaultVariants: {

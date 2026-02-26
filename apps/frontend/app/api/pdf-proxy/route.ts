@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const urlParam = searchParams.get('url');
 
   // Fallback to URL parsing if key not explicit (backward compat or transitional)
-  let objectKey = key;
+  const objectKey = key;
   if (!objectKey && urlParam) {
       // Try to extract key from URL if possible, or just fail. 
       // Given the signature issues, we really want the key.

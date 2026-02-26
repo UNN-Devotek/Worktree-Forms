@@ -104,7 +104,7 @@ export function PublicShareModal({ resourceType, resourceId, trigger }: PublicSh
                     readOnly
                     />
                 </div>
-                <Button type="button" size="sm" class="px-3" onClick={handleCopy}>
+                <Button type="button" size="sm" className="px-3" onClick={handleCopy}>
                     <span className="sr-only">Copy</span>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>

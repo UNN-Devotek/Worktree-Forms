@@ -16,6 +16,13 @@ interface SmartTableFieldProps {
 
 export const SmartTableField = forwardRef<HTMLDivElement, SmartTableFieldProps>(
   ({ field, mode = 'render' }, ref) => {
+    // Hooks must be called unconditionally
+    const { control } = useFormContext()
+    const { fields, append, remove } = useFieldArray({
+      control,
+      name: field.name
+    })
+
     // Builder Mode: Show placeholder or configuration UI shortcut
     if (mode === 'builder') {
       return (
@@ -39,11 +46,6 @@ export const SmartTableField = forwardRef<HTMLDivElement, SmartTableFieldProps>(
     }
 
     // Render/Preview Logic
-    const { control } = useFormContext()
-    const { fields,append, remove } = useFieldArray({
-      control,
-      name: field.name
-    })
 
 
 

@@ -20,18 +20,20 @@ export async function updateTheme(theme: string) {
     throw new Error("Invalid theme");
   }
 
-  await db.userPreference.upsert({
-    where: {
-      userId: session.user.id,
-    },
-    update: {
-      theme,
-    },
-    create: {
-      userId: session.user.id,
-      theme,
-    },
+  const existing = await db.userPreference.findFirst({
+    where: { userId: session.user.id, key: "theme", projectId: null },
   });
+
+  if (existing) {
+    await db.userPreference.update({
+      where: { id: existing.id },
+      data: { value: theme },
+    });
+  } else {
+    await db.userPreference.create({
+      data: { userId: session.user.id, key: "theme", value: theme },
+    });
+  }
 
   revalidatePath("/");
   return { success: true };

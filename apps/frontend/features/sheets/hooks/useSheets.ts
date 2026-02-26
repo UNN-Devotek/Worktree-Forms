@@ -53,6 +53,7 @@ export function useSheets(projectSlug: string) {
     } catch (error) {
       toast.error('Failed to create table');
     }
+    return undefined;
   };
 
   return {

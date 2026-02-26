@@ -81,7 +81,7 @@ export async function createAuditLog({
         projectId: projectId || null,
         action,
         resource,
-        details: details || null,
+        details: details ? JSON.stringify(details) : null,
         ipAddress,
       },
     });

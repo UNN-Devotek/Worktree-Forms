@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-    Check, Copy, Search, Atom, Layers, Boxes, LayoutGrid, EyeOff,
+    Check, Copy, Search, Atom, Layers, Boxes, LayoutGrid,
     Bold, Italic, AlignLeft, AlignCenter, AlignRight, Info, AlertTriangle,
     User, Settings, LogOut, Plus, Trash2, Star, ChevronRight, FileText,
 } from 'lucide-react';
@@ -383,17 +383,6 @@ function TablePreview() {
     );
 }
 
-// ── No-preview placeholder ──────────────────────────────────────────────────
-
-function NoPreview() {
-    return (
-        <div className="flex flex-col items-center justify-center h-20 text-muted-foreground/30 gap-1.5">
-            <EyeOff className="h-5 w-5" />
-            <span className="text-[10px]">Preview requires data context</span>
-        </div>
-    );
-}
-
 // ── Component data ──────────────────────────────────────────────────────────
 
 const ATOMS: ComponentEntry[] = [
@@ -687,7 +676,7 @@ const ATOMS: ComponentEntry[] = [
             <div className="w-full max-w-xs space-y-1">
                 <Label className="text-xs">Email Address</Label>
                 <Input type="email" placeholder="you@company.com" />
-                <p className="text-[10px] text-muted-foreground">We'll use this to contact you.</p>
+                <p className="text-[10px] text-muted-foreground">We&apos;ll use this to contact you.</p>
             </div>
         ),
     },
@@ -1319,7 +1308,7 @@ const ORGANISMS: ComponentEntry[] = [
                 <div className="space-y-1">
                     <Label className="text-xs">Email</Label>
                     <Input placeholder="you@example.com" />
-                    <p className="text-[10px] text-muted-foreground">We'll never share your email.</p>
+                    <p className="text-[10px] text-muted-foreground">We&apos;ll never share your email.</p>
                 </div>
                 <div className="space-y-1">
                     <Label className="text-xs">Password</Label>
@@ -1632,8 +1621,8 @@ const ORGANISMS: ComponentEntry[] = [
         description: 'Main drag-and-drop canvas where fields are arranged.', level: 'Organism', group: 'Form Builder',
         preview: (
             <div className="w-full rounded-lg border bg-background p-3 space-y-2 text-[10px]">
-                <div className="h-5 rounded border-2 border-dashed border-primary/20 bg-primary/5 flex items-center px-2 text-muted-foreground cursor-grab">⋮⋮  Text — "What is your name?"</div>
-                <div className="h-5 rounded border-2 border-dashed border-primary/20 bg-primary/5 flex items-center px-2 text-muted-foreground cursor-grab">⋮⋮  Email — "Email address"</div>
+                <div className="h-5 rounded border-2 border-dashed border-primary/20 bg-primary/5 flex items-center px-2 text-muted-foreground cursor-grab">⋮⋮  Text — &quot;What is your name?&quot;</div>
+                <div className="h-5 rounded border-2 border-dashed border-primary/20 bg-primary/5 flex items-center px-2 text-muted-foreground cursor-grab">⋮⋮  Email — &quot;Email address&quot;</div>
                 <div className="h-5 rounded border border-dashed border-muted-foreground/20 flex items-center justify-center text-muted-foreground/40">+ Drop field here</div>
             </div>
         ),
@@ -2315,7 +2304,7 @@ export default function ComponentLibraryPage() {
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <LayoutGrid className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                        <p className="font-medium text-muted-foreground">No components match "{search}"</p>
+                        <p className="font-medium text-muted-foreground">No components match &quot;{search}&quot;</p>
                         <p className="text-sm text-muted-foreground/60 mt-1">Try searching by name, export, or import path.</p>
                     </div>
                 ) : (

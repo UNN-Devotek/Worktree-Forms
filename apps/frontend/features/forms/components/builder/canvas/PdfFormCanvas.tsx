@@ -81,11 +81,11 @@ export function PdfFormCanvas({ pdfUrl }: PdfFormCanvasProps) {
                             Loading PDF...
                         </div>
                     }
-                    error={(error) => (
+                    error={() => (
                         <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
                             <div className="space-y-2">
                                 <p className="text-red-500 font-medium">Error loading PDF</p>
-                                <p className="text-xs max-w-[200px] break-words">{error?.message || 'Unknown error'}</p>
+                                <p className="text-xs max-w-[200px] break-words">Unable to load PDF</p>
                                 <a href={`/api/pdf-proxy?key=${pdfUrl}`} target="_blank" rel="noreferrer" className="text-sm underline text-blue-500">
                                     Download File
                                 </a>

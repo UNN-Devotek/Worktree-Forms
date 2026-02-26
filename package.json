@@ -20,6 +20,12 @@
     "migrate:reset": "npm run migrate:reset -w apps/backend",
     "seed": "npm run seed -w apps/backend"
   },
+  "overrides": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
     "@playwright/test": "^1.57.0",
@@ -31,7 +37,9 @@
     "@dnd-kit/sortable": "^10.0.0",
     "date-fns": "^4.1.0",
     "lodash.debounce": "^4.0.8",
+    "react": "^19.2.4",
     "react-calendar": "^4.8.0",
+    "react-dom": "^19.2.4",
     "y-leveldb": "^0.2.0"
   }
 }

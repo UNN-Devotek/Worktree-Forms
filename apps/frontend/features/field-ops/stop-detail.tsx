@@ -182,7 +182,7 @@ export function StopDetail({ stopId }: { stopId: number }) {
                     <div className="flex gap-2">
                         {/* Status Action Button */}
                         <div className="flex-1">
-                             <StatusActionButton stop={stop} distance={distance} inGeofence={inGeofence} updating={updateStatusMutation.isPending} onUpdate={updateStatusMutation.mutate} onNavigate={(path) => router.push(path)} />
+                             <StatusActionButton stop={stop} distance={distance} inGeofence={inGeofence} updating={updateStatusMutation.isPending} onUpdate={updateStatusMutation.mutate} onNavigate={(path: string) => router.push(path)} />
                         </div>
                         
                         {/* Call Button (New) */}

@@ -40,6 +40,15 @@ const buttonVariants = cva(
         /** Muted — dark grey, for inactive / unavailable actions */
         muted:
           "bg-zinc-500 text-white shadow-sm cursor-not-allowed pointer-events-none hover:bg-zinc-500",
+        /** Outline — bordered, transparent background */
+        outline:
+          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+        /** Ghost — no background, hover only */
+        ghost:
+          "hover:bg-accent hover:text-accent-foreground",
+        /** Link — looks like a hyperlink */
+        link:
+          "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 text-sm",

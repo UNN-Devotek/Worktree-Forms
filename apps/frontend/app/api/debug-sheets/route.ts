@@ -6,7 +6,6 @@ export async function GET() {
     const sheets = await db.sheet.findMany();
     const safeSheets = sheets.map(s => ({
         id: s.id,
-        slug: s.slug || 'no-slug', // Check if slug exists
         projectId: s.projectId,
         contentLen: s.content?.length
     }));

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import jwt from 'jsonwebtoken';
 
-// @ts-ignore
 export const GET = auth(async (req: any) => {
   if (!req.auth || !req.auth.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
