@@ -68,7 +68,7 @@ date: "2026-01-08"
 | **Database** | AWS DynamoDB + ElectroDB | Single-table design, TypeScript-first ODM, no schema migrations |
 | **Auth** | Auth.js (NextAuth v5) + `@auth/dynamodb-adapter` | Database sessions in DynamoDB, instant server-side revocation |
 | **API Pattern** | Hybrid — Server Actions (web) + REST (mobile) | Server Actions co-locate web mutations; REST provides versioned contract for mobile sync |
-| **Testing** | Vitest + vitest-dynalite + Playwright | Integration tests against DynamoDB Local; E2E via Playwright |
+| **Testing** | Vitest + Testcontainers (`@testcontainers/localstack`) + Playwright | Integration tests against DynamoDB Local container; E2E via Playwright |
 | **Monorepo** | npm workspaces (`apps/frontend`, `apps/backend`) | Shared types and tooling across web and Express API |
 
 ## Project Structure & Boundaries
@@ -508,39 +508,48 @@ The seed script runs in order — fully idempotent, safe to re-run at any time:
 
 Script is run with `tsx scripts/seed-dev.ts` (no compile step required). Running `docker compose down -v` wipes all data; re-running seed-dev restores it.
 
-#### Testing — vitest-dynalite
+#### Testing — Testcontainers (DynamoDB Local)
 
-Integration tests run against **vitest-dynalite** (not mocked SDK):
+Integration tests run against **`@testcontainers/localstack`** using the `amazon/dynamodb-local` image — the same image used in Docker Compose. `vitest-dynalite` was evaluated but replaced due to reduced maintenance activity (Story 0.9).
 
 ```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import dynalite from 'vitest-dynalite'
+// tests/setup/dynamodb.ts
+import { LocalstackContainer } from '@testcontainers/localstack'
+import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
+import { beforeAll, afterAll } from 'vitest'
 
-export default defineConfig({
-  test: {
-    setupFiles: ['vitest-dynalite/setup'],
-    globals: true,
-  },
+let container: LocalstackContainer
+
+beforeAll(async () => {
+  container = await new LocalstackContainer().withServices('dynamodb').start()
+  const client = new DynamoDBClient({ endpoint: container.getConnectionUri() })
+  await client.send(new CreateTableCommand({
+    TableName: 'worktree-test',
+    KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'SK', KeyType: 'RANGE' }],
+    AttributeDefinitions: [
+      { AttributeName: 'PK', AttributeType: 'S' },
+      { AttributeName: 'SK', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+  }))
 })
 
-// vitest-dynalite.config.ts
-export default {
-  tables: [
-    {
-      TableName: 'worktree-test',
-      KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'SK', KeyType: 'RANGE' }],
-      AttributeDefinitions: [
-        { AttributeName: 'PK', AttributeType: 'S' },
-        { AttributeName: 'SK', AttributeType: 'S' },
-      ],
-      BillingMode: 'PAY_PER_REQUEST',
-    },
-  ],
-}
+afterAll(async () => { await container.stop() })
 ```
 
-Rule: **Never mock the DynamoDB SDK**. Always run real queries against Dynalite. This catches access pattern bugs that mocks hide.
+```typescript
+// vitest.config.ts — separate integration pool, no Docker needed for unit tests
+export default defineConfig({
+  test: {
+    projects: [
+      { name: 'unit', include: ['**/*.unit.test.ts'] },
+      { name: 'integration', include: ['**/*.integration.test.ts'], setupFiles: ['tests/setup/dynamodb.ts'] },
+    ],
+  },
+})
+```
+
+Rule: **Never mock the DynamoDB SDK**. Always run real queries against the container. This catches access pattern bugs, GSI projections, and serialization issues that mocks hide.
 
 ### New Infrastructure Decisions (Phase 3 Enterprise)
 

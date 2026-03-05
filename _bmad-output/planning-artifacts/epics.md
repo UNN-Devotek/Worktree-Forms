@@ -239,13 +239,13 @@ So that repository functions are tested without mocking the SDK and without rely
 **Goal:** Implement the "Visa Wizard" for external users and secure Public Links for client visibility.
 **Value:** Subcontractors are automatically vetted (Insurance Check) before they can see sensitive project data.
 **Key Database Entities:** `ComplianceRequirement`, `ComplianceRecord`, `ExternalAccessRequest`.
-**FRs covered:** FR5.5, FR5.6, FR5.7, FR5.8, FR6.1, FR6.2, FR15.1, FR15.2, FR15.3.
+**FRs covered:** FR5.5, FR5.6, FR5.7, FR5.8, FR6.1, FR6.2, FR6.3, FR15.1, FR15.2, FR15.3.
 
 ### Epic 10: AI Automation & Intelligence Layer
 
 **Goal:** Deploy the Agentic Assistant, RAG Engine, and "Magic Forward" email ingestion to automate repetitive tasks.
 **Value:** Sarah can just forward an email to create a project, and ask the AI to "reschedule Mike" without clicking 10 buttons.
-**Key Database Entities:** `AiConversation`, `VectorEmbeddings` (pgvector).
+**Key Database Entities:** `AiConversation`, `VectorEmbedding` (DynamoDB metadata + Pinecone vector ID).
 **FRs covered:** FR8.1, FR8.2, FR11.1, FR11.2, FR11.3, FR11.4, FR16.1, FR18.1, NFR11.
 
 ### Epic 11: Help Center & Support System
@@ -289,6 +289,7 @@ FR5.8: Epic 9 - Visa Gate
 FR5.9: Epic 1 - Audit Log
 FR6.1: Epic 9 - Public Links
 FR6.2: Epic 9 - Password Protection
+FR6.3: Epic 9 - Marketing Landing Page
 FR7.1: Epic 6 - Assignment
 FR7.2: Epic 6 - Action Inbox
 FR7.3: Epic 6 - Notifications
@@ -355,7 +356,7 @@ So that I can establish a secure workspace for my team.
 **When** I click "Create Project" and enter "Headquarters Reno"
 **Then** a new Project entity is created with slug `headquarters-reno`
 **And** I am redirected to `/project/headquarters-reno`
-**And** a dedicated MinIO bucket path `/project-uuid/` is reserved (using UUID not Slug to allow renaming) (Arch #9)
+**And** a dedicated S3 path `{s3-bucket}/{project-uuid}/` is provisioned (using UUID not Slug to allow renaming) (Arch #9)
 **And** I am assigned the "Owner" role for this project
 **And** long project names are truncated with an ellipsis and show full text on hover (QA #4).
 
