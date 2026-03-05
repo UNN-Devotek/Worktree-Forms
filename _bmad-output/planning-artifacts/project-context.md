@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary & Vision
 
-**Worktree** is a self-hosted "Project Operating System" for field operations. It bridges the gap between back-office planning (Spreadsheets) and front-line execution (Mobile Forms).
+**Worktree** is a cloud-hosted "Project Operating System" for field operations. It bridges the gap between back-office planning (Spreadsheets) and front-line execution (Mobile Forms).
 
 - **Core Philosophy:** "Muddy Thumb" Usability.
   - If a technician cannot use it with one hand, in the rain, wearing gloves, **it is out**.
@@ -31,8 +31,8 @@
 
 ### A. Technical Constraints
 
-1.  **Self-Hosted Specificity:** Must run on a single VPS (Docker Compose). No Cloud-Native dependencies (AWS/Azure specific services) unless abstracted.
-2.  **Resource Efficiency:** Max 4GB RAM footprint for the entire stack.
+1.  **AWS Cloud Infrastructure:** Deployed on AWS managed services (ECS Fargate, DynamoDB, S3, ElastiCache, Pinecone). ~~No Cloud-Native dependencies~~ — _constraint removed 2026-03-05, strategic pivot to full AWS stack. OpenSearch Serverless replaced by Pinecone — see technical research 2026-03-05._
+2.  **Resource Efficiency:** ECS task sizes right-sized per service. No single-server RAM constraint.
 3.  **Offline-First:** The Mobile App MUST function 100% offline. Sync is an enhancement, not a requirement for usage.
 
 ### B. Design Constraints
@@ -54,6 +54,8 @@ We have consolidated the Product Plan and defined the Architecture.
 
 ## 5. Development Environment
 
-- **Command:** Always use `docker compose up --watch` to start the project.
+- **Command:** Always use `docker compose up --watch` to start the project (local dev still uses Docker Compose).
+- **Local DB:** DynamoDB Local (`amazon/dynamodb-local`) runs in Docker Compose for local development.
 - **Port:** The frontend is available at `http://localhost:3005`.
+- **AWS Services (local):** S3 connects to real AWS dev-environment resources. Pinecone uses real Pinecone free-tier API (no local equivalent needed). LocalStack is an option for S3 if offline dev is required.
 - **Workflow:** Use `/restart-worktree` to reset the environment.

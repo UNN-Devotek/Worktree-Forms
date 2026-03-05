@@ -129,9 +129,9 @@ Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, 
 
 ### Technical Success
 
-- **Reliability**: Self-hosted deployment runs via Docker with zero dependency hell.
-- **Scalability**: Handles 10,000+ submissions per form without UI lag in the Review tab.
-- **Security**: RBAC and Domain Restrictions successfully prevent unauthorized access in 100% of audit tests.
+- **Reliability**: AWS ECS Fargate deployment with managed database (DynamoDB), storage (S3), and cache (ElastiCache) — zero infrastructure ops overhead.
+- **Scalability**: Handles 10,000+ submissions per form without UI lag in the Review tab. DynamoDB scales automatically.
+- **Security**: Application-layer RBAC enforced on every API request; DynamoDB partition key design prevents cross-tenant data access.
 
 ## Product Scope
 
@@ -139,7 +139,7 @@ Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, 
 
 - **Core Form Builder**: Drag-and-drop, Logic, Validation.
 - **Form Landing Page**: All 6 tabs functional (Overview, Edit, Submit, Review, Integrations, Settings).
-- **Data Handling**: Submissions flow to database, files to MinIO.
+- **Data Handling**: Submissions flow to DynamoDB, files to AWS S3.
 - **Basic Admin**: User Management and Role assignment.
 - **Help Center**: Admin Editor (Plate.js) + Mobile Reader.
 

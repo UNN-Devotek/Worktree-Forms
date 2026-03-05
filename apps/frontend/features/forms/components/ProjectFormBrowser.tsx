@@ -66,16 +66,16 @@ export function ProjectFormBrowser({ projectId, projectSlug }: ProjectFormBrowse
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mb-6">
         <h2 className="text-xl font-semibold">Forms</h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setNewFolderDialogOpen(true)}>
-            <FolderPlus className="h-4 w-4 mr-2" />
-            New Folder
+            <FolderPlus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">New Folder</span>
           </Button>
           <Button size="sm" onClick={handleNewForm}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Form
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">New Form</span>
           </Button>
         </div>
       </div>

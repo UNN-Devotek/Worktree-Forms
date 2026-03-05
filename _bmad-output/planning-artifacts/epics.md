@@ -19,6 +19,116 @@ This document provides the complete epic and story breakdown for Worktree, decom
 
 ## Epic List
 
+### Epic 0: AWS Infrastructure Migration
+
+**Goal:** Establish the complete AWS managed infrastructure that replaces the self-hosted stack. This epic is a hard prerequisite — no database-touching stories in any other epic can begin until Stories 0.1–0.5 are complete.
+**Value:** The team can build all features against a production-grade, fully managed AWS backend with zero DB ops overhead.
+**Key AWS Services:** DynamoDB, S3, ElastiCache, Pinecone, ECS Fargate, ECR, ALB.
+**Blocks:** All epics with DB, storage, or vector search work.
+
+#### Story 0.1: DynamoDB Table Design & ElectroDB Entity Definitions
+
+As a Developer,
+I want a fully modelled DynamoDB single-table design with ElectroDB entity definitions for all data models,
+So that all application code has a type-safe, consistent data access layer.
+
+**Acceptance Criteria:**
+**Given** the existing 20+ Prisma models
+**Then** a single-table DynamoDB design is defined with composite key patterns for all entity types
+**And** ElectroDB `Entity` and `Service` definitions are written for every model (User, Project, Form, Submission, Sheet, Task, Route, etc.)
+**And** all relationships previously handled by Prisma foreign keys are expressed as composite sort key patterns (e.g. `PROJECT#<id>#FORM#<id>`)
+**And** a `lib/dynamo/` module exports the DynamoDB DocumentClient and all entity definitions
+**And** TypeScript types are inferred from ElectroDB schemas — no manual type definitions required.
+
+#### Story 0.2: S3 Bucket Setup & Storage Service Swap
+
+As a Developer,
+I want all file storage operations to use AWS S3 instead of MinIO,
+So that object storage is fully managed and globally available.
+
+**Acceptance Criteria:**
+**Given** the existing MinIO SDK usage (`minio` npm package)
+**Then** the `minio` package is removed and replaced with `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`
+**And** the storage service abstraction (`services/storage.ts`) is updated to use the S3 client
+**And** presigned URL generation uses `@aws-sdk/s3-request-presigner` (same UX, different SDK)
+**And** all `MINIO_*` environment variables are replaced with `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+**And** the `minio` service is removed from `docker-compose.yml`.
+
+#### Story 0.3: ElastiCache Redis Provisioning & Validation
+
+As a Developer,
+I want all Redis-dependent services (BullMQ, rate limiter, Hocuspocus pub-sub) to connect to AWS ElastiCache,
+So that caching and queuing are managed by AWS.
+
+**Acceptance Criteria:**
+**Given** the existing `REDIS_URL` environment variable
+**Then** `REDIS_URL` is updated to point to the ElastiCache endpoint
+**And** BullMQ workers start and process jobs successfully
+**And** `rate-limiter-flexible` connects and enforces rate limits
+**And** Hocuspocus pub-sub coordinates correctly across WebSocket connections
+**And** zero application code changes are required (connection string change only).
+
+#### Story 0.4: Pinecone Vector Search Setup & Embedding Service
+
+As a Developer,
+I want vector embeddings stored and queried via Pinecone,
+So that the AI RAG layer has a scalable vector search backend at zero upfront cost.
+
+> **Note:** Amazon OpenSearch Serverless was originally planned but carries a $350/month minimum cost floor — not justified at current scale (technical research 2026-03-05). Pinecone free tier starts at $0 and scales with actual usage. Re-evaluate OpenSearch Provisioned if hybrid BM25+semantic search becomes required.
+
+**Acceptance Criteria:**
+**Given** the existing `VectorEmbedding` Prisma model (pgvector) being replaced
+**Then** a Pinecone index is created with `projectId` and `submissionId` as metadata fields for filtered retrieval
+**And** a new `services/vector-search.ts` module wraps the Pinecone client for upsert and query operations
+**And** embeddings are stored with `projectId` and `submissionId` metadata for tenant-scoped retrieval
+**And** the `VectorEmbedding` DynamoDB entity stores metadata only (Pinecone vector ID, projectId, submissionId)
+**And** k-NN semantic search is supported for the AI assistant RAG queries
+**And** the `PINECONE_API_KEY` and `PINECONE_INDEX_NAME` environment variables are documented.
+
+#### Story 0.5: NextAuth DynamoDB Adapter
+
+As a Developer,
+I want NextAuth sessions and accounts stored in DynamoDB,
+So that authentication state is fully migrated off PostgreSQL.
+
+**Acceptance Criteria:**
+**Given** the existing Prisma NextAuth adapter
+**Then** `@auth/dynamodb-adapter` replaces the Prisma adapter in `apps/frontend/lib/auth.ts`
+**And** DynamoDB TTL is enabled on the auth table to auto-expire sessions
+**And** existing login flows work identically (email/password, magic links)
+**And** the auth table uses the standard `pk`/`sk`/`GSI1PK`/`GSI1SK` schema required by the adapter.
+
+#### Story 0.6: ECS Fargate + ECR + ALB Deployment Pipeline
+
+As a DevOps engineer,
+I want the application deployed on AWS ECS Fargate with an ECR image registry and ALB routing,
+So that deployment is fully managed with no server provisioning.
+
+**Acceptance Criteria:**
+**Given** the existing Docker Compose / Dokploy deployment
+**Then** ECR repositories are created for `app` and `ws-server` images
+**And** ECS task definitions are written for the Next.js app, Express backend, and Hocuspocus WS server
+**And** an Application Load Balancer routes HTTP/HTTPS traffic to the app service and WS traffic to the ws-server
+**And** the existing `Dockerfile` and `Dockerfile.backend` are compatible with ECS without modification
+**And** a GitHub Actions workflow builds, pushes to ECR, and deploys to ECS on push to `main`.
+
+#### Story 0.7: Environment Variable Migration
+
+As a Developer,
+I want all environment variables updated to reflect the AWS stack,
+So that no service attempts to connect to legacy self-hosted infrastructure.
+
+**Acceptance Criteria:**
+**Given** the existing `.env.example`
+**Then** `DATABASE_URL` is removed
+**And** `MINIO_*` variables are replaced with `AWS_S3_*` variables
+**And** `REDIS_URL` points to ElastiCache endpoint
+**And** new variables added: `AWS_REGION`, `DYNAMODB_TABLE_NAME`, `OPENSEARCH_ENDPOINT`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+**And** `docker-compose.yml` is updated to remove `db` and `minio` services
+**And** `.env.example` is updated with all new variable names and descriptions.
+
+---
+
 ### Epic 1: Core Project Foundation & Identity
 
 **Goal:** Establish the multi-tenant "Project" container, user authentication, and role-based access control system that underpins the entire application.
@@ -215,18 +325,21 @@ So that I can manage my team's access.
 **And** I can revoke or **Resend** expired invites (PM #2)
 **And** I can revoke invites or remove users (UI Map 17.0).
 
-### Story 1.3: Enforce RLS & RBAC
+### Story 1.3: Enforce Tenant Isolation & RBAC (DynamoDB)
 
 As a Developer,
-I want to ensure data isolation at the database level,
+I want to ensure data isolation at the application layer,
 So that users cannot access data from other projects or exceed their privileges.
 
 **Acceptance Criteria:**
 **Given** a user is logged in
-**When** they attempt to query `SELECT * FROM forms` via the API
-**Then** the query only returns rows where `project_id` matches their current project context
-**And** `current_setting` is set safely within a transaction to handle connection pooling (Arch #3)
-**And** if they try to `DELETE` a project without `OWNER` role, the DB throws a Policy Violation error (FR5.3, FR5.4).
+**When** they attempt to query any project resource via the API
+**Then** all DynamoDB queries are scoped with `projectId` as the partition key prefix (`PROJECT#<id>#ENTITY_TYPE#<id>`)
+**And** the RBAC middleware validates the user's `ProjectMember` record before executing any DynamoDB query
+**And** unauthorized requests return `403 Forbidden` before any DynamoDB call is made
+**And** if they try to delete a project without `OWNER` role, the service layer throws a permission error (FR5.3, FR5.4)
+**And** a shared `requireProjectAccess(userId, projectId, requiredRole)` utility is used consistently across all route handlers
+**And** integration tests verify cross-tenant data cannot be accessed by constructing requests with mismatched project IDs.
 
 ### Story 1.4: User Profile & Theme Preferences
 
@@ -887,18 +1000,20 @@ So that I understand what Worktree is.
 
 **Goal:** Deploy the Agentic Assistant, RAG Engine, and "Magic Forward" email ingestion.
 
-### Story 10.1: Native RAG Ingestion
+### Story 10.1: Native RAG Ingestion (Pinecone)
 
 As a System,
-I want to automatically index new submissions into a vector database,
-So that the AI can answer questions about them.
+I want to automatically index new submissions into Pinecone,
+So that the AI can answer questions about them with semantic vector search.
 
 **Acceptance Criteria:**
 **Given** a new form submission is saved
-**Then** a background job triggers
-**And** generates embeddings for the text content
+**Then** a background job (BullMQ via ElastiCache) triggers
+**And** generates embeddings for the text content via the configured AI provider (OpenAI/Anthropic)
 **And** applies a strict Token Usage Cap ($50/month hard limit) (PM #6)
-**And** stores them in `pgvector` with metadata filtering (FR8.2).
+**And** upserts the embedding into **Pinecone** with `projectId` and `submissionId` as metadata fields for tenant-scoped retrieval
+**And** supports k-NN semantic search for the AI assistant queries (FR8.2)
+**And** the `VectorEmbedding` DynamoDB entity stores the Pinecone vector ID and metadata for deletion/audit.
 
 ### Story 10.2: Magic Forward (Email Ingestion)
 

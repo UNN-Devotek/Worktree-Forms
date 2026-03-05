@@ -24,25 +24,25 @@ date: "2026-01-08"
 - **Core Domain**: Project-Centric Operations (Forms, Routes, Files, Chat) managed as unified "Aggregates".
 - **Field Tech Experience**: Offline-first Mobile App with "Append-Only Ledger" sync and "Contextual Compass" (Geofence) auto-launch.
 - **Data Ingestion**: "Magic Forward" (IMAP IDLE) for zero-touch project creation and "Bulk Paste Grid" for rapid data entry.
-- **Intelligence**: RAG Engine (pgvector) for context-aware queries and active Blueprint annotation.
+- **Intelligence**: RAG Engine (Pinecone vector search) for context-aware queries and active Blueprint annotation.
 - **Security**: Strict RBAC with "Project Visa" (Gated Access) for subcontractors.
 
 **Non-Functional Requirements:**
 
-- **Deployment**: Single-Server Self-Hosted (Docker/Coolify) with high density resource usage.
+- **Deployment**: AWS managed services (ECS Fargate + DynamoDB + S3 + ElastiCache + Pinecone).
 - **Performance**: <100ms API latency, <5% battery drain for geofencing, sub-2s offline startup.
-- **Reliability**: Sync resilience for long-running uploads and schema migration strategies.
-- **Data Isolation**: Postgres RLS enforcing strict multi-tenancy within a single database.
+- **Reliability**: Sync resilience for long-running uploads; DynamoDB point-in-time recovery enabled.
+- **Data Isolation**: Application-layer tenant isolation — all queries scoped by `projectId` partition key prefix; enforced in RBAC middleware before any DynamoDB call.
 
 **Scale & Complexity:**
 
 - **Primary Domain**: Full-Stack (Web + Mobile + Backend + AI).
-- **Complexity Level**: **High**. Combining Offline Sync, Geofencing, Real-time Sockets, and RAG in a self-hosted monolith is architecturally demanding.
+- **Complexity Level**: **High**. Combining Offline Sync, Geofencing, Real-time Sockets, and RAG in a multi-service AWS architecture is architecturally demanding.
 - **Estimated Components**: ~15 (Auth, Projects, Forms, Submissions, Routes, Chat, Files, AI, Email, Geofence, Notifications, Analytics, etc.).
 
 ### Technical Constraints & Dependencies
 
-- **Strict Self-Hosting**: Must run on standard Linux VPS without proprietary cloud services.
+- ~~**Strict Self-Hosting**: Must run on standard Linux VPS without proprietary cloud services.~~ _Constraint removed 2026-03-05 — strategic pivot to full AWS managed services stack._
 - **Mobile Native Bridge**: Capacitor required for "Background-to-Foreground" handoff.
 - **System Density**: Full stack must fit in <4GB RAM.
 - **Schema Evolution**: Backend must support multiple schema versions for offline clients.
@@ -170,9 +170,10 @@ Features should interact via **Public API** (exported functions) or **Events** (
 
 ### Development Workflow
 
-1.  **Database**: `npx prisma migrate dev`
-2.  **Infrastructure**: `docker-compose up -d` (DB, Redis, MinIO)
-3.  **App**: `npm run dev`
+1.  **Infrastructure**: `docker compose up --watch` (DynamoDB Local, Redis — matches ElastiCache protocol exactly)
+2.  **App**: Next.js + Express hot-reload via Compose Watch
+3.  **No migrations**: DynamoDB is schema-less — entity changes are code-only, no `prisma migrate dev`
+4.  **S3 + Pinecone**: Connect to real AWS dev-environment resources (no local equivalent needed)
 
 ## Core Architectural Decisions
 
@@ -180,17 +181,18 @@ Features should interact via **Public API** (exported functions) or **Events** (
 
 **Critical Decisions (Block Implementation):**
 
-- **ORM Selection**: Prisma (Standard, Type-safe).
+- **ODM Selection**: ElectroDB (TypeScript-first DynamoDB ODM, single-table design, full type inference). Replaces Prisma.
 - **API Pattern**: Hybrid (Server Actions for Web, REST for Mobile).
 - **UI Library**: **shadcn/ui** (User Mandate).
 
 ### Data Architecture
 
-- **Database**: PostgreSQL 16 (Verified Image: `postgres:16-alpine`).
-- **ORM**: **Prisma** (Latest). Chosen for robust migration capabilities and type safety.
-- **Multi-Tenancy**: **Row-Level Security (RLS)**.
-  - _Pattern_: All tables include `project_id`. RLS Policies enforce `project_id = current_setting('app.current_project_id')`.
-  - _Bypass_: Prisma Client extensions will handle session variable setting.
+- **Database**: **AWS DynamoDB** (single-table design).
+- **ODM**: **ElectroDB** (Latest). Chosen for TypeScript-first DynamoDB modeling, single-table design support, and type-safe query API. Replaces Prisma.
+- **Multi-Tenancy**: **Application-Layer Tenant Isolation**.
+  - _Pattern_: All DynamoDB items use composite keys with `PROJECT#<projectId>` as the partition key prefix. Every query is scoped at the service layer.
+  - _Enforcement_: A shared `requireProjectAccess(userId, projectId, requiredRole)` middleware validates membership before any DynamoDB operation. Unauthorized calls return 403 before hitting the DB.
+  - _No migration files_: DynamoDB is schema-less. Entity definitions in ElectroDB serve as the schema contract. Breaking changes are handled via attribute versioning.
 
 ### Data Architecture (Prisma Schema - High Level)
 
@@ -360,9 +362,16 @@ Features should interact via **Public API** (exported functions) or **Events** (
 
 ### Infrastructure & Deployment
 
-- **Deployment**: **Docker Compose** (Single Node).
-- **Orchestrator**: **Coolify**.
-- **Container Strategy**: "All-in-One" Monolith Container (Next.js) + Microservices for specialized tasks (if needed later) + Persistence Containers (DB, Redis, MinIO).
+- **Deployment**: **AWS ECS Fargate** (serverless containers — no EC2 provisioning).
+- **Image Registry**: **AWS ECR** (Elastic Container Registry).
+- **Load Balancing**: **AWS ALB** (Application Load Balancer) — HTTP/HTTPS for app, WebSocket routing for Hocuspocus WS server. ALB stickies WebSocket connections automatically.
+- **DNS**: **AWS Route 53** for domain management.
+- **CI/CD**: GitHub Actions with **OIDC** (no static AWS credentials) → build → push to ECR → ECS rolling deploy on push to `main`. `wait-for-service-stability: true` surfaces broken deploys in CI.
+- **IaC**: **AWS CDK TypeScript** — `ApplicationLoadBalancedFargateService` L2 construct for ECS + ALB. CDK L2 constructs available for DynamoDB, ElastiCache, and S3.
+- **Container Strategy**: Three ECS services — `app` (Next.js + Express), `ws-server` (Hocuspocus), `worker` (BullMQ). No persistence containers in ECS — all persistence is AWS managed services.
+- **Inter-Service Communication**: **ECS Service Connect** for internal service-to-service traffic (short DNS names, built-in retries).
+- **VPC Endpoints**: DynamoDB and S3 VPC Gateway Endpoints (free) — keeps AWS API traffic off the public internet, reduces NAT Gateway costs.
+- **Local Development**: Docker Compose with `amazon/dynamodb-local` (100% API compatible) and `redis:7-alpine` (`--maxmemory-policy noeviction`). S3 and Pinecone connect to real AWS dev-environment resources.
 
 ### New Infrastructure Decisions (Phase 3 Enterprise)
 
@@ -381,8 +390,23 @@ Features should interact via **Public API** (exported functions) or **Events** (
 - **Documentation**: **Swagger / OpenAPI 3.0** auto-generated from Zod Schemas (`zod-to-openapi`). Ensures AI Agent always has the correct Tool definitions.
 - **Localization (i18n)**: Backend-Driven. API inspects `Accept-Language` header and returns localized error messages (English/Spanish).
 
-**Redis Strategy:**
+**Redis / ElastiCache Strategy:**
 
-- **Persistence**: Used for Yjs Collaboration State (Smart Sheets).
-- **Rate Limiting**: Used as the distributed counter store for the `rate-limiter-flexible` middleware (GLOBAL limits, not per-instance).
-- **Job Queues**: BullMQ backing for Webhooks and IMAP Ingestion.
+- **Provider**: **AWS ElastiCache for Redis** — fully managed, zero code changes from self-hosted Redis (same protocol, same client libraries).
+- **Pub-Sub**: Hocuspocus WebSocket coordination for Yjs Collaboration State (Smart Sheets).
+- **Rate Limiting**: Distributed counter store for `rate-limiter-flexible` middleware (global limits across ECS tasks).
+- **Job Queues**: BullMQ backing for Webhooks, background jobs, and email ingestion — connects to ElastiCache via `REDIS_URL`.
+
+**Object Storage Strategy:**
+
+- **Provider**: **AWS S3** — replaces self-hosted MinIO. SDK swap only (`minio` → `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`).
+- **Presigned URLs**: Pattern unchanged — backend generates presigned URLs, browser uploads/downloads directly to S3.
+- **Bucket Structure**: Single bucket `worktree-{env}` with prefix-based organization (same as MinIO).
+
+**Vector Search Strategy:**
+
+- **Provider**: **Pinecone** — replaces pgvector PostgreSQL extension. _Amazon OpenSearch Serverless was originally planned but carries a $350/month minimum cost floor, which is not justified at Worktree's current scale (research finding: 2026-03-05). Pinecone starts at $0 and scales with actual usage._
+- **Index Design**: Pinecone index with `projectId` and `submissionId` as metadata fields for filtered retrieval.
+- **Query Pattern**: k-NN semantic search for AI assistant RAG queries. Migrate to OpenSearch Provisioned if hybrid keyword+vector search becomes required at scale.
+- **Integration**: `services/vector-search.ts` wraps Pinecone client — AI routes call this service, not DynamoDB directly.
+- **Cost**: Free tier → pay-per-use. Re-evaluate at 10k+ DAU or if hybrid BM25+semantic search is needed.
