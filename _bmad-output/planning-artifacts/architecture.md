@@ -334,7 +334,7 @@ Features should interact via **Public API** (exported functions) or **Events** (
 - **Container Strategy**: Three ECS services — `app` (Next.js + Express), `ws-server` (Hocuspocus), `worker` (BullMQ). No persistence containers in ECS — all persistence is AWS managed services.
 - **Inter-Service Communication**: **ECS Service Connect** for internal service-to-service traffic (short DNS names, built-in retries).
 - **VPC Endpoints**: DynamoDB and S3 VPC Gateway Endpoints (free) — keeps AWS API traffic off the public internet, reduces NAT Gateway costs.
-- **Local Development**: Docker Compose with `amazon/dynamodb-local` + `redis:7` + optional `pinecone-local`. S3 uses a real AWS dev bucket. See the Local Development section below for full service map and configuration.
+- **Local Development**: Docker Compose with `amazon/dynamodb-local` + `redis:7` + `localstack` (S3) + optional `pinecone-local`. Fully offline — no real AWS credentials required for local dev. See the Local Development section below for full service map and configuration.
 
 ### Local Development Environment
 
@@ -350,6 +350,7 @@ _Research source: technical-Local-Dev-AWS-Stack-Worktree-research-2026-03-05.md_
 | `dynamodb-local` | `amazon/dynamodb-local` | `8000` | AWS DynamoDB |
 | `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8001` | DX tool only — not in production |
 | `redis` | `redis:7` | `6379` | AWS ElastiCache for Redis 7.1 |
+| `localstack` | `localstack/localstack` | `4566` | AWS S3 (fully local, no credentials) |
 | `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | Pinecone (in-memory, 100K record limit) |
 
 #### Critical Configuration Rules
@@ -401,6 +402,9 @@ Local `.env.local` (gitignored):
 DYNAMODB_ENDPOINT=http://dynamodb-local:8000
 DYNAMODB_TABLE_NAME=worktree-local
 REDIS_URL=redis://redis:6379
+# S3 — LocalStack
+S3_ENDPOINT=http://localstack:4566
+S3_BUCKET=worktree-local
 # Pinecone — option A: local container
 PINECONE_API_KEY=local
 PINECONE_HOST=http://pinecone-local:5080
@@ -412,18 +416,74 @@ Production `.env` (injected by ECS Task Definition / GitHub Actions secrets):
 # No DYNAMODB_ENDPOINT set → SDK uses real DynamoDB endpoint
 DYNAMODB_TABLE_NAME=worktree-prod
 REDIS_URL=rediss://<elasticache-cluster-endpoint>:6379
+# No S3_ENDPOINT set → SDK uses real AWS S3
+S3_BUCKET=worktree-prod
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=[real]
+AWS_SECRET_ACCESS_KEY=[real]
 PINECONE_API_KEY=<real-key>
 # No PINECONE_HOST override → SDK uses real Pinecone endpoint
 ```
 
-#### S3 — Real AWS Dev Bucket (no local emulation)
+#### S3 — LocalStack (fully local, no AWS credentials required)
 
-Offline S3 is not a stated requirement for local development. Using a real `worktree-dev` S3 bucket in a sandbox AWS account is the recommended approach:
-- Simpler — no LocalStack overhead
-- Zero emulation gap — presigned URL behavior is identical to production
-- Cost is negligible for dev-scale data volumes
+S3 runs locally via **LocalStack Community Edition** (`localstack/localstack`). This means local dev requires zero real AWS credentials for storage.
 
-LocalStack S3 remains an option if offline dev becomes a requirement. The SDK `endpoint` override pattern is identical to DynamoDB Local.
+```yaml
+# docker-compose.yml
+localstack:
+  image: localstack/localstack:latest
+  environment:
+    - SERVICES=s3
+    - DEFAULT_REGION=us-east-1
+    - AWS_DEFAULT_REGION=us-east-1
+  ports:
+    - "4566:4566"
+  volumes:
+    - localstack-data:/var/lib/localstack
+```
+
+S3 client factory (endpoint-switched):
+```typescript
+// lib/s3.ts
+import { S3Client } from '@aws-sdk/client-s3'
+
+export const s3 = new S3Client({
+  region: process.env.AWS_REGION ?? 'us-east-1',
+  ...(process.env.S3_ENDPOINT && {
+    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4566' locally
+    forcePathStyle: true,               // Required for LocalStack — virtual host style fails locally
+  }),
+  // Fake credentials required by SDK when hitting LocalStack (any non-empty values work)
+  ...(process.env.S3_ENDPOINT && {
+    credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+  }),
+})
+```
+
+Local `.env.local`:
+```bash
+S3_ENDPOINT=http://localstack:4566
+S3_BUCKET=worktree-local
+# No real AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY needed for local dev
+```
+
+Production (no S3_ENDPOINT set → SDK uses real AWS S3):
+```bash
+S3_BUCKET=worktree-prod
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=[real]
+AWS_SECRET_ACCESS_KEY=[real]
+# S3_ENDPOINT not set → SDK uses real AWS endpoint
+```
+
+**The seed script creates the LocalStack bucket** on first run:
+```bash
+# scripts/seed-dev.sh (step 0 — runs before DynamoDB table creation)
+aws s3 mb s3://worktree-local \
+  --endpoint-url http://localstack:4566 \
+  --region us-east-1 2>/dev/null || true  # idempotent — ignore if already exists
+```
 
 #### Pinecone — Two Valid Options
 
@@ -438,13 +498,15 @@ LocalStack S3 remains an option if offline dev becomes a requirement. The SDK `e
 
 Replaces the old Prisma-based `seed-dev.sh`. The new script must:
 
-1. **Create the DynamoDB table** with correct `KeySchema`, `AttributeDefinitions`, and all GSIs — skip creation if table already exists (`ResourceInUseException` caught)
-2. **Seed dev users** — `admin@worktree.pro` (OWNER role) and `user@worktree.com` (MEMBER role) with bcrypt-hashed passwords
-3. **Seed a sample project** with Forms, Sheets (with columns), and Routes sufficient for UI development
-4. **Auth adapter records** — seed NextAuth session table entries for quick login in dev
-5. **Idempotent** — using DynamoDB `PutItem` with `ConditionExpression: "attribute_not_exists(PK)"` so re-runs don't duplicate data
+The seed script runs in order — fully idempotent, safe to re-run at any time:
 
-Script is run with `tsx scripts/seed-dev.ts` (no build step required).
+1. **Create S3 bucket in LocalStack** — `aws s3 mb s3://worktree-local --endpoint-url http://localstack:4566` — ignores error if already exists
+2. **Create DynamoDB table** with correct `KeySchema`, `AttributeDefinitions`, and all GSIs — catches `ResourceInUseException` if table exists
+3. **Seed dev users** — `admin@worktree.pro` (OWNER role) and `user@worktree.com` (MEMBER role) with bcrypt-hashed passwords; uses `PutItem` with `ConditionExpression: "attribute_not_exists(PK)"` to skip duplicates
+4. **Seed a sample project** with Forms, Sheets (with columns), and Routes sufficient for UI development
+5. **Auth adapter records** — seed NextAuth session/account records for dev users so login works without registering
+
+Script is run with `tsx scripts/seed-dev.ts` (no compile step required). Running `docker compose down -v` wipes all data; re-running seed-dev restores it.
 
 #### Testing — vitest-dynalite
 

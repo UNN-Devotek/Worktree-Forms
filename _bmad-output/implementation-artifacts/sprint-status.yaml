@@ -42,6 +42,7 @@ development_status:
   0-5-nextauth-dynamodb-adapter: backlog
   0-6-ecs-fargate-ecr-alb-pipeline: backlog
   0-7-environment-variable-migration: backlog
+  0-8-local-dev-environment-seed-script: backlog
   epic-0-retrospective: optional
 
   # Epic 1: Core Project Foundation & Identity

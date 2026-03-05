@@ -1,710 +1,174 @@
-# 📚 Claude Development Guide - Worktree
+# Worktree — Gemini Development Guide
 
-**Last Updated**: December 16, 2025 (Docker Setup Documentation)
-**For**: Development Team
-**Quick Access**: Bookmark this file!
-
----
-
-## ⚡ Deployment & Workflow
-
-### Development Cycle
-
-1. **Review Codebase**
-   - Read `README.md` and project structure.
-
-   > [!IMPORTANT]
-   > **NO LOCALHOST RULE**: Never use `localhost` or `127.0.0.1` in the codebase for binding or accessing services, as this breaks Docker networking. Always bind to `0.0.0.0` and use service names (e.g., `app`, `db`) or environment variables.
-
-2. **Make Changes**
-   - Implement features or fixes.
-
-3. **Pre-Deployment Checks**
-
-   ```bash
-   # Run tests
-   npm run test
-
-   # Verify build
-   npm run build
-   ```
-
-4. **Deploy**
-   - Commit and push to GitHub.
-   - Dokploy handles the deployment.
-   ```bash
-   git push origin main
-   ```
-
-### Access & Testing
-
-- **Live Site**: [https://worktree.pro](https://worktree.pro)
-- **API Documentation**: [https://worktree.pro/api/docs](https://worktree.pro/api/docs)
-- **MinIO Guide**: [`docs/minio-guide.md`](./docs/minio-guide.md)
-
-### Common Tasks
-
-```bash
-# Run tests
-npm run test
-
-# Linting
-npm run lint
-```
+**Last Updated**: 2026-03-05
+**Stack**: Next.js + AWS (DynamoDB, S3, ElastiCache, Pinecone) + ECS Fargate
 
 ---
 
-## 🐳 Local Development Setup
+## Project Overview
 
-### Prerequisites
+**Worktree** is a cloud-hosted "Project Operating System" for field operations — bridging back-office planning (spreadsheets) with front-line execution (mobile forms). Core promise: a row in the spreadsheet = a form on the phone = a pin on the map.
 
-- Docker Desktop installed and running
-- `.env` file configured with external service connections (see `.env.example`)
+- **Frontend**: Next.js App Router (TypeScript, strict mode)
+- **Database**: AWS DynamoDB + ElectroDB ODM (single-table design, no SQL, no migrations)
+- **Auth**: Auth.js (NextAuth v5) + `@auth/dynamodb-adapter`
+- **Storage**: AWS S3 (presigned URLs, no public bucket access)
+- **Cache / Queues**: AWS ElastiCache for Redis 7 (BullMQ + Hocuspocus pub-sub)
+- **Vector Search**: Pinecone (RAG for AI assistant)
+- **Real-time**: Hocuspocus WebSocket server (Yjs CRDT for Smart Grid collaboration)
+- **Production**: AWS ECS Fargate (3 services: `app`, `ws-server`, `worker`)
+- **CI/CD**: GitHub Actions → ECR → ECS rolling deploy
 
-> [!IMPORTANT]
-> Local development connects to **external Dokploy services** (database and MinIO). You must have the `.env` file properly configured with these connection details.
+---
+
+## Local Development
 
 ### Quick Start
 
 ```bash
-# 1. Ensure .env file exists with external connections
-# (Database and MinIO hosted on Dokploy)
-
-# 2. Create persistent data volumes (one-time, safe to re-run)
-bash scripts/init-volumes.sh
-
-# 3. Start the application with Docker Compose Watch
-# NOTE: Always use --watch in development for instant file sync without polling overhead
-docker compose up --watch
-
-# 4. In a second terminal: run migrations + seed dev data (one-time, safe to re-run)
-bash scripts/seed-dev.sh
-
-# 5. Check logs for successful startup
-docker-compose logs -f app
-
-# 6. Access the application
-# Frontend: http://localhost:3100
-# Backend API: http://localhost:5100
-# Health Check: http://localhost:5100/api/health
-
-# Dev login credentials (shown on login page in development mode):
-#   Admin:  admin@worktree.pro  / password
-#   User:   user@worktree.com   / password
+cp .env.example .env.local        # no real AWS credentials needed for local dev
+docker compose up --watch         # starts DynamoDB Local, Redis, LocalStack S3, app, ws-server, worker
+bash scripts/seed-dev.sh          # creates S3 bucket + DynamoDB tables + seeds dev data (idempotent)
 ```
 
-### Required Environment Variables
+- **Frontend**: http://localhost:3005
+- **DynamoDB Admin UI**: http://localhost:8001
+- **Dev credentials**: `admin@worktree.pro / password` | `user@worktree.com / password`
 
-Your `.env` file must include:
+### Local Service Map
+
+| Service | Image | Port |
+|---|---|---|
+| App (Next.js + API) | Project Dockerfile | 3005 |
+| WS Server (Hocuspocus) | Project Dockerfile | 1234 |
+| Worker (BullMQ) | Project Dockerfile | — |
+| DynamoDB Local | `amazon/dynamodb-local` | 8000 |
+| DynamoDB Admin | `aaronshaf/dynamodb-admin` | 8001 |
+| Redis | `redis:7` | 6379 |
+| LocalStack (S3) | `localstack/localstack` | 4566 |
+| Pinecone Local (optional) | `pinecone-io/pinecone-local` | 5080 |
+
+### Key Environment Variables (`.env.local`)
 
 ```bash
-# Application Ports
-PORT=3100
-BACKEND_PORT=5100
-NODE_ENV=development
-
-# External Database Connection (Dokploy)
-DATABASE_URL=postgresql://[credentials-from-dokploy]
-
-# External MinIO Connection
-# NOTE: For local dev, you need external API access to MinIO
-# Currently https://minio.worktree.pro points to Console (port 9002)
-# For API access (port 9004), you may need to use direct IP or set up a second domain
-MINIO_PUBLIC_URL=https://minio.worktree.pro
-MINIO_ENDPOINT=https://minio.worktree.pro
-MINIO_USE_SSL=true
-MINIO_HOST=minio.worktree.pro
-MINIO_PORT=443
-MINIO_ACCESS_KEY=[get-from-dokploy]
-MINIO_SECRET_KEY=[get-from-dokploy]
-MINIO_BUCKET_NAME=worktree
-
-# JWT Configuration
-JWT_SECRET=[32+-character-secret]
-JWT_EXPIRE=15m
-JWT_REFRESH_EXPIRE=7d
-
-# Frontend URLs
-# NEXT_PUBLIC_API_URL should be empty for local dev to use Next.js proxy rewrite
-# NEXT_PUBLIC_API_URL=http://localhost:5100/api
-NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
+DYNAMODB_ENDPOINT=http://dynamodb-local:8000   # Docker service name — NOT localhost
+DYNAMODB_TABLE_NAME=worktree-local
+REDIS_URL=redis://redis:6379
+# S3 — LocalStack (no real AWS credentials needed)
+S3_ENDPOINT=http://localstack:4566
+S3_BUCKET=worktree-local
+AWS_ACCESS_KEY_ID=local                         # fake creds — LocalStack accepts anything
+AWS_SECRET_ACCESS_KEY=local
+AWS_REGION=us-east-1
+# Pinecone — real free-tier key OR local container
+PINECONE_API_KEY=[real free-tier key OR 'local' for local container]
+# PINECONE_HOST=http://pinecone-local:5080      # uncomment if using local container
+AUTH_SECRET=[32+ chars]
+NEXTAUTH_URL=http://localhost:3005
 ```
 
-> [!WARNING]
-> Never commit the `.env` file to git. It contains sensitive credentials and is already in `.gitignore`.
-
-### Stopping Services
-
-```bash
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes (clean slate)
-docker-compose down -v
-```
-
-### Rebuilding After Code Changes
-
-```bash
-# Rebuild and restart with Watch
-docker compose up --watch --build
-
-# View logs during rebuild
-docker compose up --watch --build
-docker-compose logs -f app
-
-> [!NOTE]
-> **Hot Reload**:
-> Hot reload is enabled for the frontend via volume binding (`./apps/frontend:/app/apps/frontend`) and forced polling (`WATCHPACK_POLLING=true`) to support Windows environments. Changes to frontend files should reflect immediately without rebuilding.
-```
-
-### Database Operations
-
-```bash
-# Run migrations (connects to external Dokploy DB)
-docker-compose exec app sh -c "cd apps/backend && npx prisma migrate deploy"
-
-# Check migration status
-docker-compose exec app sh -c "cd apps/backend && npx prisma migrate status"
-
-# Access Prisma Studio (connects to external DB)
-docker-compose exec app sh -c "cd apps/backend && npx prisma studio"
-```
-
-### Troubleshooting Local Development
-
-**Container won't start:**
-
-```bash
-# Check logs
-docker-compose logs app
-
-# Look for "✓ Environment validation passed"
-# If validation fails, check your .env file
-
-# Check if ports are available
-netstat -ano | findstr :3100
-netstat -ano | findstr :5100
-```
-
-**Database connection failed:**
-
-- Verify `DATABASE_URL` in `.env` points to external Dokploy database
-- Check firewall allows outbound connections to external database
-- Ensure external database is accessible and running
-
-**MinIO connection failed:**
-
-- Verify `MINIO_PUBLIC_URL` in `.env` is set to `https://minio.worktree.pro`
-- Check `MINIO_USE_SSL=true` for external HTTPS connection
-- Test MinIO access: `curl https://minio.worktree.pro`
-
-**Clean restart:**
-
-```bash
-# Stop everything, remove volumes, rebuild
-docker-compose down -v
-docker compose up --watch --build
-```
+> **Critical**: DynamoDB Local must start with `-sharedDb` flag. Without it, hot-reload forks see isolated datasets.
+> **Critical**: Redis must use `maxmemory-policy noeviction` (required for BullMQ).
+> **Critical**: S3 client needs `forcePathStyle: true` when `S3_ENDPOINT` is set (LocalStack requires path-style addressing).
+> **Critical**: Never add `export const runtime = 'edge'` to routes using AWS SDK — Node.js runtime only.
 
 ---
 
-## 🏗️ Project Structure
+## Architecture Rules (The Law)
 
-```
-Worktree-Forms/
-├── apps/
-│   ├── frontend/                # Next.js 14 App Router
-│   │   ├── app/
-│   │   │   ├── (auth)/         # Auth routes (login, signup, reset)
-│   │   │   ├── (admin)/        # Admin pages (requires role: admin)
-│   │   │   ├── dashboard/      # User dashboard
-│   │   │   ├── forms/          # Form builder & renderer
-│   │   │   ├── layout.tsx      # Root layout
-│   │   │   └── page.tsx        # Home page
-│   │   ├── components/
-│   │   │   ├── auth/           # Auth components
-│   │   │   ├── admin/          # Admin components
-│   │   │   ├── forms/          # Form builder components
-│   │   │   └── ui/             # Shadcn/ui wrappers
-│   │   ├── lib/
-│   │   │   ├── api.ts          # API client
-│   │   │   ├── auth.ts         # Auth utilities
-│   │   │   └── hooks.ts        # Custom React hooks
-│   │   ├── tailwind.config.ts  # Ameritech colors
-│   │   └── package.json
-│   │
-│   └── backend/                 # Express.js
-│       ├── src/
-│       │   ├── routes/
-│       │   │   ├── auth.ts      # Auth endpoints
-│       │   │   ├── users.ts     # User CRUD
-│       │   │   ├── roles.ts     # Role management
-│       │   │   ├── forms.ts     # Form CRUD
-│       │   │   └── admin.ts     # Admin endpoints
-│       │   ├── middleware/
-│       │   │   ├── auth.ts      # JWT verification
-│       │   │   ├── rbac.ts      # Role-based access control
-│       │   │   └── audit.ts     # Audit logging
-│       │   ├── models/
-│       │   │   └── prisma/      # Prisma schema
-│       │   ├── services/
-│       │   │   ├── auth.ts
-│       │   │   ├── user.ts
-│       │   │   └── form.ts
-│       │   ├── utils/
-│       │   │   ├── validators.ts # Zod schemas
-│       │   │   └── errors.ts     # Error handling
-│       │   └── index.ts         # Express app entry
-│       ├── tests/
-│       ├── migrations/          # Database migrations
-│       └── package.json
-│
-├── docs/                        # Documentation
-├── docker-compose.yml          # Docker orchestration
-├── Dockerfile.frontend
-├── Dockerfile.backend
-├── .env.example
-├── .gitignore
-├── package.json                # Root workspaces config
-└── README.md
-```
+1. **Feature Rule**: All logic in `apps/frontend/features/{domain}`. No loose files in `components/`.
+2. **Verify Before Build**: Architecture must be approved in `_bmad-output/planning-artifacts/architecture.md` before writing code.
+3. **Strict Types**: `noImplicitAny` ON. Zod schemas required for ALL API inputs.
+4. **Never mock DynamoDB SDK**: Use `vitest-dynalite` for integration tests — run real queries.
+5. **All DB calls scoped**: Every DynamoDB query passes through `requireProjectAccess(userId, projectId, role)` first.
+6. **No migrations**: DynamoDB is schema-less. ElectroDB entity definitions are the schema contract.
 
 ---
 
-## 💻 Code Standards
+## Tech Stack Summary
 
-### TypeScript
-
-- **Strict Mode**: Always enabled (`"strict": true`)
-- **Module Resolution**: ESM-compatible
-- **Type Definitions**: Explicit types for all function params & returns
-- **No `any`**: Use `unknown` if truly dynamic, then narrow
-
-### File Naming
-
-- **Components**: PascalCase (`LoginForm.tsx`, `UserCard.tsx`)
-- **Utilities**: camelCase (`authUtils.ts`, `formatDate.ts`)
-- **Types/Interfaces**: PascalCase (`User.ts`, `FormSchema.ts`)
-- **Constants**: UPPER_SNAKE_CASE (`API_BASE_URL`, `DEFAULT_TIMEOUT`)
-- **Folders**: kebab-case (`auth-forms/`, `admin-pages/`)
-
-### Function Design
-
-- **Single Responsibility**: One job per function
-- **Pure Functions**: Prefer no side effects
-- **Error Handling**: Explicit try-catch, never silent failures
-- **Validation**: Use Zod for schemas, validate at boundaries
-
-### React/Next.js Patterns
-
-- **Hooks Only**: No class components
-- **Context for State**: Use React Context or TanStack Query for global state
-- **Server Components**: Use in Next.js 14 by default (mark `'use client'` only when needed)
-- **API Routes**: Use route handlers in `app/api/`
-
-### Component Library
-
-> [!IMPORTANT]
-> **Every new component must be registered in the Component Library.** When creating any new UI component (atoms, molecules, or organisms), add it to `apps/frontend/app/(dashboard)/component-library/page.tsx` in the appropriate `ATOMS`, `MOLECULES`, or `ORGANISMS` array. Include a static live preview using hard-coded dummy data — no API calls or context providers required in the preview.
-
-### Backend (Express)
-
-- **Middleware Chain**: Auth → RBAC → Validation → Handler → Error
-- **Status Codes**: 200 (OK), 201 (Created), 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found), 500 (Server Error)
-- **Response Format**: `{ success: boolean, data?, error?, message? }`
-- **Error Handling**: Centralized error middleware catches all throws
+| Concern | Decision |
+|---|---|
+| Language | TypeScript (strict) |
+| Frontend | Next.js App Router |
+| Components | shadcn/ui + Tailwind CSS |
+| Database | AWS DynamoDB + ElectroDB |
+| Auth | Auth.js v5 + `@auth/dynamodb-adapter` |
+| Storage | AWS S3 (`@aws-sdk/client-s3`) |
+| Cache/Queues | ElastiCache Redis 7 / BullMQ |
+| Vector Search | Pinecone (`@pinecone-database/pinecone` v5+) |
+| Real-time | Hocuspocus + Yjs CRDT |
+| Testing | Vitest + vitest-dynalite + Playwright |
+| IaC | AWS CDK TypeScript |
+| CI/CD | GitHub Actions OIDC → ECR → ECS |
 
 ---
 
-## 🧪 Testing Standards
+## Data Architecture
 
-### Coverage Requirements
+- **Single-table DynamoDB design** — all entities in one table `worktree-{env}`
+- **Partition key**: `PK` — pattern `PROJECT#<projectId>` for project-scoped entities
+- **Sort key**: `SK` — pattern `<ENTITY_TYPE>#<entityId>`
+- **Multi-tenancy**: Application-layer isolation via `requireProjectAccess()` middleware
+- **No RLS, no triggers**: All enforcement is code-level
 
-- **Minimum**: ≥90% code coverage
-- **Exceptions**: Generated code, migrations, config files
-- **Measurement**: `npm run test:coverage`
-
-### Test Types
-
-**Unit Tests** (Vitest)
-
-```typescript
-// test/utils.test.ts
-import { describe, it, expect } from "vitest";
-import { formatDate } from "@/lib/utils";
-
-describe("formatDate", () => {
-  it("formats ISO date to readable format", () => {
-    expect(formatDate("2025-12-11")).toBe("Dec 11, 2025");
-  });
-});
-```
-
-**Integration Tests** (Jest)
-
-```typescript
-// test/api.test.ts
-import request from "supertest";
-import app from "@/index";
-
-describe("POST /api/auth/login", () => {
-  it("returns JWT token on successful login", async () => {
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "user@example.com", password: "password123" });
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.token).toBeDefined();
-  });
-});
-```
-
-**E2E Tests** (Playwright)
-
-```typescript
-// tests/e2e/login.spec.ts
-import { test, expect } from "@playwright/test";
-
-test("user can login and see dashboard", async ({ page }) => {
-  await page.goto("http://<your-domain>/login");
-  await page.fill('input[name="email"]', "user@example.com");
-  await page.fill('input[name="password"]', "password123");
-  await page.click('button:has-text("Login")');
-  await expect(page).toHaveURL("/dashboard");
-});
-```
+See `_bmad-output/planning-artifacts/architecture.md` for the full entity reference (pending Story 0.1 completion).
 
 ---
 
-## 🔐 Security Checklist
+## Key File Locations
 
-Before deploying to production:
-
-- [ ] All secrets moved to `.env` (no hardcoded values)
-- [ ] JWT_SECRET is 32+ characters
-- [ ] HTTPS enforced in production
-- [ ] CORS configured for allowed domains only
-- [ ] Rate limiting enabled on auth endpoints
-- [ ] Input validation on all endpoints (Zod)
-- [ ] SQL injection prevention via Prisma
-- [ ] CSRF tokens on state-changing requests
-- [ ] Password hashing uses bcrypt 10+ rounds
-- [ ] Audit logs enabled and monitored
-- [ ] Dependencies scanned for vulnerabilities (`npm audit`)
+| File | Purpose |
+|---|---|
+| `_bmad-output/planning-artifacts/architecture.md` | Full system architecture |
+| `_bmad-output/planning-artifacts/project-context.md` | Project constraints + dev environment |
+| `_bmad-output/planning-artifacts/epics.md` | Feature epics and stories |
+| `_bmad-output/implementation-artifacts/sprint-status.yaml` | Story status tracking |
+| `scripts/seed-dev.sh` | DynamoDB table creation + dev data seed |
+| `apps/frontend/lib/dynamodb.ts` | DynamoDB client (endpoint-switched) |
+| `apps/frontend/lib/s3.ts` | S3 client |
+| `apps/backend/src/entities/` | ElectroDB entity definitions |
+| `apps/backend/src/middleware/rbac.ts` | `requireProjectAccess()` |
 
 ---
 
-## 🐛 Troubleshooting
+## S3 File Handling
 
-### Docker Issues
+Files are NOT served from public S3/LocalStack URLs. Pattern:
+1. Client requests presigned PUT URL from backend → uploads directly to S3/LocalStack
+2. Client requests presigned GET URL from backend → redirects (302) to it
+3. All files tracked in `FileUpload` DynamoDB entity (`objectKey`, `projectId`, `submissionId`)
 
-**Services won't start**
+**Seed script creates the S3 bucket** in LocalStack as step 1 before any DynamoDB operations.
 
-```bash
-# Check logs
-docker-compose logs -f
+## Seed Data (`seed-dev.sh`)
 
-# Restart everything
-docker-compose down -v
-docker-compose up -d
-```
-
-**Port already in use**
-
-```bash
-# Change port in .env
-# Or kill process using port
-lsof -i :3000  # Find process
-kill -9 <PID>  # Kill it
-```
-
-### Database Issues
-
-**Migrations failed**
-
-```bash
-# View migration status
-npm run migrate:status
-
-# Reset and retry
-npm run migrate:reset
-npm run migrate:dev
-```
-
-**Cannot connect to database**
-
-```bash
-# Verify DATABASE_URL in .env
-# Check if db container is running
-docker-compose ps db
-
-# Connect directly
-psql -h localhost -U worktree -d worktree_forms
-```
-
-### Build Issues
-
-**Node modules corruption**
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-**"Module not found" in Docker (but exists in package.json)**
-
-```bash
-# Stale volume issue - need to recreate node_modules volume
-docker-compose down -v
-docker-compose up -d --build
-# IMPORTANT: Database will be empty after down -v
-docker-compose exec app sh -c "cd apps/backend && npx prisma migrate deploy && npm run seed"
-```
-
-**TypeScript errors**
-
-```bash
-# Clear build cache
-rm -rf .next dist
-npm run build
-```
+5-step idempotent script (safe to re-run after `docker compose down -v`):
+1. Create `worktree-local` bucket in LocalStack S3
+2. Create DynamoDB table with KeySchema + all GSIs
+3. Seed `admin@worktree.pro` (OWNER) + `user@worktree.com` (MEMBER) with bcrypt passwords
+4. Seed sample Project with Form, Sheet (columns), Route
+5. Seed `@auth/dynamodb-adapter` session records for immediate dev login
 
 ---
 
-## 📋 Commit Conventions
-
-Use conventional commits:
+## Commit Conventions
 
 ```
 feat: add user login functionality
-fix: resolve JWT token expiration bug
-docs: update README with setup instructions
-test: add coverage for auth service
-refactor: simplify form builder logic
-style: format code with prettier
-chore: update dependencies
-```
-
-**Format**:
-
-```
-<type>: <short description>
-
-[optional body explaining why/what]
-
-[optional footer]
+fix: resolve DynamoDB query scope issue
+docs: update architecture with ElectroDB entity design
+test: add vitest-dynalite integration tests for FormEntity
+refactor: extract S3 presigned URL service
+chore: update @aws-sdk packages
 ```
 
 ---
 
-## 🚀 Deployment Checklist
+## Production (ECS Fargate)
 
-### Before Each Deployment
-
-- [ ] All tests passing (`npm run test`)
-- [ ] No TypeScript errors (`npm run build`)
-- [ ] ESLint clean (`npm run lint`)
-- [ ] Environment variables set correctly
-- [ ] Database backups created
-- [ ] Migrations reviewed and tested
-- [ ] Audit logs exported
-
-### Deployment Steps
-
-```bash
-# Build images
-docker-compose build
-
-# Deploy to production
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify
-curl http://localhost:5000/api/health
-```
-
----
-
-## 🚀 Dokploy Production Deployment
-
-### Overview
-
-Production deployment uses Dokploy's environment variable configuration. **All credentials are configured in Dokploy's UI**, not in the codebase.
-
-### Deployment Process
-
-1. **Commit and Push Changes**
-
-   ```bash
-   git add .
-   git commit -m "feat: your changes"
-   git push origin main
-   ```
-
-2. **Dokploy Auto-Deploy**
-   - Dokploy automatically pulls from GitHub
-   - Builds Docker image using `Dockerfile`
-   - Deploys with configured environment variables
-
-3. **Verify Deployment**
-   - Check health: `curl https://worktree.pro/api/health`
-   - Review Dokploy logs for "✓ Environment validation passed"
-
-### Required Environment Variables in Dokploy
-
-Configure these in Dokploy's environment settings:
-
-**Application Core**:
-
-```bash
-NODE_ENV=production
-PORT=3100
-BACKEND_PORT=5100
-HOSTNAME=0.0.0.0
-NEXT_PUBLIC_APP_URL=https://worktree.pro
-```
-
-**Database (Internal Docker Network)**:
-
-```bash
-DATABASE_URL=postgresql://[user]:[pass]@[dokploy-db-service-name]:5432/[database]
-```
-
-> Use the internal Docker service name, NOT localhost or external IP
-
-**MinIO (Docker Internal Networking)**:
-
-```bash
-# Production uses Docker internal service name
-MINIO_HOST=minio                      # Docker service name (internal network)
-MINIO_PORT=9004                       # MinIO S3 API port
-MINIO_USE_SSL=false                  # No SSL needed for internal Docker traffic
-MINIO_ACCESS_KEY=[your-access-key]
-MINIO_SECRET_KEY=[your-secret-key]
-MINIO_BUCKET_NAME=worktree
-MINIO_REGION=us-east-1
-```
-
-> **✅ PRODUCTION**: MinIO runs in the same Dokploy project, so use Docker internal networking (`minio:9004`) for fast, direct container-to-container communication. No SSL needed for internal traffic.
-
-**MinIO Public URL (Browser Access)**:
-
-```bash
-MINIO_PUBLIC_URL=https://minio.worktree.pro
-```
-
-> **Public Endpoint**: Used for presigned URLs that browsers access. This domain routes to MinIO Console UI (port 9002).
-
-**Local Development**:
-
-> For local development, use the external API domain since MinIO is not in your local Docker network:
->
-> ```bash
-> MINIO_HOST=api.worktree.worktree.pro
-> MINIO_PORT=443
-> MINIO_USE_SSL=true
-> ```
-
-**Frontend Configuration**:
-
-```bash
-BACKEND_HOST=localhost
-NEXT_PUBLIC_API_URL=https://worktree.pro/api
-NEXT_PUBLIC_MINIO_URL=https://minio.worktree.pro
-```
-
-**Security**:
-
-```bash
-JWT_SECRET=[32+-character-secret]
-JWT_EXPIRE=15m
-JWT_REFRESH_EXPIRE=7d
-```
-
-### Docker Networking Rules for Production
-
-> [!CRITICAL]
-> These rules prevent deployment failures:
-
-1. **Internal Service Communication** - Use Docker service names:
-   - Database: Use full Dokploy service name (e.g., `devo-corner-worktreedatabasedev-cxfozh:5432`)
-   - MinIO API: `minio:9004` (both in same Dokploy project, use internal networking)
-
-2. **External/Browser Access** - Use public URLs:
-   - API: `https://worktree.pro/api`
-   - MinIO Public: `https://minio.worktree.pro` (for presigned URLs/browser downloads)
-
-3. **Never use localhost** except for:
-   - `BACKEND_HOST=localhost` (Next.js to Express in same container)
-
-4. **Local Development** - Use external domains:
-   - MinIO: `api.worktree.worktree.pro:443` with SSL (MinIO not in local Docker network)
-
-5. **MinIO Port Reference**:
-   - Port 9004: S3 API endpoint (production uses `minio:9004`, local dev uses `api.worktree.worktree.pro:443`)
-   - Port 9002: Console UI (`https://minio.worktree.pro`)
-
-### Post-Deployment Checks
-
-```bash
-# Health check
-curl https://worktree.pro/api/health
-
-# Check database connection
-# Should show "database": "connected"
-
-# Test file upload
-# Upload a file through UI to verify MinIO works
-```
-
-### Troubleshooting Production
-
-**"Cannot connect to database"**:
-
-- Check `DATABASE_URL` uses Docker service name
-- Verify database service is running in Dokploy
-- Never use `localhost` or external IPs for internal services
-
-**"MinIO connection failed"**:
-
-- Verify `MINIO_HOST=minio` (not localhost)
-- Check `MINIO_PORT=9004`
-- Confirm MinIO container is running
-- Ensure `MINIO_PUBLIC_URL` is set for browser access
-
-**"Environment validation failed"**:
-
-- Review error message in Dokploy logs
-- This is intentional - it caught a configuration error
-- Fix the environment variable mentioned in error
-
----
-
-## 📞 Support & Questions
-
-- 📖 **Full Plan**: See `worktree-forms-plan.md`
-- 🏗️ **Architecture**: See `strategic-overview.md`
-- ⚙️ **Quick Ref**: See `QUICK-REFERENCE.md`
-- 👨‍💼 **Admin Guide**: See `ADMIN-PAGES-GUIDE.md`
-- 🎨 **Colors**: See `COLOR-THEME-UPDATE.md`
-
----
-
-**Remember**: The docs are your friend. Check them first!
-
----
-
-## 📸 MinIO Image Handling
-
-> [!NOTE]
-> Detailed guide available at: [`docs/minio-guide.md`](./docs/minio-guide.md)
-
-**Key Implementation Details**:
-
-1.  **Uploads**: Direct to backend -> Stream to MinIO (using Multer memory storage).
-2.  **Serving**:
-    - **Images are NOT served directly from MinIO public URL.**
-    - Frontend requests: `/api/images/:key`
-    - Backend: Generates **Presigned URL** and redirects (302) to it.
-    - This ensures secure access even for private buckets.
-3.  **Database**: All files are tracked in `FileUpload` table with `objectKey` and `submissionId`.
+- 3 ECS services: `app` (port 3005), `ws-server` (port 1234), `worker` (no HTTP)
+- DynamoDB, S3, ElastiCache, Pinecone are all AWS managed — no containers for these in production
+- `DYNAMODB_ENDPOINT` must NOT be set in production (its absence routes SDK to real AWS DynamoDB)
+- `S3_ENDPOINT` must NOT be set in production (its absence routes SDK to real AWS S3)
+- Deploy via `git push origin main` → GitHub Actions handles everything

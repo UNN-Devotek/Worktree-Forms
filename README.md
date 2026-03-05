@@ -61,14 +61,14 @@ Worktree bridges back-office planning and front-line execution for field operati
 ### Quick Start
 
 ```bash
-# 1. Configure
+# 1. Configure (no real AWS credentials needed for local dev)
 cp .env.example .env.local
-# Fill in: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, PINECONE_API_KEY, AUTH_SECRET
+# Fill in: PINECONE_API_KEY (or use pinecone-local container), AUTH_SECRET
 
 # 2. Start all local services
 docker compose up --watch
 
-# 3. Seed dev data (second terminal)
+# 3. Seed dev data (second terminal) — creates S3 bucket + DynamoDB tables + dev data
 bash scripts/seed-dev.sh
 
 # 4. Open
@@ -92,9 +92,10 @@ bash scripts/seed-dev.sh
 | DynamoDB Local | 8000 | Full API emulation |
 | DynamoDB Admin UI | 8001 | Browser table inspector |
 | Redis | 6379 | ElastiCache equivalent |
+| LocalStack (S3) | 4566 | Fully local S3 — no AWS credentials needed |
 | Pinecone Local (optional) | 5080 | In-memory vector emulator |
 
-> S3 connects to a real AWS dev bucket (`worktree-dev`). Pinecone uses the real free-tier API by default.
+> Fully local — DynamoDB and S3 run entirely in Docker. No real AWS credentials needed. Pinecone uses real free-tier API by default, or run `pinecone-local` for fully offline dev.
 
 ---
 
@@ -118,7 +119,7 @@ worktree/
 │           ├── routes/
 │           └── middleware/    # auth, rbac (requireProjectAccess)
 ├── scripts/
-│   └── seed-dev.sh            # DynamoDB table creation + dev data seed
+│   └── seed-dev.sh            # Step 1: LocalStack S3 bucket | Step 2: DynamoDB table+GSIs | Steps 3-5: dev data
 ├── docker-compose.yml
 ├── .env.example
 └── _bmad-output/              # Planning & architecture documents

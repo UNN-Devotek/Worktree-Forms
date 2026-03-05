@@ -74,13 +74,14 @@ bash scripts/seed-dev.sh     # create tables + GSIs, seed dev users + sample dat
 | **DynamoDB Local** | `amazon/dynamodb-local` | `8000` | Full DynamoDB API emulation |
 | **DynamoDB Admin UI** | `aaronshaf/dynamodb-admin` | `8001` | Browser table inspector |
 | **Redis** | `redis:7` | `6379` | ElastiCache equivalent; exact protocol parity |
+| **LocalStack** | `localstack/localstack` | `4566` | AWS S3 local emulation — no real credentials needed |
 | **Pinecone Local** _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory vector emulator (100K record limit) |
 
 ### Service Notes
 
 - **DynamoDB Local** must be started with `-sharedDb` flag — without it each process connection sees an isolated SQLite dataset. Critical for hot-reload scenarios.
 - **Redis** must be configured with `maxmemory-policy noeviction` to match ElastiCache production config (required for BullMQ reliability).
-- **S3:** Connects to a real AWS dev-environment bucket (`worktree-dev`). Offline S3 not required; LocalStack is an option but adds operational overhead.
+- **S3 (LocalStack):** Runs fully locally at `http://localstack:4566`. No real AWS credentials needed for local dev. SDK requires `forcePathStyle: true` and fake credentials (any non-empty values). Seed script creates the `worktree-local` bucket on first run.
 - **Pinecone:** Two options — run `pinecone-local` Docker container (no network required, ephemeral) OR use the real Pinecone free-tier API. Free tier supports up to 100K vectors/5 indexes at $0.
 - **Next.js API routes** that use AWS SDK (DynamoDB, S3, Pinecone) must NOT use `export const runtime = 'edge'` — AWS SDK v3 requires Node.js runtime.
 
@@ -93,9 +94,9 @@ DYNAMODB_ENDPOINT=http://dynamodb-local:8000   # Docker service name
 DYNAMODB_REGION=us-east-1
 DYNAMODB_TABLE_NAME=worktree-local
 REDIS_URL=redis://redis:6379
-# S3 — real dev bucket (no local override needed)
-AWS_REGION=us-east-1
-S3_BUCKET=worktree-dev
+# S3 — LocalStack (no real AWS credentials needed)
+S3_ENDPOINT=http://localstack:4566
+S3_BUCKET=worktree-local
 # Pinecone — choose one:
 PINECONE_API_KEY=local                          # if using pinecone-local container
 PINECONE_HOST=http://pinecone-local:5080        # if using pinecone-local container
@@ -104,11 +105,15 @@ PINECONE_HOST=http://pinecone-local:5080        # if using pinecone-local contai
 
 ### Seed Data (`seed-dev.sh`)
 
-Replaces the old Prisma `seed-dev.sh`. Responsibilities:
-1. **Create DynamoDB table** with correct KeySchema and all GSIs (idempotent — skips if table exists)
-2. **Seed dev users** (`admin@worktree.pro`, `user@worktree.com`) with hashed passwords
-3. **Seed sample project** with Forms, Sheets, and Routes for UI development
-4. **Safe to re-run** — uses DynamoDB `put` with condition expression to avoid duplicates
+Replaces the old Prisma `seed-dev.sh`. Runs in order, fully idempotent — safe to re-run at any time:
+
+1. **Create S3 bucket in LocalStack** — `worktree-local` bucket at `http://localstack:4566` (skips if exists)
+2. **Create DynamoDB table** with correct KeySchema and all GSIs (skips if exists)
+3. **Seed dev users** (`admin@worktree.pro` OWNER, `user@worktree.com` MEMBER) with bcrypt-hashed passwords
+4. **Seed sample project** with Forms, Sheets (with columns), and Routes for UI development
+5. **Seed NextAuth adapter records** so dev users can log in immediately without registering
+
+All DynamoDB writes use `ConditionExpression: "attribute_not_exists(PK)"` — re-runs never overwrite or duplicate existing data.
 
 ### Workflow
 

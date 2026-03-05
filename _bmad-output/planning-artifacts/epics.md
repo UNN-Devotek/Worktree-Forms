@@ -46,16 +46,18 @@ So that all application code has a type-safe, consistent data access layer.
 #### Story 0.2: S3 Bucket Setup & Storage Service Swap
 
 As a Developer,
-I want all file storage operations to use AWS S3 instead of MinIO,
-So that object storage is fully managed and globally available.
+I want all file storage operations to use AWS S3 (production) and LocalStack S3 (local dev),
+So that object storage is fully managed in production and fully offline-capable in development.
 
 **Acceptance Criteria:**
 **Given** the existing MinIO SDK usage (`minio` npm package)
 **Then** the `minio` package is removed and replaced with `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`
+**And** the S3 client factory reads `S3_ENDPOINT` — if set, points to `http://localstack:4566` with `forcePathStyle: true`; if unset, uses real AWS S3
 **And** the storage service abstraction (`services/storage.ts`) is updated to use the S3 client
 **And** presigned URL generation uses `@aws-sdk/s3-request-presigner` (same UX, different SDK)
-**And** all `MINIO_*` environment variables are replaced with `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-**And** the `minio` service is removed from `docker-compose.yml`.
+**And** all `MINIO_*` environment variables are removed; local dev uses `S3_ENDPOINT=http://localstack:4566`, `S3_BUCKET=worktree-local`; production uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=worktree-prod`
+**And** `localstack/localstack` replaces the `minio` service in `docker-compose.yml` with `SERVICES=s3`
+**And** the `seed-dev.sh` script creates the `worktree-local` bucket in LocalStack on first run.
 
 #### Story 0.3: ElastiCache Redis Provisioning & Validation
 
@@ -126,9 +128,32 @@ So that no service attempts to connect to legacy self-hosted infrastructure.
 **Then** `DATABASE_URL` is removed
 **And** `MINIO_*` variables are replaced with `AWS_S3_*` variables
 **And** `REDIS_URL` points to ElastiCache endpoint
-**And** new variables added: `AWS_REGION`, `DYNAMODB_TABLE_NAME`, `OPENSEARCH_ENDPOINT`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-**And** `docker-compose.yml` is updated to remove `db` and `minio` services
+**And** new variables added: `AWS_REGION`, `DYNAMODB_TABLE_NAME`, `PINECONE_API_KEY`, `PINECONE_INDEX_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+**And** local dev variables added: `DYNAMODB_ENDPOINT`, `S3_ENDPOINT`, `S3_BUCKET`, `PINECONE_HOST` (all pointing to Docker service names)
+**And** `docker-compose.yml` is updated to remove `db` and `minio` services and add `dynamodb-local`, `dynamodb-admin`, `redis`, `localstack`
 **And** `.env.example` is updated with all new variable names and descriptions.
+
+#### Story 0.8: Local Development Environment & Seed Data Script
+
+As a Developer,
+I want a single command to start a fully local development environment with realistic seed data,
+So that I can develop and test all features without any real AWS credentials or internet access.
+
+**Acceptance Criteria:**
+**Given** a fresh clone of the repository
+**Then** `docker compose up --watch` starts all local services: `app` (3005), `ws-server` (1234), `worker`, `dynamodb-local` (8000), `dynamodb-admin` (8001), `redis` (6379), `localstack` (4566)
+**And** `bash scripts/seed-dev.sh` runs idempotently and completes without error
+**And** the seed script step 1: creates the `worktree-local` S3 bucket in LocalStack (`aws s3 mb s3://worktree-local --endpoint-url http://localstack:4566`)
+**And** the seed script step 2: creates the DynamoDB table `worktree-local` with full KeySchema, AttributeDefinitions, and all GSIs — skips if table already exists
+**And** the seed script step 3: seeds `admin@worktree.pro` (OWNER) and `user@worktree.com` (MEMBER) with bcrypt-hashed passwords using `PutItem` + `ConditionExpression: "attribute_not_exists(PK)"`
+**And** the seed script step 4: seeds one sample Project with at least one Form, one Sheet (with columns), and one Route
+**And** the seed script step 5: seeds `@auth/dynamodb-adapter` session/account records so dev users can log in without registering
+**And** `docker compose down -v` followed by `bash scripts/seed-dev.sh` fully restores the dev environment
+**And** `dynamodb-local` runs with `-sharedDb` flag so all processes share one SQLite dataset
+**And** `redis` runs with `--maxmemory-policy noeviction` so BullMQ queues never drop entries
+**And** the `.env.local` template in `.env.example` documents all local-only variables: `DYNAMODB_ENDPOINT`, `S3_ENDPOINT`, `S3_BUCKET`, `PINECONE_HOST`
+
+> **Note:** `seed-dev.sh` is the spiritual successor to the old Prisma `seed-dev.sh`. It replaces `npx prisma migrate deploy && npx prisma db seed` with DynamoDB table creation + LocalStack bucket creation + ElectroDB seed writes. Script runs via `tsx scripts/seed-dev.ts` with no build step required.
 
 ---
 
