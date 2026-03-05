@@ -52,10 +52,10 @@ So that object storage is fully managed in production and fully offline-capable 
 **Acceptance Criteria:**
 **Given** the existing MinIO SDK usage (`minio` npm package)
 **Then** the `minio` package is removed and replaced with `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`
-**And** the S3 client factory reads `S3_ENDPOINT` — if set, points to `http://localstack:4566` with `forcePathStyle: true`; if unset, uses real AWS S3
+**And** the S3 client factory reads `S3_ENDPOINT` — if set, points to `http://localstack:4510` with `forcePathStyle: true`; if unset, uses real AWS S3
 **And** the storage service abstraction (`services/storage.ts`) is updated to use the S3 client
 **And** presigned URL generation uses `@aws-sdk/s3-request-presigner` (same UX, different SDK)
-**And** all `MINIO_*` environment variables are removed; local dev uses `S3_ENDPOINT=http://localstack:4566`, `S3_BUCKET=worktree-local`; production uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=worktree-prod`
+**And** all `MINIO_*` environment variables are removed; local dev uses `S3_ENDPOINT=http://localstack:4510`, `S3_BUCKET=worktree-local`; production uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=worktree-prod`
 **And** `localstack/localstack` replaces the `minio` service in `docker-compose.yml` with `SERVICES=s3`
 **And** the `seed-dev.sh` script creates the `worktree-local` bucket in LocalStack on first run.
 
@@ -141,9 +141,9 @@ So that I can develop and test all features without any real AWS credentials or 
 
 **Acceptance Criteria:**
 **Given** a fresh clone of the repository
-**Then** `docker compose up --watch` starts all local services: `app` (3005), `ws-server` (1234), `worker`, `dynamodb-local` (8000), `dynamodb-admin` (8001), `redis` (6379), `localstack` (4566)
+**Then** `docker compose up --watch` starts all local services: `app` (3005), `ws-server` (1234), `worker`, `dynamodb-local` (8100), `dynamodb-admin` (8101), `redis` (6380), `localstack` (4510)
 **And** `bash scripts/seed-dev.sh` runs idempotently and completes without error
-**And** the seed script step 1: creates the `worktree-local` S3 bucket in LocalStack (`aws s3 mb s3://worktree-local --endpoint-url http://localstack:4566`)
+**And** the seed script step 1: creates the `worktree-local` S3 bucket in LocalStack (`aws s3 mb s3://worktree-local --endpoint-url http://localstack:4510`)
 **And** the seed script step 2: creates the DynamoDB table `worktree-local` with full KeySchema, AttributeDefinitions, and all GSIs — skips if table already exists
 **And** the seed script step 3: seeds `admin@worktree.pro` (OWNER) and `user@worktree.com` (MEMBER) with bcrypt-hashed passwords using `PutItem` + `ConditionExpression: "attribute_not_exists(PK)"`
 **And** the seed script step 4: seeds one sample Project with at least one Form, one Sheet (with columns), and one Route

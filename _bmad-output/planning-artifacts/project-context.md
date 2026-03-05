@@ -71,17 +71,17 @@ bash scripts/seed-dev.sh     # create tables + GSIs, seed dev users + sample dat
 | **App** (Next.js + API) | `app` (project Dockerfile) | `3005` | Frontend + REST API |
 | **WS Server** (Hocuspocus) | `ws-server` (project Dockerfile) | `1234` | Real-time collab |
 | **Worker** (BullMQ) | `worker` (project Dockerfile) | — | Background jobs |
-| **DynamoDB Local** | `amazon/dynamodb-local` | `8000` | Full DynamoDB API emulation |
-| **DynamoDB Admin UI** | `aaronshaf/dynamodb-admin` | `8001` | Browser table inspector |
-| **Redis** | `redis:7` | `6379` | ElastiCache equivalent; exact protocol parity |
-| **LocalStack** | `localstack/localstack` | `4566` | AWS S3 local emulation — no real credentials needed |
+| **DynamoDB Local** | `amazon/dynamodb-local` | `8100` | Full DynamoDB API emulation |
+| **DynamoDB Admin UI** | `aaronshaf/dynamodb-admin` | `8101` | Browser table inspector |
+| **Redis** | `redis:7` | `6380` | ElastiCache equivalent; exact protocol parity |
+| **LocalStack** | `localstack/localstack` | `4510` | AWS S3 local emulation — no real credentials needed |
 | **Pinecone Local** _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory vector emulator (100K record limit) |
 
 ### Service Notes
 
 - **DynamoDB Local** must be started with `-sharedDb` flag — without it each process connection sees an isolated SQLite dataset. Critical for hot-reload scenarios.
 - **Redis** must be configured with `maxmemory-policy noeviction` to match ElastiCache production config (required for BullMQ reliability).
-- **S3 (LocalStack):** Runs fully locally at `http://localstack:4566`. No real AWS credentials needed for local dev. SDK requires `forcePathStyle: true` and fake credentials (any non-empty values). Seed script creates the `worktree-local` bucket on first run.
+- **S3 (LocalStack):** Runs fully locally at `http://localstack:4510`. No real AWS credentials needed for local dev. SDK requires `forcePathStyle: true` and fake credentials (any non-empty values). Seed script creates the `worktree-local` bucket on first run.
 - **Pinecone:** Two options — run `pinecone-local` Docker container (no network required, ephemeral) OR use the real Pinecone free-tier API. Free tier supports up to 100K vectors/5 indexes at $0.
 - **Next.js API routes** that use AWS SDK (DynamoDB, S3, Pinecone) must NOT use `export const runtime = 'edge'` — AWS SDK v3 requires Node.js runtime.
 
@@ -90,12 +90,12 @@ bash scripts/seed-dev.sh     # create tables + GSIs, seed dev users + sample dat
 All local overrides live in `.env.local` (gitignored). Key values:
 
 ```bash
-DYNAMODB_ENDPOINT=http://dynamodb-local:8000   # Docker service name
+DYNAMODB_ENDPOINT=http://dynamodb-local:8100   # Docker service name
 DYNAMODB_REGION=us-east-1
 DYNAMODB_TABLE_NAME=worktree-local
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://redis:6380
 # S3 — LocalStack (no real AWS credentials needed)
-S3_ENDPOINT=http://localstack:4566
+S3_ENDPOINT=http://localstack:4510
 S3_BUCKET=worktree-local
 # Pinecone — choose one:
 PINECONE_API_KEY=local                          # if using pinecone-local container
@@ -107,7 +107,7 @@ PINECONE_HOST=http://pinecone-local:5080        # if using pinecone-local contai
 
 Replaces the old Prisma `seed-dev.sh`. Runs in order, fully idempotent — safe to re-run at any time:
 
-1. **Create S3 bucket in LocalStack** — `worktree-local` bucket at `http://localstack:4566` (skips if exists)
+1. **Create S3 bucket in LocalStack** — `worktree-local` bucket at `http://localstack:4510` (skips if exists)
 2. **Create DynamoDB table** with correct KeySchema and all GSIs (skips if exists)
 3. **Seed dev users** (`admin@worktree.pro` OWNER, `user@worktree.com` MEMBER) with bcrypt-hashed passwords
 4. **Seed sample project** with Forms, Sheets (with columns), and Routes for UI development
@@ -119,4 +119,4 @@ All DynamoDB writes use `ConditionExpression: "attribute_not_exists(PK)"` — re
 
 - Use `docker compose up --watch` — Compose Watch syncs file changes without polling overhead.
 - Use `docker compose down` to stop. Use `docker compose down -v` for a clean slate (wipes DynamoDB SQLite data).
-- DynamoDB Admin UI at `http://localhost:8001` — inspect tables, run queries, verify seed data.
+- DynamoDB Admin UI at `http://localhost:8101` — inspect tables, run queries, verify seed data.

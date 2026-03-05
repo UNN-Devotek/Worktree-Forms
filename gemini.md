@@ -32,7 +32,7 @@ bash scripts/seed-dev.sh          # creates S3 bucket + DynamoDB tables + seeds 
 ```
 
 - **Frontend**: http://localhost:3005
-- **DynamoDB Admin UI**: http://localhost:8001
+- **DynamoDB Admin UI**: http://localhost:8101
 - **Dev credentials**: `admin@worktree.pro / password` | `user@worktree.com / password`
 
 ### Local Service Map
@@ -42,20 +42,20 @@ bash scripts/seed-dev.sh          # creates S3 bucket + DynamoDB tables + seeds 
 | App (Next.js + API) | Project Dockerfile | 3005 |
 | WS Server (Hocuspocus) | Project Dockerfile | 1234 |
 | Worker (BullMQ) | Project Dockerfile | — |
-| DynamoDB Local | `amazon/dynamodb-local` | 8000 |
-| DynamoDB Admin | `aaronshaf/dynamodb-admin` | 8001 |
-| Redis | `redis:7` | 6379 |
-| LocalStack (S3) | `localstack/localstack` | 4566 |
+| DynamoDB Local | `amazon/dynamodb-local` | 8100 |
+| DynamoDB Admin | `aaronshaf/dynamodb-admin` | 8101 |
+| Redis | `redis:7` | 6380 |
+| LocalStack (S3) | `localstack/localstack` | 4510 |
 | Pinecone Local (optional) | `pinecone-io/pinecone-local` | 5080 |
 
 ### Key Environment Variables (`.env.local`)
 
 ```bash
-DYNAMODB_ENDPOINT=http://dynamodb-local:8000   # Docker service name — NOT localhost
+DYNAMODB_ENDPOINT=http://dynamodb-local:8100   # Docker service name — NOT localhost
 DYNAMODB_TABLE_NAME=worktree-local
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://redis:6380
 # S3 — LocalStack (no real AWS credentials needed)
-S3_ENDPOINT=http://localstack:4566
+S3_ENDPOINT=http://localstack:4510
 S3_BUCKET=worktree-local
 AWS_ACCESS_KEY_ID=local                         # fake creds — LocalStack accepts anything
 AWS_SECRET_ACCESS_KEY=local

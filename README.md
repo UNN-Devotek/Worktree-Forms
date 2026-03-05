@@ -73,7 +73,7 @@ bash scripts/seed-dev.sh
 
 # 4. Open
 # App:               http://localhost:3005
-# DynamoDB Admin UI: http://localhost:8001
+# DynamoDB Admin UI: http://localhost:8101
 ```
 
 ### Dev Credentials
@@ -89,10 +89,10 @@ bash scripts/seed-dev.sh
 |---|---|---|
 | App (Next.js + API) | 3005 | |
 | Hocuspocus WS | 1234 | Real-time Smart Grid |
-| DynamoDB Local | 8000 | Full API emulation |
-| DynamoDB Admin UI | 8001 | Browser table inspector |
-| Redis | 6379 | ElastiCache equivalent |
-| LocalStack (S3) | 4566 | Fully local S3 — no AWS credentials needed |
+| DynamoDB Local | 8100 | Full API emulation |
+| DynamoDB Admin UI | 8101 | Browser table inspector |
+| Redis | 6380 | ElastiCache equivalent |
+| LocalStack (S3) | 4510 | Fully local S3 — no AWS credentials needed |
 | Pinecone Local (optional) | 5080 | In-memory vector emulator |
 
 > Fully local — DynamoDB and S3 run entirely in Docker. No real AWS credentials needed. Pinecone uses real free-tier API by default, or run `pinecone-local` for fully offline dev.

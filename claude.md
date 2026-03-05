@@ -64,7 +64,7 @@ bash scripts/seed-dev.sh
 
 # 4. Access the application
 # Frontend:          http://localhost:3005
-# DynamoDB Admin UI: http://localhost:8001  (table inspector)
+# DynamoDB Admin UI: http://localhost:8101  (table inspector)
 # Health Check:      http://localhost:3005/api/health
 
 # Dev login credentials:
@@ -79,10 +79,10 @@ bash scripts/seed-dev.sh
 | `app` | Project Dockerfile | `3005` | Next.js + Express API |
 | `ws-server` | Project Dockerfile | `1234` | Hocuspocus WebSocket |
 | `worker` | Project Dockerfile | — | BullMQ background jobs |
-| `dynamodb-local` | `amazon/dynamodb-local` | `8000` | Full DynamoDB API emulation |
-| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8001` | Browser table inspector (DX only) |
-| `redis` | `redis:7` | `6379` | ElastiCache equivalent |
-| `localstack` | `localstack/localstack` | `4566` | AWS S3 local emulation |
+| `dynamodb-local` | `amazon/dynamodb-local` | `8100` | Full DynamoDB API emulation |
+| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8101` | Browser table inspector (DX only) |
+| `redis` | `redis:7` | `6380` | ElastiCache equivalent |
+| `localstack` | `localstack/localstack` | `4510` | AWS S3 local emulation |
 | `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory Pinecone emulator |
 
 ### Required Environment Variables (`.env.local`)
@@ -91,15 +91,15 @@ bash scripts/seed-dev.sh
 NODE_ENV=development
 
 # DynamoDB Local (Docker service name — do NOT use localhost)
-DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+DYNAMODB_ENDPOINT=http://dynamodb-local:8100
 DYNAMODB_REGION=us-east-1
 DYNAMODB_TABLE_NAME=worktree-local
 
 # Redis (Docker service name)
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://redis:6380
 
 # S3 — LocalStack (fully local, no real AWS credentials needed)
-S3_ENDPOINT=http://localstack:4566
+S3_ENDPOINT=http://localstack:4510
 S3_BUCKET=worktree-local
 # Note: LocalStack accepts any non-empty fake credentials
 AWS_ACCESS_KEY_ID=local
@@ -139,13 +139,13 @@ bash scripts/seed-dev.sh
 bash scripts/seed-dev.sh
 
 # Inspect tables in browser
-open http://localhost:8001
+open http://localhost:8101
 
 # Run a raw DynamoDB query against local
-aws dynamodb list-tables --endpoint-url http://localhost:8000 --region us-east-1
+aws dynamodb list-tables --endpoint-url http://localhost:8100 --region us-east-1
 
 # Scan a table directly
-aws dynamodb scan --table-name worktree-local --endpoint-url http://localhost:8000 --region us-east-1
+aws dynamodb scan --table-name worktree-local --endpoint-url http://localhost:8100 --region us-east-1
 ```
 
 > [!NOTE]
@@ -159,7 +159,7 @@ aws dynamodb scan --table-name worktree-local --endpoint-url http://localhost:80
 docker compose logs app
 # Check if ports are available
 netstat -ano | findstr :3005
-netstat -ano | findstr :8000
+netstat -ano | findstr :8100
 ```
 
 **DynamoDB tables missing after restart:**
@@ -178,9 +178,9 @@ bash scripts/seed-dev.sh
 **S3 upload fails (LocalStack):**
 
 - Check LocalStack is running: `docker compose ps localstack`
-- Verify the bucket was created: `aws s3 ls --endpoint-url http://localhost:4566`
+- Verify the bucket was created: `aws s3 ls --endpoint-url http://localhost:4510`
 - Re-create the bucket: `bash scripts/seed-dev.sh` (step 1 recreates it)
-- Confirm `S3_ENDPOINT=http://localstack:4566` and `forcePathStyle: true` in `lib/s3.ts`
+- Confirm `S3_ENDPOINT=http://localstack:4510` and `forcePathStyle: true` in `lib/s3.ts`
 
 **Module not found after `docker compose down -v`:**
 
@@ -370,8 +370,8 @@ bash scripts/seed-dev.sh
 
 ```bash
 netstat -ano | findstr :3005   # app
-netstat -ano | findstr :8000   # dynamodb-local
-netstat -ano | findstr :6379   # redis
+netstat -ano | findstr :8100   # dynamodb-local
+netstat -ano | findstr :6380   # redis
 ```
 
 ### Build Issues
@@ -444,7 +444,7 @@ PINECONE_API_KEY=[real-key]
 ```
 
 > [!CRITICAL]
-> Do NOT set `DYNAMODB_ENDPOINT` in production. The absence of this variable is what tells the SDK to use real AWS DynamoDB. Setting it to `http://dynamodb-local:8000` in production would route all DB calls to a non-existent container.
+> Do NOT set `DYNAMODB_ENDPOINT` in production. The absence of this variable is what tells the SDK to use real AWS DynamoDB. Setting it to `http://dynamodb-local:8100` in production would route all DB calls to a non-existent container.
 
 ### Post-Deployment Verification
 
@@ -479,7 +479,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 export const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'us-east-1',
   ...(process.env.S3_ENDPOINT && {
-    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4566' in local dev
+    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4510' in local dev
     forcePathStyle: true,               // Required for LocalStack
     credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
   }),

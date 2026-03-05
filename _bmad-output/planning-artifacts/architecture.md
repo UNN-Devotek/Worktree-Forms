@@ -347,10 +347,10 @@ _Research source: technical-Local-Dev-AWS-Stack-Worktree-research-2026-03-05.md_
 | `app` | Project Dockerfile | `3005` | ECS `app` service |
 | `ws-server` | Project Dockerfile | `1234` | ECS `ws-server` service |
 | `worker` | Project Dockerfile | — | ECS `worker` service |
-| `dynamodb-local` | `amazon/dynamodb-local` | `8000` | AWS DynamoDB |
-| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8001` | DX tool only — not in production |
-| `redis` | `redis:7` | `6379` | AWS ElastiCache for Redis 7.1 |
-| `localstack` | `localstack/localstack` | `4566` | AWS S3 (fully local, no credentials) |
+| `dynamodb-local` | `amazon/dynamodb-local` | `8100` | AWS DynamoDB |
+| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8101` | DX tool only — not in production |
+| `redis` | `redis:7` | `6380` | AWS ElastiCache for Redis 7.1 |
+| `localstack` | `localstack/localstack` | `4510` | AWS S3 (fully local, no credentials) |
 | `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | Pinecone (in-memory, 100K record limit) |
 
 #### Critical Configuration Rules
@@ -366,7 +366,7 @@ dynamodb-local:
   volumes:
     - dynamodb-data:/data
   ports:
-    - "8000:8000"
+    - "8100:8100"
 ```
 
 **Redis — `noeviction` policy is mandatory for BullMQ.**
@@ -377,7 +377,7 @@ redis:
   image: redis:7
   command: "redis-server --maxmemory-policy noeviction"
   ports:
-    - "6379:6379"
+    - "6380:6380"
 ```
 
 **Next.js API routes — Node.js runtime only.**
@@ -392,18 +392,18 @@ The SDK client factory reads a single env var to select local vs. cloud:
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION ?? 'us-east-1',
   ...(process.env.DYNAMODB_ENDPOINT && {
-    endpoint: process.env.DYNAMODB_ENDPOINT, // 'http://dynamodb-local:8000' locally
+    endpoint: process.env.DYNAMODB_ENDPOINT, // 'http://dynamodb-local:8100' locally
   }),
 });
 ```
 
 Local `.env.local` (gitignored):
 ```bash
-DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+DYNAMODB_ENDPOINT=http://dynamodb-local:8100
 DYNAMODB_TABLE_NAME=worktree-local
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://redis:6380
 # S3 — LocalStack
-S3_ENDPOINT=http://localstack:4566
+S3_ENDPOINT=http://localstack:4510
 S3_BUCKET=worktree-local
 # Pinecone — option A: local container
 PINECONE_API_KEY=local
@@ -438,7 +438,7 @@ localstack:
     - DEFAULT_REGION=us-east-1
     - AWS_DEFAULT_REGION=us-east-1
   ports:
-    - "4566:4566"
+    - "4510:4510"
   volumes:
     - localstack-data:/var/lib/localstack
 ```
@@ -451,7 +451,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 export const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'us-east-1',
   ...(process.env.S3_ENDPOINT && {
-    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4566' locally
+    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4510' locally
     forcePathStyle: true,               // Required for LocalStack — virtual host style fails locally
   }),
   // Fake credentials required by SDK when hitting LocalStack (any non-empty values work)
@@ -463,7 +463,7 @@ export const s3 = new S3Client({
 
 Local `.env.local`:
 ```bash
-S3_ENDPOINT=http://localstack:4566
+S3_ENDPOINT=http://localstack:4510
 S3_BUCKET=worktree-local
 # No real AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY needed for local dev
 ```
@@ -481,7 +481,7 @@ AWS_SECRET_ACCESS_KEY=[real]
 ```bash
 # scripts/seed-dev.sh (step 0 — runs before DynamoDB table creation)
 aws s3 mb s3://worktree-local \
-  --endpoint-url http://localstack:4566 \
+  --endpoint-url http://localstack:4510 \
   --region us-east-1 2>/dev/null || true  # idempotent — ignore if already exists
 ```
 
@@ -500,7 +500,7 @@ Replaces the old Prisma-based `seed-dev.sh`. The new script must:
 
 The seed script runs in order — fully idempotent, safe to re-run at any time:
 
-1. **Create S3 bucket in LocalStack** — `aws s3 mb s3://worktree-local --endpoint-url http://localstack:4566` — ignores error if already exists
+1. **Create S3 bucket in LocalStack** — `aws s3 mb s3://worktree-local --endpoint-url http://localstack:4510` — ignores error if already exists
 2. **Create DynamoDB table** with correct `KeySchema`, `AttributeDefinitions`, and all GSIs — catches `ResourceInUseException` if table exists
 3. **Seed dev users** — `admin@worktree.pro` (OWNER role) and `user@worktree.com` (MEMBER role) with bcrypt-hashed passwords; uses `PutItem` with `ConditionExpression: "attribute_not_exists(PK)"` to skip duplicates
 4. **Seed a sample project** with Forms, Sheets (with columns), and Routes sufficient for UI development
