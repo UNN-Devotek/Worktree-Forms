@@ -44,69 +44,32 @@ date: "2026-01-08"
 
 - ~~**Strict Self-Hosting**: Must run on standard Linux VPS without proprietary cloud services.~~ _Constraint removed 2026-03-05 — strategic pivot to full AWS managed services stack._
 - **Mobile Native Bridge**: Capacitor required for "Background-to-Foreground" handoff.
-- **System Density**: Full stack must fit in <4GB RAM.
+- ~~**System Density**: Full stack must fit in <4GB RAM.~~ _Removed — ECS Fargate right-sizes each service independently; no single-server constraint._
 - **Schema Evolution**: Backend must support multiple schema versions for offline clients.
 
 ### Cross-Cutting Concerns Identified
 
 - **Synchronization Engine**: The "Append-Only Ledger" pattern for all write operations.
-- **Multi-Tenancy (RLS)**: Query scoping via `project_id`.
-- **Real-Time Event Bus**: Redis-based bus for Chat/Notifications/Jobs.
+- **Multi-Tenancy (Application-Layer)**: All DynamoDB queries scoped by `PROJECT#<projectId>` partition key prefix; enforced in RBAC middleware before any DB call.
+- **Real-Time Event Bus**: ElastiCache Redis pub-sub for Chat/Notifications/Jobs and Hocuspocus multi-instance coordination.
 
-## Starter Template Evaluation
+## Technology Foundation
 
-### Primary Technology Domain
+> _Note: The project was originally bootstrapped from Create T3 App (Next.js + Prisma + Postgres). The database layer has since been migrated to DynamoDB + ElectroDB as part of the 2026-03-05 AWS stack pivot. The frontend, API patterns, and component architecture remain as originally designed._
 
-**Full-stack Web Application** (Next.js 14 App Router + Postgres)
+### Core Technology Decisions
 
-### Starter Options Considered
-
-1.  **Create T3 App** (`create-t3-app`)
-    - _Pros_: Industry standard for type-safety (tRPC/Next.js/Prisma/Tailwind). Extremely modular, no "SaaS bloat" (Stripe/Subscription code) to delete. Perfect for self-hosting.
-    - _Cons_: Requires manual setup of the "Modular Monolith" folder structure (it defaults to standard Next.js layout).
-
-2.  **Next.js Enterprise Boilerplate**
-    - _Pros_: Comes with strict linting, testing (Jest/Playwright) and Storybook pre-configured.
-    - _Cons_: Often engineered for Vercel deployment; might require "ejecting" some serverless patterns for our Docker/Coolify setup.
-
-3.  **SaaS Starter Kits (Various)**
-    - _Pros_: Pre-built Auth/Billing.
-    - _Cons_: Too opinionated on Multi-tenancy (often Subdomain-based) which conflicts with our "Project-Centric" RLS model.
-
-### Selected Starter: Create T3 App
-
-**Rationale for Selection:**
-We need a **"Clean Slate with Superpowers."** Worktree's architecture (Project-Centric, Offline-Sync, RLS) is unique. Using a pre-built SaaS kit would require deleting 50% of the code (Billing, Team Management) to replace it with our custom logic. `create-t3-app` gives us the best tools (Type Safety, DB connection) without the baggage.
-
-**Initialization Command:**
-
-```bash
-npm create t3-app@latest ./Worktree -- --no-trpc --tailwind --prisma --nextAuth --appRouter --dbProvider postgres
-```
-
-**Architectural Decisions Provided by Starter:**
-
-**Language & Runtime:**
-
-- **TypeScript**: Strict mode enabled by default (Crucial for our complex data model).
-
-**Styling Solution:**
-
-- **Tailwind CSS**: Utility-first, standard for modern React pipelines.
-
-**Build Tooling:**
-
-- **Next.js 14**: App Router for nested layouts (perfect for `Dashboard -> Project -> Form`).
-
-**Testing Framework:**
-
-- _Not included by default_ - We will manually add **Playwright** as per our Research.
-
-**Code Organization:**
-
-- **Monorepo-Ready**: We will restructure the default `src` into `features/` (Modular Monolith) immediately after init.
-
-**Development Experience:**
+| Concern | Decision | Rationale |
+|---|---|---|
+| **Language** | TypeScript (strict mode) | Type safety across full stack — mandatory for DynamoDB access patterns |
+| **Frontend** | Next.js App Router | Nested layouts, RSC, Server Actions for web dashboard |
+| **Component Library** | shadcn/ui | Copy-paste, no npm abstraction to fight; accessible primitives |
+| **Styling** | Tailwind CSS | Utility-first, standard for modern React |
+| **Database** | AWS DynamoDB + ElectroDB | Single-table design, TypeScript-first ODM, no schema migrations |
+| **Auth** | Auth.js (NextAuth v5) + `@auth/dynamodb-adapter` | Database sessions in DynamoDB, instant server-side revocation |
+| **API Pattern** | Hybrid — Server Actions (web) + REST (mobile) | Server Actions co-locate web mutations; REST provides versioned contract for mobile sync |
+| **Testing** | Vitest + vitest-dynalite + Playwright | Integration tests against DynamoDB Local; E2E via Playwright |
+| **Monorepo** | npm workspaces (`apps/frontend`, `apps/backend`) | Shared types and tooling across web and Express API |
 
 ## Project Structure & Boundaries
 
@@ -194,106 +157,105 @@ Features should interact via **Public API** (exported functions) or **Events** (
   - _Enforcement_: A shared `requireProjectAccess(userId, projectId, requiredRole)` middleware validates membership before any DynamoDB operation. Unauthorized calls return 403 before hitting the DB.
   - _No migration files_: DynamoDB is schema-less. Entity definitions in ElectroDB serve as the schema contract. Breaking changes are handled via attribute versioning.
 
-### Data Architecture (Prisma Schema - High Level)
+### Data Architecture — Entity Reference
 
-**Core Entities**:
+> [!NOTE]
+> **This section is a placeholder.** The full DynamoDB single-table entity definitions, key schema, and GSI map are produced as the output of **Story 0.1** (DynamoDB Table Design & ElectroDB Entity Definitions). Update this section when Story 0.1 is complete.
 
-- `User`: Auth properties, Profile, `systemRoleId`.
-- `Project`: Workspaces.
-- `ProjectRoleDefinitions`: JSONB Definition of roles specific to a Project or Template.
-- `ProjectMember`: Link table (`userId`, `projectId`, `assigned_role_name`).
+**Key Design Rules (established — see Story 0.1 for full schema):**
 
-**RBAC System (Site vs Project):**
+- All items use `PK` / `SK` composite keys. Partition key prefix encodes entity type and tenant scope.
+- Pattern: `PK: PROJECT#<projectId>` + `SK: <ENTITY_TYPE>#<entityId>` for all project-scoped entities.
+- Global Secondary Indexes (GSIs) support alternate access patterns (e.g., lookup by email, by entity ID without knowing project).
+- Auth records (`@auth/dynamodb-adapter`) share the same table using `pk`/`sk` keys in the auth namespace.
 
-1.  **Site Roles (Hardcoded):**
-    - `OWNER`, `SITE_ADMIN`, `CREATOR` (Can create projects), `MEMBER`.
-    - Stored in `User.system_role`.
+**Entity Domains (to be fully defined in Story 0.1):**
 
-2.  **Project Roles (Dynamic/Snapshot):**
-    - **Structure:** Stored as JSONB in `Project` table: `roles: { "Foreman": ["SHEET_VIEW", "FORM_SUBMIT"] }`.
-    - **Snapshot Logic:** Creating a project _copies_ the Template's role definitions into the new Project. Future template updates do **not** cascade.
-    - **Constraint:** `SystemRoles` are global. `ProjectRoles` are scoped strictly to `project_id`.
+| Domain | Entities |
+|---|---|
+| Identity | User, ProjectMember |
+| Projects | Project, ProjectTemplate |
+| Forms | Form, FormVersion, Submission |
+| Sheets | Sheet, SheetColumn, SheetRow |
+| Field Ops | Route, RouteStop |
+| Tasks | Task, EntityLink |
+| Documents | SpecSection |
+| Compliance | ComplianceRequirement, ComplianceRecord |
+| Files | FileUpload |
+| AI | VectorEmbedding, AiConversation |
+| Access | PublicToken, AuditLog |
+| Help | HelpArticle, HelpCategory |
 
-3.  **Security Policies:**
-    - **Self-Demotion:** `BEFORE UPDATE` Trigger on `ProjectMember` prevents removing the last `DIRECTOR` role from a project.
-    - **Ghost Permissions:** RLS `check_visibility()` (Object Level) always runs _before_ Application Permission checks.
-    - **Caching Strategy:** Permissions are embedded in the Auth Session. Updates require a Session Refresh (Next Login or explicit refresh).
+**RBAC System (DynamoDB):**
 
-**Compliance & Access:**
+- **Site Roles** (`OWNER`, `SITE_ADMIN`, `CREATOR`, `MEMBER`): stored as an attribute on the `User` entity.
+- **Project Roles** (dynamic, snapshot): stored as a JSON attribute on the `Project` entity — `roles: { "Foreman": ["SHEET_VIEW", "FORM_SUBMIT"] }`. Created by copying Template role definitions at project creation time; future template changes do not cascade.
+- **Self-Demotion Guard**: Enforced at the application layer in `requireProjectAccess()` — prevents removing the last `DIRECTOR` from a project before committing the write.
+- **Permission Caching**: Permissions are embedded in the Auth session. Role changes trigger `auth:force_refresh` via Socket.io event; client re-validates immediately.
 
-- `ComplianceRequirement`: Definition (Type: PROOF_OF_INSURANCE, WAIVER_SIGNATURE). Linked to `Project`.
-- `ComplianceRecord`: User's submission for a requirement (Status: PENDING, APPROVED, REJECTED).
-- `ExternalAccessRequest`: Logs attempts to access shared resources.
-- `HelpArticle`: Knowledge Base Item (Fields: `title`, `content_json` (Plate), `status` (DRAFT/PUBLISHED), `category_id`).
-- `HelpCategory`: Organizational Folder for Articles.
+### Smart Grid System (Hocuspocus + DynamoDB)
 
-### New Core Entities (Phase 2)
+- **Infrastructure**: **Hocuspocus** WebSocket server — dedicated `ws-server` ECS service.
+- **Persistence Strategy**:
+  - **Live**: In-memory Yjs CRDT binary (Hocuspocus in-memory state per document).
+  - **Durable**: Hocuspocus **Database Extension** saves Yjs document snapshots to DynamoDB (`Sheet` entity) every 5 minutes or on session end. Uses DynamoDB conditional writes on a `version` attribute to detect conflicts.
+  - **Querying**: `SheetRow` DynamoDB entities mirror the Yjs data for API-based reporting (Dashboard metrics). ElectroDB collection query retrieves all rows for a sheet in a single request.
+  - **Multi-Instance Sync**: Hocuspocus **Redis Extension** on ElastiCache pub-sub propagates Yjs CRDT updates across all `ws-server` ECS tasks. ALB stickies each WebSocket connection to one task.
+- **Concurrency**: Last-Write-Wins on Yjs cell edits (CRDT handles conflict-free merge). DynamoDB condition expression on `version` attribute prevents concurrent snapshot overwrites.
 
-- **Smart Grid System (Hybrid Sync)**:
-  - **Infrastructure**: **Hocuspocus** (WebSocket Server) running as a separate microservice.
-  - **Persistence Strategy**:
-    - **Live**: In-memory Yjs binary.
-    - **Durable**: **Webhook Provider** saves snapshot to Postgres `Sheet` table every 5 minutes or on session end.
-    - **Querying**: `SheetRow` table mirrors the Yjs data for SQL-based reporting (Dashboard metrics).
-  - `Sheet`: Container (`name`, `project_id`, `visibility_config`).
-  - `SheetColumn`: Definitions (`type`: JSON, `options`: JSON).
-  - `SheetRow`: Durable Entity (`id`: CUID, `parent_id` for hierarchy, `rank`).
-  - `SheetVersion`: Full JSON snapshot for rollback.
-  - **Concurrency**: Optimistic Locking on SQL save. Last-Write-Wins on Yjs cell edits.
+**Connected Systems (Integration Layer):**
 
-- **Connected Systems (Integration Layer)**:
-  - **Form-to-Sheet**:
-    - `SheetColumn.source_field_id`: Maps a column to a specific Form Field ID.
-    - `SheetRow.submission_id`: Links a row to its source submission (Source of Truth).
-  - **Sheet-to-Route**:
-    - `Route.source_sheet_id`: Defines the sheet driving this route.
-    - `RouteStop.sheet_row_id`: Bi-directional link. Updating the stop updates the row.
-    - `SheetRow.route_group_id`: Optional grouping ID to visualize which rows belong to which route.
+- **Form-to-Sheet**:
+  - `SheetColumn.sourceFieldId`: Maps a column to a specific Form Field ID.
+  - `SheetRow.submissionId`: Links a row to its source submission (Source of Truth).
+- **Sheet-to-Route**:
+  - `Route.sourceSheetId`: Defines the sheet driving this route.
+  - `RouteStop.sheetRowId`: Bi-directional link — updating the stop updates the row.
+  - `SheetRow.routeGroupId`: Groups rows belonging to a route for map visualization.
 
-- **RFI System**:
-  - `RFI`: The core request (`status`, `question`, `due_date`, `assignee_id`).
-  - `SpecSection`: Parsed text from PDF (`code`, `title`, `content_vector`).
-  - `ScheduleTask`: Gantt activity (`start`, `end`, `dependencies[]`).
-  - **`EntityLink` (Polymorphic)**: The glue table.
-    - Fields: `rfi_id?`, `task_id?`, `spec_id?`, `sheet_region_id?`.
-    - Constraint: `CHECK (num_nonnulls(rfi_id, task_id, spec_id) == 1)`.
+**Task System (formerly RFI):**
+
+- `Task`: Core work item (`status`, `title`, `dueDate`, `assigneeId`, `type`).
+- `SpecSection`: Parsed text from PDF spec books (`code`, `title`). Pinecone vector ID stored in `VectorEmbedding` entity.
+- `ScheduleTask`: Gantt activity (`startDate`, `endDate`, `dependencies[]`).
+- **`EntityLink` (Polymorphic DynamoDB pattern)**: Links tasks, specs, sheet regions. Enforced at the application layer (no DB-level CHECK constraint in DynamoDB).
 
 ### Granular Visibility & Permissions (Deep Dive)
 
 **Requirement:** Project Admins must set visibility on _all_ folders, objects, and chats.
 
-**Schema Strategy:**
+**DynamoDB Attribute Strategy:**
 
-- **Entity Mixin:** `Form`, `Sheet`, `Folder`, `ChatChannel` tables will all include a standard `VisibilityConfig` JSONB column.
+- **Entity Mixin:** `Form`, `Sheet`, `Folder`, `ChatChannel` ElectroDB entities all include a `visibilityConfig` map attribute.
 - **Structure**:
-  ```json
-  {
-    "mode": "PUBLIC" | "PRIVATE" | "ROLE_RESTRICTED",
-    "allowedRoles": ["manager", "admin"],
-    "allowedUsers": ["user_id_123"]
+  ```typescript
+  visibilityConfig: {
+    mode: 'PUBLIC' | 'PRIVATE' | 'ROLE_RESTRICTED',
+    allowedRoles: string[],   // e.g. ["manager", "admin"]
+    allowedUsers: string[]    // user IDs granted explicit access
   }
   ```
 
-**RLS Enforcement Strategy:**
+**Application-Layer Enforcement (replaces PostgreSQL RLS):**
 
-- **Policy:** `CHECK (check_visibility(project_id, visibility_config, auth.uid()))`
-- **Deep Links**: Direct URL access to a Private ID must return `403 Forbidden` (Enforced by RLS, not just UI).
-- **Concurrency**: If User A revokes User B's access to a folder, and User B tries to write to it simultaneously, the write must be **Rejected** (Database Constraint).
-- **Export Process**: The "Export to Zip" background job must run _as the requesting user_ (or impersonate via RLS policy) to ensure it **Strips Out** private files.
+- **Middleware**: `requireProjectAccess()` reads `visibilityConfig` from the fetched entity and evaluates against the caller's `projectRole` before returning data.
+- **Deep Links**: Direct URL access to a Private ID returns `403 Forbidden` — enforced in the API route handler, not at the database layer.
+- **Concurrency**: DynamoDB conditional writes using `version` attribute prevent race conditions on visibility changes. If User A revokes User B's access while User B writes, the middleware check on B's next request will reject the operation.
+- **Export Process**: The "Export to Zip" BullMQ worker evaluates `visibilityConfig` for each file before including it in the ZIP — no RLS impersonation required.
 
 **Real-Time Security:**
 
-- **Instant Revocation**: Role changes (e.g., Demotion) trigger a specific Socket.io event (`auth:force_refresh`).
-- **Client Action**: The client app listens for `auth:force_refresh` and immediately re-validates the session or redirects to the Login screen if access is lost.
+- **Instant Revocation**: Role changes (e.g., Demotion) trigger a Socket.io event (`auth:force_refresh`) via ElastiCache pub-sub.
+- **Client Action**: The client listens for `auth:force_refresh` and immediately re-validates the session or redirects to Login if access is lost.
 
 ### API & Communication Patterns
 
 - **Versioning Strategy (Universal History)**:
   - **Pattern**: **Mutation-Based Audit Log**.
   - **Implementation**:
-    - **Forms**: Store JSON Schema versions in `FormVersions` table.
-    - **Sheets/Routes**: Use **Yjs CRDT** with **y-websocket** + **y-leveldb** persistence as the source of truth. Every change produces a Yjs update that is stored in LevelDB and can be replayed to reconstruct any state at timestamp `T`.
-    - **Fallback**: For non-sync entities, use a lightweight `_history` table pattern (via Triggers) if strict audit is required.
+    - **Forms**: Store JSON Schema versions as `FormVersion` DynamoDB entities under the same `PROJECT#<id>` partition.
+    - **Sheets**: Yjs CRDT (Hocuspocus) is the source of truth for live collaboration. Hocuspocus Database Extension periodically snapshots the Yjs binary to a `SheetVersion` DynamoDB entity for rollback.
+    - **Audit Trail**: An `AuditLog` DynamoDB entity records all mutations with `userId`, `action`, `entityType`, `entityId`, and `timestamp`. Written as part of the service layer, not via DB triggers.
 
 ### Authentication & Security
 
@@ -318,11 +280,12 @@ Features should interact via **Public API** (exported functions) or **Events** (
   - **Rendering**: Custom CSS-Grid renderer (primary) with **TanStack Table v8** + **TanStack Virtual** available as an alternate `LiveTable` view mode.
   - **Math**: **Hyperformula** (Headless Formula Engine).
 - **Architecture**:
-  - **Frontend**: Custom `SmartGrid` component. Connects to WebSocket via `y-websocket`.
-  - **Backend**: Custom **y-websocket** server (`y-websocket-server.js`) with **LevelDB persistence** and **JWT authentication**.
+  - **Frontend**: Custom `SmartGrid` component. Connects to WebSocket via `y-websocket` (or Hocuspocus client provider).
+  - **Backend**: **Hocuspocus** WebSocket server (`ws-server` ECS service) with **DynamoDB persistence** (Database Extension) and **ElastiCache pub-sub** (Redis Extension for multi-instance sync).
   - **Persistence**: Hybrid model.
-    - Active State: Stored in Redis/Memory during editing.
-    - Durability: Snapshotted to Postgres `Sheet` tables (Rows/Columns) periodically or on "Save".
+    - Active State: In-memory Yjs document on the Hocuspocus instance handling that connection.
+    - Durability: Hocuspocus Database Extension snapshots to `SheetVersion` DynamoDB entity every 5 minutes or on session end.
+    - Query Layer: `SheetRow` DynamoDB entities mirror row data for REST API access (dashboard metrics, mobile read).
 - **Row-Centricity**:
   - Data is structured as `Row[]` with stable UUIDs, not `Cell[][]`.
   - This allows "Row Attachments" and "Row Chat" to link reliably even if the row is moved or sorted.

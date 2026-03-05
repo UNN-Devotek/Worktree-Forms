@@ -39,6 +39,9 @@ So that all application code has a type-safe, consistent data access layer.
 **And** all relationships previously handled by Prisma foreign keys are expressed as composite sort key patterns (e.g. `PROJECT#<id>#FORM#<id>`)
 **And** a `lib/dynamo/` module exports the DynamoDB DocumentClient and all entity definitions
 **And** TypeScript types are inferred from ElectroDB schemas — no manual type definitions required.
+**And** a complete access pattern document is produced listing every query, its PK/SK pattern, and which GSI it uses.
+
+> **Post-completion task:** Once this story is done, update the **"Data Architecture — Entity Reference"** section in `architecture.md` with the finalized entity list, full key schema table, and GSI map. That section is currently a placeholder pending Story 0.1 output.
 
 #### Story 0.2: S3 Bucket Setup & Storage Service Swap
 
