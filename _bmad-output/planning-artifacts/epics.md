@@ -183,14 +183,14 @@ So that repository functions are tested without mocking the SDK and without rely
 **Goal:** Establish the multi-tenant "Project" container, user authentication, and role-based access control system that underpins the entire application.
 **Value:** Sarah can create a secure workspace and invite her team.
 **Key Database Entities:** `User`, `Project`, `ProjectRoleDefinitions`, `ProjectMember`.
-**FRs covered:** FR3.1, FR3.3, FR5.1, FR5.2, FR5.3, FR5.4, FR5.9, FR10.1, FR10.2, FR10.3, NFR4, NFR8.
+**FRs covered:** FR3.1, FR3.3, FR5.1, FR5.2, FR5.3, FR5.4, FR5.9, FR10.1, FR10.2, FR10.3, NFR4, NFR8, NFR13.
 
 ### Epic 2: Visual Form Builder & Schema Engine
 
 **Goal:** Enable Admins to create complex, versioned data entry forms with validation, logic, and intelligent file naming.
 **Value:** Sarah can digitize her paper forms in minutes without coding.
 **Key Database Entities:** `Form`, `FormVersion`, `FormField` (JSONB), `VisibilityConfig`.
-**FRs covered:** FR1.1, FR1.2, FR1.3, FR1.4, FR1.5, FR1.5.1, FR1.6, FR9.1, FR9.2 (Forms), NFR10.
+**FRs covered:** FR1.1, FR1.2, FR1.3, FR1.4, FR1.5, FR1.5.1, FR1.6, FR9.1, FR9.2, FR9.3, FR9.4 (Forms), NFR10.
 
 ### Epic 3: Field Operations Mobile App (Offline First)
 
@@ -218,7 +218,7 @@ So that repository functions are tested without mocking the SDK and without rely
 **Goal:** Implement a custom, high-performance "Smart Grid" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
 **Value:** The office team can manage complex project schedules and trackers with hierarchy, rich data types, and real-time concurrency.
 **Key Database Entities:** `Sheet`, `SheetColumn` (Definitions), `SheetRow` (Data + Metadata), `YjsDocument` (Binary State).
-**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, NFR9, NFR12.
+**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, FR9.3, FR9.4 (Sheets), NFR9, NFR12.
 
 ### Epic 7: Document Control & Field Tools
 
@@ -246,7 +246,7 @@ So that repository functions are tested without mocking the SDK and without rely
 **Goal:** Deploy the Agentic Assistant, RAG Engine, and "Magic Forward" email ingestion to automate repetitive tasks.
 **Value:** Sarah can just forward an email to create a project, and ask the AI to "reschedule Mike" without clicking 10 buttons.
 **Key Database Entities:** `AiConversation`, `VectorEmbedding` (DynamoDB metadata + Pinecone vector ID).
-**FRs covered:** FR8.1, FR8.2, FR11.1, FR11.2, FR11.3, FR11.4, FR16.1, FR18.1, NFR11.
+**FRs covered:** FR8.1, FR8.2, FR11.1, FR11.2, FR11.3, FR11.4, FR16.1, FR16.2, FR16.3, FR18.1, NFR11.
 
 ### Epic 11: Help Center & Support System
 
@@ -297,12 +297,17 @@ FR8.1: Epic 10 - Magic Forward
 FR8.2: Epic 10 - RAG Engine
 FR8.3: Epic 3 - Contextual Compass
 FR9.1: Epic 2 - Form History
+FR9.3: Epic 2 (Form restore) + Epic 6 (Sheet snapshot rollback)
+FR9.4: Epic 2 (Form blame) + Epic 6 (Sheet snapshot blame)
+NFR13: Epic 1 (Story 1.10 - i18n Infrastructure)
 FR10.1: Epic 1 - Profile Display Name
 FR11.1: Epic 10 - Persistent Chat
 FR11.2: Epic 10 - Autonomous Action
 FR12.1: Epic 6 - Live Collab
 FR15.1: Epic 9 - Compliance Gates
 FR16.1: Epic 10 - Webhooks
+FR16.2: Epic 10 - API Key Management (scoped keys + outgoing encrypted secrets)
+FR16.3: Epic 10 - OpenAPI/Swagger auto-documentation
 FR17.1: Epic 5 - Data Retention
 FR17.2: Epic 5 - Storage Quotas
 FR18.1: Epic 5 - Resource Limits
@@ -473,6 +478,22 @@ So that I can navigate and perform actions quickly.
 **And** handles "Stacked Modals" (Z-index management) correctly (Arch #5)
 **And** Icon imports are tree-shakable (e.g. `lucide-react/dist/esm/icons/...`) (Arch #4).
 
+### Story 1.10: i18n Infrastructure (Localization)
+
+As a Developer,
+I want a working internationalization setup with English and Spanish translation files,
+So that every story delivered going forward can satisfy the NFR13 localization requirement without rework.
+
+**Acceptance Criteria:**
+**Given** the Next.js frontend
+**Then** `next-i18next` (or equivalent) is installed and configured with `en-US` as the default locale and `es-ES` as a supported locale
+**And** translation JSON files exist at `public/locales/en/common.json` and `public/locales/es/common.json`
+**And** all existing hardcoded user-facing strings in currently-shipped components are extracted into `en/common.json`
+**And** `es/common.json` contains Spanish translations for all extracted keys (machine-translated baseline is acceptable; human review is a separate concern)
+**And** a CI lint step fails if a `.tsx` file contains a hardcoded user-facing string not wrapped in `t('key')` — enforced from this story forward
+**And** the resolved locale is determined first by the `language` field on the `User` DynamoDB entity, falling back to the `Accept-Language` request header
+**And** API error messages returned by Server Actions and Express routes respect the resolved locale (NFR13).
+
 ## Epic 2: Visual Form Builder & Schema Engine
 
 **Goal:** Enable Admins to create complex, versioned data entry forms with validation, logic, and intelligent file naming.
@@ -536,13 +557,18 @@ So that I can iterate on the collection process safely.
 
 As an Admin,
 I want to view the edit history of a form and restore previous versions,
-So that I can recover from accidental changes.
+So that I can recover from accidental changes and audit who changed what.
 
 **Acceptance Criteria:**
-**Given** a form has been edited multiple times
-**When** I view "Version History"
-**Then** I see a list of edits with User ID, Timestamp, and a "Diff" summary (FR9.4)
-**And** I can click "Restore" on a previous version to make it active (FR9.3).
+**Given** a form has been published multiple times
+**When** I open the "Version History" panel
+**Then** I see a chronological list of every published version with Publisher User ID and Timestamp (FR9.4)
+**And** each entry shows a human-readable diff summary of what fields were added, removed, or modified
+**And** every version is stored as a `FormVersion` entity in DynamoDB with the full schema snapshot
+**And** I can click "Restore" on any historical version to make it the active published schema (FR9.3)
+**And** restoring creates a new version entry attributed to the restoring user — it does not overwrite history
+**And** the form builder loads the restored schema immediately after restore completes
+**And** existing submissions referencing older schema versions are unaffected (schema versioning maintained per FR9.2).
 
 ### Story 2.6: Retroactive Renaming (Background Job)
 
@@ -887,15 +913,27 @@ So that I can show my team exactly what I'm looking at.
 #### Story 6.12: Governance & Permissions
 
 As an Admin,
-I want to lock the "Budget" column,
-So that Editors cannot change approved costs.
+I want to lock columns, save sheet snapshots, and roll back to previous states,
+So that I can protect approved data and recover from unintended bulk edits.
 
 **Acceptance Criteria:**
+
+**Column Permissions (FR12.7):**
 **Given** I am an Admin
 **When** I edit Column Properties
 **Then** I can toggle "Lock Column"
 **And** Editors see the column as Read-Only
-**And** the API rejects edits to that column from non-Admins (FR12.7).
+**And** the API rejects edits to that column from non-Admins
+
+**Sheet Snapshots & Rollback (FR9.3, FR9.4):**
+**Given** I am an Admin on a Smart Sheet
+**When** I click "Save Snapshot"
+**Then** the current full Yjs document state is serialised and stored as a `SheetSnapshot` DynamoDB entity with my User ID and a Timestamp (FR9.4)
+**And** I can view the snapshot list ordered by most recent
+**And** each snapshot entry shows the author, timestamp, and an optional label I can set
+**And** I can click "Restore" on any snapshot to replace the live Yjs document state with the snapshot binary (FR9.3)
+**And** restoring creates a new snapshot entry marking it as a restore event — it does not delete history
+**And** all connected users see the restored state propagated in real-time via Hocuspocus.
 
 #### Story 6.13: Offline Resilience
 
@@ -1093,15 +1131,28 @@ So that I can find information quickly.
 ### Story 10.4: API Key Management
 
 As an Admin,
-I want to generate and revoke API keys for external integrations,
-So that I can connect third-party tools securely.
+I want to generate scoped API keys for external tools and securely store outgoing service credentials,
+So that I can integrate third-party systems without exposing secrets in plaintext.
 
 **Acceptance Criteria:**
+
+**Incoming API Keys (FR16.2a):**
 **Given** I am in Project Settings > Integrations
 **When** I create a new API Key
-**Then** the key is displayed ONCE and then hashed (FR16.2)
-**And** I can see the "Last Used" timestamp
-**And** I can revoke the key immediately.
+**Then** I must select at least one permission scope from the available list (e.g. `read:forms`, `write:submissions`, `read:sheets`)
+**And** the full key is displayed exactly once immediately after creation and never again
+**And** the key is stored as a bcrypt hash — the plaintext is never persisted
+**And** I can see each key's label, scopes, creation date, and "Last Used" timestamp in the key list
+**And** I can revoke any key immediately; revoked keys are rejected on the next API request
+**And** API requests using the key are scoped strictly to the declared permissions — attempting an out-of-scope operation returns 403
+
+**Outgoing Encrypted Secrets (FR16.2b):**
+**Given** I am in Project Settings > Integrations > External Services
+**When** I save a third-party credential (e.g. OpenAI API key, Stripe secret)
+**Then** the value is encrypted with AES-256 field-level encryption before being written to DynamoDB
+**And** the stored value is never returned to the frontend in plaintext — the UI shows only a masked preview (e.g. `sk-...xxxx`)
+**And** the decrypted value is available only server-side to the worker/service that needs it
+**And** I can delete the stored secret, which removes it from DynamoDB permanently.
 
 ### Story 10.5: Webhooks & Event Subscriptions
 
@@ -1116,6 +1167,21 @@ So that I can trigger external workflows in Zapier or n8n.
 **And** includes a discrete `X-Signature` header for security verification
 **And** retries with exponential backoff if the external server returns 500 (Reliability)
 **And** logs the delivery attempt in the Audit Log.
+
+### Story 10.6: OpenAPI / Swagger Auto-Documentation
+
+As a Developer,
+I want the Express REST API to expose an auto-generated OpenAPI spec,
+So that mobile client developers and external integrators always have an accurate, up-to-date API contract.
+
+**Acceptance Criteria:**
+**Given** the Express backend is running
+**Then** `GET /api/docs` serves a Swagger UI HTML page
+**And** `GET /api/docs/openapi.json` returns the OpenAPI 3.0 spec as JSON
+**And** the spec is auto-generated from route definitions using `zod-openapi` or equivalent — no hand-maintained YAML
+**And** every route that accepts a Zod-validated request body has its request schema reflected in the spec
+**And** every route response shape is documented with at least the 200 and 400/401/403 status codes
+**And** the `/api/docs` endpoint is disabled (returns 404) when `NODE_ENV=production` unless `ENABLE_API_DOCS=true` is explicitly set (FR16.3).
 
 ## Epic 11: Help Center & Support System
 

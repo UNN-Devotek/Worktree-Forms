@@ -58,6 +58,7 @@ development_status:
   1-7-authentication-ui-flows: done
   1-8-project-workspace-layout: done
   1-9-global-ui-components: done
+  1-10-i18n-infrastructure: backlog
   epic-1-retrospective: optional
 
   # Epic 2: Visual Form Builder & Schema Engine
@@ -143,6 +144,7 @@ development_status:
   10-3-ai-assistant-interface: done
   10-4-api-key-management: done
   10-5-webhooks-event-subscriptions: done
+  10-6-openapi-swagger-docs: backlog
   epic-10-retrospective: optional
 
   # Epic 11: Help Center & Support System
