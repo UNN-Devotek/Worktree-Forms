@@ -334,7 +334,151 @@ Features should interact via **Public API** (exported functions) or **Events** (
 - **Container Strategy**: Three ECS services — `app` (Next.js + Express), `ws-server` (Hocuspocus), `worker` (BullMQ). No persistence containers in ECS — all persistence is AWS managed services.
 - **Inter-Service Communication**: **ECS Service Connect** for internal service-to-service traffic (short DNS names, built-in retries).
 - **VPC Endpoints**: DynamoDB and S3 VPC Gateway Endpoints (free) — keeps AWS API traffic off the public internet, reduces NAT Gateway costs.
-- **Local Development**: Docker Compose with `amazon/dynamodb-local` (100% API compatible) and `redis:7-alpine` (`--maxmemory-policy noeviction`). S3 and Pinecone connect to real AWS dev-environment resources.
+- **Local Development**: Docker Compose with `amazon/dynamodb-local` + `redis:7` + optional `pinecone-local`. S3 uses a real AWS dev bucket. See the Local Development section below for full service map and configuration.
+
+### Local Development Environment
+
+_Research source: technical-Local-Dev-AWS-Stack-Worktree-research-2026-03-05.md_
+
+#### Docker Compose Service Map
+
+| Service | Docker Image | Local Port | Production Equivalent |
+|---|---|---|---|
+| `app` | Project Dockerfile | `3005` | ECS `app` service |
+| `ws-server` | Project Dockerfile | `1234` | ECS `ws-server` service |
+| `worker` | Project Dockerfile | — | ECS `worker` service |
+| `dynamodb-local` | `amazon/dynamodb-local` | `8000` | AWS DynamoDB |
+| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8001` | DX tool only — not in production |
+| `redis` | `redis:7` | `6379` | AWS ElastiCache for Redis 7.1 |
+| `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | Pinecone (in-memory, 100K record limit) |
+
+#### Critical Configuration Rules
+
+**DynamoDB Local — `-sharedDb` flag is mandatory.**
+Without it, each Node.js process (including Next.js hot-reload forks) opens a connection that sees a different isolated SQLite dataset. Tables created by the seed script become invisible to the app. Always pass `-sharedDb` in the Docker Compose command.
+
+```yaml
+# docker-compose.yml
+dynamodb-local:
+  image: amazon/dynamodb-local
+  command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+  volumes:
+    - dynamodb-data:/data
+  ports:
+    - "8000:8000"
+```
+
+**Redis — `noeviction` policy is mandatory for BullMQ.**
+BullMQ requires Redis to never silently drop queue entries. Match production ElastiCache config:
+
+```yaml
+redis:
+  image: redis:7
+  command: "redis-server --maxmemory-policy noeviction"
+  ports:
+    - "6379:6379"
+```
+
+**Next.js API routes — Node.js runtime only.**
+Any Route Handler or Server Component using `@aws-sdk/client-dynamodb`, `@aws-sdk/client-s3`, or `@pinecone-database/pinecone` must run on the Node.js runtime. The AWS SDK v3 is incompatible with the Edge runtime. Do NOT add `export const runtime = 'edge'` to any route that touches these services.
+
+#### Environment Variable Switching
+
+The SDK client factory reads a single env var to select local vs. cloud:
+
+```typescript
+// lib/dynamodb.ts
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION ?? 'us-east-1',
+  ...(process.env.DYNAMODB_ENDPOINT && {
+    endpoint: process.env.DYNAMODB_ENDPOINT, // 'http://dynamodb-local:8000' locally
+  }),
+});
+```
+
+Local `.env.local` (gitignored):
+```bash
+DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+DYNAMODB_TABLE_NAME=worktree-local
+REDIS_URL=redis://redis:6379
+# Pinecone — option A: local container
+PINECONE_API_KEY=local
+PINECONE_HOST=http://pinecone-local:5080
+# Pinecone — option B: real free-tier key (remove PINECONE_HOST override)
+```
+
+Production `.env` (injected by ECS Task Definition / GitHub Actions secrets):
+```bash
+# No DYNAMODB_ENDPOINT set → SDK uses real DynamoDB endpoint
+DYNAMODB_TABLE_NAME=worktree-prod
+REDIS_URL=rediss://<elasticache-cluster-endpoint>:6379
+PINECONE_API_KEY=<real-key>
+# No PINECONE_HOST override → SDK uses real Pinecone endpoint
+```
+
+#### S3 — Real AWS Dev Bucket (no local emulation)
+
+Offline S3 is not a stated requirement for local development. Using a real `worktree-dev` S3 bucket in a sandbox AWS account is the recommended approach:
+- Simpler — no LocalStack overhead
+- Zero emulation gap — presigned URL behavior is identical to production
+- Cost is negligible for dev-scale data volumes
+
+LocalStack S3 remains an option if offline dev becomes a requirement. The SDK `endpoint` override pattern is identical to DynamoDB Local.
+
+#### Pinecone — Two Valid Options
+
+| Option | How | Tradeoff |
+|---|---|---|
+| `pinecone-local` Docker | `PINECONE_HOST=http://pinecone-local:5080` | Offline; ephemeral (no persistence after `down`) |
+| Real Pinecone free tier | Remove `PINECONE_HOST` override; use real API key | Persistent; simplest; requires internet |
+
+**Recommendation:** Start with real Pinecone free tier (simpler). Switch to `pinecone-local` if offline development becomes a requirement.
+
+#### Seed Data Script (`seed-dev.sh`)
+
+Replaces the old Prisma-based `seed-dev.sh`. The new script must:
+
+1. **Create the DynamoDB table** with correct `KeySchema`, `AttributeDefinitions`, and all GSIs — skip creation if table already exists (`ResourceInUseException` caught)
+2. **Seed dev users** — `admin@worktree.pro` (OWNER role) and `user@worktree.com` (MEMBER role) with bcrypt-hashed passwords
+3. **Seed a sample project** with Forms, Sheets (with columns), and Routes sufficient for UI development
+4. **Auth adapter records** — seed NextAuth session table entries for quick login in dev
+5. **Idempotent** — using DynamoDB `PutItem` with `ConditionExpression: "attribute_not_exists(PK)"` so re-runs don't duplicate data
+
+Script is run with `tsx scripts/seed-dev.ts` (no build step required).
+
+#### Testing — vitest-dynalite
+
+Integration tests run against **vitest-dynalite** (not mocked SDK):
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import dynalite from 'vitest-dynalite'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['vitest-dynalite/setup'],
+    globals: true,
+  },
+})
+
+// vitest-dynalite.config.ts
+export default {
+  tables: [
+    {
+      TableName: 'worktree-test',
+      KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'SK', KeyType: 'RANGE' }],
+      AttributeDefinitions: [
+        { AttributeName: 'PK', AttributeType: 'S' },
+        { AttributeName: 'SK', AttributeType: 'S' },
+      ],
+      BillingMode: 'PAY_PER_REQUEST',
+    },
+  ],
+}
+```
+
+Rule: **Never mock the DynamoDB SDK**. Always run real queries against Dynalite. This catches access pattern bugs that mocks hide.
 
 ### New Infrastructure Decisions (Phase 3 Enterprise)
 
