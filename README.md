@@ -1,387 +1,161 @@
-# 🎉 Worktree: Complete Form Management System
+# Worktree — Project Operating System for Field Operations
 
-**Project Status**: Phase 2 - Frontend Refinement & Core Feature Integration
-**Timeline**: 8-week implementation
-**Last Updated**: December 11, 2025
-
-## 📋 Quick Links
-
-- 📖 [Development Guide](./claude.md) - Daily reference for developers
-- 📊 [Full Plan](./worktree-forms-plan.md) - Complete 8-week roadmap
-- 🏗️ [Architecture](./strategic-overview.md) - System design & decisions
-- 🛠️ [Admin Guide](./ADMIN-PAGES-GUIDE.md) - Admin panel specifications
-- 🎨 [Themes](./COLOR-THEME-UPDATE.md) - Ameritech brand colors
-- 📸 [MinIO Guide](./docs/minio-guide.md) - Image upload & serving
-- ⚡ [Quick Ref](./QUICK-REFERENCE.md) - Common commands & patterns
-
-## 🎯 What We're Building
-
-A production-ready form management system featuring:
-
-- **Visual Form Builder** - Drag-and-drop interface for creating forms
-- **Dynamic Form Rendering** - Real-time form display and submission
-- **Admin Panel** - Complete user, role, and form management
-- **Role-Based Access** - 3 predefined roles + custom role support
-- **Audit Logging** - Complete activity tracking
-- **Multi-Theme Support** - Light/dark modes with Ameritech branding
-
-## ✨ Recent Progress (December 11, 2025)
-
-This session focused on significant frontend development and refactoring:
-
-- **Cleanup & UI Polish (Dec 12, 2025)**: Removed dummy data from file system store and standardized button styling (Green/Blue primary colors) on the Forms page.
-- **Bug Fixes (Dec 12, 2025)**:
-  - Fixed "Create Form" navigation.
-  - Added localStorage persistence for the File Browser state.
-- **Styling Update**: The frontend application's global styles (`globals.css`) and Tailwind CSS configuration (`tailwind.config.ts`) have been updated to align with the `Squidhub 2.1` project's shadcn-based theming. Unused font-face declarations were removed, and the color palette now uses CSS variables for enhanced theming capabilities.
-- **Core Forms Feature Integration**: Extensive form-building and rendering capabilities have been successfully integrated from `Squidhub 2.1`. This involved:
-  - Transferring entire component directories for `form-builder`, `form-renderer`, `forms/fields`, and `applications`.
-  - Migrating essential hooks (`use-applications`, `use-toast`, `use-drag-drop`, `use-undo-redo`, `use-field-calculator`, `use-conditional-logic`, `use-draft-autosave`, `use-form-submission`, `use-form-progress`, `use-field-progress`).
-  - Copying utility libraries (`api`, `application-utils`, `field-registry`, `form-validation`, `validation/regex-patterns`) and relevant type definitions.
-  - Incorporating several shadcn/ui components (`tabs`, `toast`, `toaster`, `dialog`, `tooltip`, `scroll-area`, `toggle-group`, `toggle`, `progress`, `alert-dialog`, `table`, `calendar`, `popover`).
-- **Feature Decoupling**: All functionalities, fields, and logic related to Discord, gaming identifiers (Steam64 ID, RSI ID, Reforger ID), and Special Interest Groups (SIGs) have been systematically removed from the frontend data models, validation schemas, and UI components. The user interface now focuses on general `full_name` and `email` for application processes.
-- **Application Path Refactoring**: The `/apply` route and its associated sub-routes have been renamed and migrated to `/forms`, with all internal references updated.
-- **Dependency Management**: Missing npm packages required by the integrated features, including various `@radix-ui` components, `@dnd-kit` libraries, `nanoid`, `sonner`, and `date-fns`, were installed.
-- **Code Quality & Refactoring**: Addressed numerous TypeScript compilation errors and ESLint warnings. This involved:
-  - Removing unused imports and variables.
-  - Refactoring `FileField.tsx` and `SignatureField.tsx` into consolidated `forwardRef` components.
-  - Ensuring correct `useEffect` hook usage and type safety across the codebase.
-  - Correcting regex literal usage in `form-viewer.tsx`.
-  - Adjusting parameter signatures for conditional logic functions (`executeAction`, `applyValidationRule`).
-  - Resolving pathing issues for form field components by correctly structuring the `components/forms/fields` directory.
-  - Re-aligning `field-registry.ts` with the intended Squidhub 2.1 implementation.
-- **Build Verification**: The frontend project now successfully builds without any TypeScript errors or linting warnings.
-- **System Verification & Fixes (Jan 19, 2026)**:
-  - **Frontend Stability**: Fixed critical `'use client'` errors in RFI, Blueprints, and Help Center components.
-  - **Environment Config**: Corrected `.env` configuration for `NEXT_PUBLIC_API_URL` to fix API routing issues in local development.
-  - **Verified Flows**: Validated Login, Project Creation, RFI Creation, Help Center, and Blueprints UI via manual browser testing.
-- **Fixes (Jan 20, 2026)**:
-  - **Build Fix**: Resolved `SpecList.tsx` build error by adding `'use client'` and fixing type definitions.
-  - **Docker Setup**: Clarified need for `docker-compose down -v` to clear stale `node_modules` volumes when dependencies like `idb-keyval` are added.
-  - **Refactor**: Corrected `form-builder-store` import paths across the frontend codebase.
-
-## 🚀 Getting Started
-
-There are two deployment modes:
-
-1. **🚀 Dokploy Production** - Live production environment
-2. **💻 Local Development** - For development and testing
+**Last Updated**: 2026-03-05
+**Stack**: Next.js · AWS DynamoDB · S3 · ElastiCache · Pinecone · ECS Fargate
 
 ---
 
-### 🚀 Dokploy Production Deployment
+## What We're Building
 
-Production runs on Dokploy infrastructure with automatic deployments.
+Worktree bridges back-office planning and front-line execution for field operations teams.
 
-#### Prerequisites
-
-- Access to Dokploy dashboard
-- GitHub repository access
-- Environment variables configured in Dokploy
-
-#### Deployment Process
-
-```bash
-# 1. Make your changes locally
-git add .
-git commit -m "feat: your changes"
-git push origin main
-
-# 2. Dokploy automatically:
-#    - Pulls from GitHub
-#    - Builds Docker image
-#    - Deploys with configured environment variables
-#    - Restarts the application
-
-# 3. Verify deployment
-curl https://worktree.pro/api/health
-# Should return: {"status":"ok","database":"connected"}
-```
-
-#### Production URLs
-
-- **Live Site**: https://worktree.pro
-- **API**: https://worktree.pro/api
-- **MinIO Console**: https://minio.worktree.pro (Admin access only)
-
-#### Environment Variables (Configured in Dokploy)
-
-All environment variables are configured in Dokploy's UI. Key settings:
-
-```bash
-# Application
-NODE_ENV=production
-PORT=3100
-BACKEND_PORT=5100
-
-# MinIO (Internal Docker Network)
-MINIO_HOST=minio
-MINIO_PORT=9004
-MINIO_USE_SSL=false
-
-# MinIO (Public Access)
-MINIO_PUBLIC_URL=https://minio.worktree.pro
-```
-
-> See [CLAUDE.md](./CLAUDE.md) section "🚀 Dokploy Production Deployment" for complete environment variable list.
+**Core promise**: A Row in the spreadsheet = A Form on the phone = A Pin on the map. Zero silos. Real-time sync.
 
 ---
 
-### 💻 Local Development Setup
+## Quick Links
 
-Local development connects to **external Dokploy services** (database and MinIO).
-
-#### Prerequisites
-
-- Docker Desktop installed and running
-- `.env` file configured (see `.env.example`)
-- Access to external services (database, MinIO)
-
-#### Quick Start
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/UNN-Devotek/Worktree-Forms
-cd Worktree-Forms
-
-# 2. Create .env file from example
-cp .env.example .env
-# Edit .env with your credentials (ask team for values)
-
-# 3. Start Docker container
-docker-compose up -d
-
-# 4. Check logs for successful startup
-docker-compose logs -f app
-
-# 5. Look for successful startup message:
-#    "✓ Environment validation passed"
-#    "Frontend ready on http://localhost:3100"
-#    "Backend ready on http://localhost:5100"
-```
-
-#### Local Development URLs
-
-- **Frontend**: http://localhost:3100
-- **Backend API**: http://localhost:5100/api
-- **Health Check**: http://localhost:5100/api/health
-
-#### Environment Configuration
-
-Your `.env` file must include:
-
-```bash
-# Application
-NODE_ENV=development
-PORT=3100
-BACKEND_PORT=5100
-
-# External Database (from Dokploy)
-DATABASE_URL=postgresql://[get-from-team]
-
-# External MinIO (Direct IP access to API port)
-MINIO_HOST=67.222.144.10
-MINIO_PORT=9004
-MINIO_USE_SSL=false
-MINIO_ENDPOINT=http://67.222.144.10:9004
-
-# Credentials (ask team)
-MINIO_ACCESS_KEY=[ask-team]
-MINIO_SECRET_KEY=[ask-team]
-JWT_SECRET=[ask-team]
-```
-
-> **Important**: Never commit `.env` to git. It contains sensitive credentials and is already in `.gitignore`.
-
-#### Common Commands
-
-```bash
-# Start containers
-docker-compose up -d
-
-# Rebuild after code changes
-docker-compose down
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f app
-
-# Stop containers
-docker-compose down
-
-# View running containers
-docker-compose ps
-```
-
-#### Troubleshooting
-
-**"Cannot connect to database"**
-
-- Check `DATABASE_URL` in `.env`
-- Ensure database service is running in Dokploy
-- Ask team for latest credentials
-
-**"MinIO connection failed"**
-
-- Verify `MINIO_HOST=67.222.144.10` and `MINIO_PORT=9004`
-- Check credentials are correct
-- Ensure MinIO port 9004 is accessible externally
-
-**"File upload fails"**
-
-- Check Docker logs: `docker-compose logs app`
-- Verify MinIO endpoint is using IP (not domain) for local dev
-- Ensure bucket name is `worktree`
+- 🏗️ [Architecture](./\_bmad-output/planning-artifacts/architecture.md) — Tech stack, data model, infrastructure
+- 📋 [Project Context](./\_bmad-output/planning-artifacts/project-context.md) — Constraints, dev environment, rules
+- 📖 [Epics & Stories](./\_bmad-output/planning-artifacts/epics.md) — Feature backlog
+- 📊 [Sprint Status](./\_bmad-output/implementation-artifacts/sprint-status.yaml) — Story tracking
+- 🤖 [Claude Guide](./CLAUDE.md) — Daily dev reference for Claude Code
+- 🤖 [Gemini Guide](./GEMINI.md) — Daily dev reference for Gemini CLI
 
 ---
 
-### 🔑 Default Credentials
-
-- **Admin**: `admin@worktree.pro` / `admin123`
-- **User**: Register a new account
-
-## 📦 Technology Stack
+## Tech Stack
 
 ### Frontend
+- **Next.js App Router** (TypeScript, strict mode)
+- **shadcn/ui** + Tailwind CSS
+- **Yjs + Hocuspocus** — real-time collaborative Smart Grid (CRDT)
+- **Vercel AI SDK** — global AI assistant
 
-- Next.js 14+ with App Router
-- TypeScript
-- Tailwind CSS + Ameritech colors
-- Shadcn/ui components
-- React Hook Form + Zod validation
-- TanStack Query for state management
+### Backend / API
+- **Express.js** REST API (versioned, for mobile sync)
+- **Next.js Server Actions** (web dashboard mutations)
+- **BullMQ** — background job queue (PDF parsing, webhooks, image optimization)
 
-### Backend
+### Data & Storage
+- **AWS DynamoDB + ElectroDB** — single-table design, no SQL, no migrations
+- **Auth.js v5 + `@auth/dynamodb-adapter`** — database sessions, instant revocation
+- **AWS S3** — file storage (presigned URLs, no public access)
+- **AWS ElastiCache for Redis 7** — BullMQ queues + Hocuspocus pub-sub
+- **Pinecone** — vector search for AI RAG (free tier → pay-per-use)
 
-- Express.js with TypeScript
-- Node.js 20+
-- PostgreSQL
-- Prisma ORM
-- JWT authentication
-- Bcrypt for password hashing
-
-### DevOps & Testing
-
-- Docker & Docker Compose
-- GitHub Actions for CI/CD
-- Vitest for unit tests
-- Jest for integration tests
-- Playwright for E2E tests
-- ≥90% code coverage target
-
-## 🎨 Ameritech Brand Colors
-
-```
-Primary Corporate Blue    #003D82
-Primary Medium Blue       #0055B8 ← Main actions
-Primary Light Blue        #1E90FF ← Interactive
-Accent Red               #B31B1B ← Warnings
-Text Dark Gray           #1F2937
-Background Light Gray    #F3F4F6
-White                    #FFFFFF
-```
-
-## 📊 Implementation Timeline
-
-| Week | Phase                      | Deliverable                        |
-| ---- | -------------------------- | ---------------------------------- |
-| 1    | **Foundation**             | Docker setup, repo init, DB config |
-| 2    | **Authentication**         | Login/signup, JWT, password reset  |
-| 3    | **User Management**        | CRUD users, roles, permissions     |
-| 4    | **Form Builder**           | Drag-drop UI, field management     |
-| 5    | **Form Rendering**         | Rendering, submissions, export     |
-| 6    | **Settings**               | Form settings, system settings     |
-| 7    | **Testing & Polish**       | 90% coverage, accessibility        |
-| 8    | **Documentation & Launch** | API docs, guides, deployment       |
-
-## ✅ Pre-Implementation Checklist
-
-- [ ] All team members reviewed claude.md
-- [ ] Docker Desktop installed
-- [ ] Node.js 20+ verified
-- [ ] Ameritech colors confirmed
-- [ ] Technology stack approved
-- [ ] Development environment ready
-- [ ] Deployment strategy finalized
-
-## 🎯 Success Metrics
-
-✅ All features implemented
-✅ ≥90% test coverage
-✅ Page load <2 seconds
-✅ API response <200ms (p95)
-✅ Lighthouse score >90
-✅ WCAG AA accessibility
-✅ Zero critical vulnerabilities
-✅ Complete documentation
-
-## 📁 Repository Structure
-
-```
-Worktree-Forms/
-├── apps/
-│   ├── frontend/          # Next.js application
-│   │   ├── app/
-│   │   ├── components/
-│   │   ├── lib/
-│   │   └── public/
-│   └── backend/           # Express.js API
-│       ├── src/
-│       │   ├── routes/
-│       │   ├── middleware/
-│       │   ├── models/
-│       │   └── services/
-│       └── tests/
-├── docs/                  # Documentation
-├── docker-compose.yml
-├── Dockerfile.frontend
-├── Dockerfile.backend
-└── .github/workflows/     # CI/CD
-```
-
-## 📚 Documentation
-
-All documentation files are provided and ready to use:
-
-1. **claude.md** - Developer guide with daily commands
-2. **worktree-forms-plan.md** - Full technical specifications
-3. **strategic-overview.md** - Architecture and design decisions
-4. **ADMIN-PAGES-GUIDE.md** - Admin panel specifications
-5. **COLOR-THEME-UPDATE.md** - Brand colors and theming
-6. **QUICK-REFERENCE.md** - Common commands and troubleshooting
-
-## 🤝 Contributing
-
-Please refer to [claude.md](./claude.md) for:
-
-- Code standards
-- Commit conventions
-- Development workflow
-- Testing requirements
-- PR process
-
-## 🔒 Security
-
-- Bcrypt password hashing (10+ rounds)
-- JWT token management (15min access, 7day refresh)
-- CSRF protection enabled
-- Input validation (Zod)
-- Rate limiting on auth endpoints
-- HTTPS enforced in production
-
-## 📞 Support
-
-For questions or issues:
-
-1. Check the relevant documentation file
-2. Review QUICK-REFERENCE.md
-3. Consult development standards in claude.md
-4. Reference full plan in worktree-forms-plan.md
+### Infrastructure
+- **AWS ECS Fargate** — 3 services: `app`, `ws-server`, `worker`
+- **AWS CDK TypeScript** — infrastructure as code
+- **GitHub Actions OIDC** — CI/CD to ECR → ECS
 
 ---
 
-**Status**: ✅ READY FOR NEXT PHASE
-**Start Date**: Week 1
-**Target Completion**: Week 8
+## Local Development
 
-**Everything is planned, documented, and ready for implementation!** 🚀
+### Prerequisites
+
+- Docker Desktop running
+- `.env.local` configured (copy from `.env.example`)
+
+### Quick Start
+
+```bash
+# 1. Configure
+cp .env.example .env.local
+# Fill in: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, PINECONE_API_KEY, AUTH_SECRET
+
+# 2. Start all local services
+docker compose up --watch
+
+# 3. Seed dev data (second terminal)
+bash scripts/seed-dev.sh
+
+# 4. Open
+# App:               http://localhost:3005
+# DynamoDB Admin UI: http://localhost:8001
+```
+
+### Dev Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@worktree.pro | password |
+| Member | user@worktree.com | password |
+
+### Local Services
+
+| Service | Port | Notes |
+|---|---|---|
+| App (Next.js + API) | 3005 | |
+| Hocuspocus WS | 1234 | Real-time Smart Grid |
+| DynamoDB Local | 8000 | Full API emulation |
+| DynamoDB Admin UI | 8001 | Browser table inspector |
+| Redis | 6379 | ElastiCache equivalent |
+| Pinecone Local (optional) | 5080 | In-memory vector emulator |
+
+> S3 connects to a real AWS dev bucket (`worktree-dev`). Pinecone uses the real free-tier API by default.
+
+---
+
+## Project Structure
+
+```
+worktree/
+├── apps/
+│   ├── frontend/               # Next.js App Router
+│   │   ├── app/
+│   │   │   ├── (auth)/        # Login / Signup
+│   │   │   ├── (dashboard)/   # Protected workspace
+│   │   │   └── api/           # Route handlers
+│   │   ├── features/          # Domain modules (forms, sheets, routing, ...)
+│   │   ├── components/ui/     # shadcn/ui components
+│   │   └── lib/               # SDK clients (dynamodb, s3, redis, pinecone)
+│   └── backend/               # Express REST API (mobile sync)
+│       └── src/
+│           ├── entities/      # ElectroDB entity definitions
+│           ├── repositories/  # Data access layer
+│           ├── routes/
+│           └── middleware/    # auth, rbac (requireProjectAccess)
+├── scripts/
+│   └── seed-dev.sh            # DynamoDB table creation + dev data seed
+├── docker-compose.yml
+├── .env.example
+└── _bmad-output/              # Planning & architecture documents
+```
+
+---
+
+## Development Rules
+
+1. **Feature Rule** — All logic in `features/{domain}`. No loose files in `components/`.
+2. **Verify Before Build** — Architecture must be in `architecture.md` before writing code.
+3. **Strict Types** — `noImplicitAny` ON. Zod for all API inputs.
+4. **No mocking DynamoDB** — use `vitest-dynalite` for real integration tests.
+5. **Scope all DB calls** — `requireProjectAccess()` before every DynamoDB operation.
+6. **No migrations** — ElectroDB entity definitions are the schema contract.
+7. **Node.js runtime only** for AWS SDK routes — never `export const runtime = 'edge'`.
+
+---
+
+## Deployment
+
+Push to `main` → GitHub Actions builds → pushes to ECR → deploys to ECS Fargate automatically.
+
+```bash
+git push origin main
+# Verify:
+curl https://worktree.pro/api/health
+```
+
+---
+
+## Security
+
+- Bcrypt password hashing (10+ rounds)
+- Auth.js database sessions (instant server-side revocation)
+- Application-layer tenant isolation (all DynamoDB queries scoped by `projectId`)
+- S3 private bucket — presigned URLs only, no public access
+- HTTPS via ALB TLS termination
+- Input validation (Zod) on all endpoints
+- Rate limiting on auth endpoints
