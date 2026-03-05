@@ -43,6 +43,7 @@ development_status:
   0-6-ecs-fargate-ecr-alb-pipeline: backlog
   0-7-environment-variable-migration: backlog
   0-8-local-dev-environment-seed-script: backlog
+  0-9-integration-test-infrastructure-dynamodb: backlog
   epic-0-retrospective: optional
 
   # Epic 1: Core Project Foundation & Identity

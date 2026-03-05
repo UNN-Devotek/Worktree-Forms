@@ -58,6 +58,7 @@ So that object storage is fully managed in production and fully offline-capable 
 **And** all `MINIO_*` environment variables are removed; local dev uses `S3_ENDPOINT=http://localstack:4510`, `S3_BUCKET=worktree-local`; production uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=worktree-prod`
 **And** `localstack/localstack` replaces the `minio` service in `docker-compose.yml` with `SERVICES=s3`
 **And** the `seed-dev.sh` script creates the `worktree-local` bucket in LocalStack on first run.
+**And** presigned GET/PUT URLs generated in local dev are rewritten to replace the internal Docker hostname (`http://localstack:4510`) with the host-accessible address (`http://localhost:4510`) before being returned to the browser — production presigned URLs are returned unchanged.
 
 #### Story 0.3: ElastiCache Redis Provisioning & Validation
 
@@ -154,6 +155,26 @@ So that I can develop and test all features without any real AWS credentials or 
 **And** the `.env.local` template in `.env.example` documents all local-only variables: `DYNAMODB_ENDPOINT`, `S3_ENDPOINT`, `S3_BUCKET`, `PINECONE_HOST`
 
 > **Note:** `seed-dev.sh` is the spiritual successor to the old Prisma `seed-dev.sh`. It replaces `npx prisma migrate deploy && npx prisma db seed` with DynamoDB table creation + LocalStack bucket creation + ElectroDB seed writes. Script runs via `tsx scripts/seed-dev.ts` with no build step required.
+
+#### Story 0.9: Integration Test Infrastructure (DynamoDB)
+
+As a Developer,
+I want a working DynamoDB integration test setup that runs real queries against DynamoDB Local,
+So that repository functions are tested without mocking the SDK and without relying on the old Prisma/PostgreSQL test layer.
+
+**Acceptance Criteria:**
+**Given** the existing stale Prisma-based test files (`rls-integration.test.ts`, `audit-security.test.ts`, `form-builder-validation-logic.test.ts`, `alias.test.ts`, `sanity.test.ts`, `invite-actions.test.ts`) that reference `db`, `getAuthenticatedDb`, and other Prisma APIs
+**Then** all stale Prisma-based test files are deleted
+**And** `@testcontainers/localstack` is installed as a dev dependency (provides DynamoDB Local via the same `amazon/dynamodb-local` image used in Docker Compose)
+**And** a shared Vitest setup file (`tests/setup/dynamodb.ts`) starts the DynamoDB Local testcontainer before the test suite and tears it down after
+**And** the setup file creates the `worktree-local` table with the correct KeySchema, AttributeDefinitions, and GSIs matching the production table definition
+**And** at least one integration test per repository module is written that exercises a real DynamoDB PutItem + Query round-trip (e.g. `ProjectRepository.create` + `ProjectRepository.findById`)
+**And** integration tests use `ConditionExpression: "attribute_not_exists(PK)"` for write idempotency within test runs
+**And** `vitest.config.ts` defines a separate `integration` project/pool pointing at the Testcontainers setup, distinct from the unit test pool (no Docker required for unit tests)
+**And** `npm run test:integration` runs only the integration suite
+**And** CI (GitHub Actions) runs `docker compose up dynamodb-local` before `npm run test:integration` as an alternative to Testcontainers (either approach acceptable — Testcontainers is preferred locally, Compose service is acceptable in CI)
+
+> **Rationale:** `vitest-dynalite` was evaluated but shows reduced maintenance activity as of early 2026. `@testcontainers/localstack` is actively maintained and uses the same `amazon/dynamodb-local` image that is already part of the local dev stack, ensuring zero API gap between tests and the running development environment. Never mock the DynamoDB SDK — run real queries.
 
 ---
 
