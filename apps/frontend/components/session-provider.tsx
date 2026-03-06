@@ -217,7 +217,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       {/* Expired Overlay (Login) */}
       {isSessionExpired && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
             <div className="w-full max-w-md p-6 bg-card border rounded-lg shadow-2xl animate-in fade-in zoom-in duration-300">
                 <h2 className="text-2xl font-bold text-center mb-2">Session Expired</h2>
                 <p className="text-center text-muted-foreground mb-6">Please log in again to continue working.</p>

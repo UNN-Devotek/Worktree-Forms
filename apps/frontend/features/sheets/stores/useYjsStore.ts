@@ -10,7 +10,7 @@ interface YjsState {
   provider: HocuspocusProvider | null;
   persistence: IndexeddbPersistence | null;
   isConnected: boolean;
-  users: any[];
+  users: Record<string, unknown>[];
   connect: (sheetId: string, token: string, user: { name: string; color: string; id?: string }) => void;
   disconnect: () => void;
 }
@@ -40,7 +40,6 @@ export const useYjsStore = create<YjsState>((set, get) => ({
     const persistence = new IndexeddbPersistence(sheetId, doc);
 
     const wsUrl = getWebSocketUrl();
-    console.log('🔌 Connecting to WebSocket:', wsUrl);
 
     // HocuspocusProvider matches the @hocuspocus/server wire protocol exactly.
     // Auth token is sent via the Hocuspocus auth message (token option) so it
@@ -51,15 +50,10 @@ export const useYjsStore = create<YjsState>((set, get) => ({
       document: doc,
       token,
       onConnect: () => {
-        console.log('📡 WebSocket status: connected');
         set({ isConnected: true });
       },
       onDisconnect: () => {
-        console.log('📡 WebSocket status: disconnected');
         set({ isConnected: false });
-      },
-      onSynced: ({ state }: { state: boolean }) => {
-        if (state) console.log('✅ Yjs document synced - data loaded');
       },
     });
 

@@ -33,7 +33,7 @@ export function OfflineIndicator() {
       aria-live="assertive"
       aria-label={t('offline.indicator.label', 'Network status')}
       className={[
-        'fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2',
+        'fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2',
         'bg-amber-500 text-amber-950 text-sm font-medium py-2 px-4',
         'transition-transform duration-300 ease-in-out',
         isOffline ? 'translate-y-0' : '-translate-y-full',

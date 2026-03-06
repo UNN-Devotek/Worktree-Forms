@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Save, Loader2, Globe, Lock } from 'lucide-react'
 import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
 import { apiClient } from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ApiResponse } from '@/types/api'
 import { GroupForm, CreateFormData, FormType } from '@/types/group-forms'
@@ -37,6 +37,7 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
   const [isPublished, setIsPublished] = useState(false)
   const [showPublishDialog, setShowPublishDialog] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Fetch current publish status on mount
   useEffect(() => {
@@ -62,7 +63,6 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
         return false
     }
 
-    console.log('Saving form:', { formId, groupId, isNew: !formId })
     setIsSaving(true)
     try {
       if (formId) {
@@ -78,8 +78,6 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
             sig_ids: sigIds
         }
 
-        console.log('Sending PUT request to', `/api/groups/${groupId}/forms/${formId}`, payload)
-
         const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
           `/api/groups/${groupId}/forms/${formId}`,
           {
@@ -88,8 +86,6 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
             body: JSON.stringify(payload)
           }
         )
-
-        console.log('Save response:', response)
 
         if (!response.success) {
           throw new Error(response.error || 'Failed to update form')
@@ -101,7 +97,7 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
       } else {
         // Create new form
         const title = formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form'
-        const folderIdParam = new URLSearchParams(window.location.search).get('folderId')
+        const folderIdParam = searchParams.get('folderId')
         const folderId = folderIdParam ? parseInt(folderIdParam) : undefined
 
         if (projectId) {
@@ -150,8 +146,6 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
           groupSlug: groupSlug,
         }
 
-        console.log('Sending POST request to', `/api/groups/${groupId}/forms`, createData)
-
         const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
           `/api/groups/${groupId}/forms`,
           {
@@ -160,8 +154,6 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
             body: JSON.stringify(createData),
           }
         )
-
-        console.log('Create response:', response)
 
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to create form')

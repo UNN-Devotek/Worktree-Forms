@@ -7,6 +7,10 @@ import { BlueprintUploadModal } from './BlueprintUploadModal';
 import { apiClient } from '@/lib/api';
 import { Loader2, Search, FileText, Trash2, Map, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Specification {
     id: string;
@@ -28,6 +32,7 @@ export const BlueprintList: React.FC<BlueprintListProps> = ({ projectId, project
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
     const router = useRouter();
 
     const fetchBlueprints = async (query = '') => {
@@ -58,15 +63,20 @@ export const BlueprintList: React.FC<BlueprintListProps> = ({ projectId, project
         return () => clearTimeout(timer);
     }, [projectId, searchQuery]); // Correct dependency
 
-    const handleDelete = async (e: React.MouseEvent, id: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this blueprint?')) return;
-        
+        setDeleteTarget(id);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
         try {
-            await apiClient(`/api/specs/${id}`, { method: 'DELETE' });
+            await apiClient(`/api/specs/${deleteTarget}`, { method: 'DELETE' });
             fetchBlueprints(searchQuery);
         } catch (e) {
             console.error(e);
+        } finally {
+            setDeleteTarget(null);
         }
     };
 
@@ -112,7 +122,7 @@ export const BlueprintList: React.FC<BlueprintListProps> = ({ projectId, project
                                     </p>
                                 </div>
                                 <button 
-                                    onClick={(e) => handleDelete(e, bp.id)}
+                                    onClick={(e) => handleDeleteClick(e, bp.id)}
                                     className="absolute top-2 right-2 bg-white/80 dark:bg-black/50 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-red-500"
                                 >
                                     <Trash2 className="h-4 w-4" />
@@ -123,15 +133,30 @@ export const BlueprintList: React.FC<BlueprintListProps> = ({ projectId, project
                 )}
             </div>
 
-            <BlueprintUploadModal 
-                projectId={projectId} 
-                isOpen={isUploadOpen} 
+            <BlueprintUploadModal
+                projectId={projectId}
+                isOpen={isUploadOpen}
                 onClose={() => setIsUploadOpen(false)}
                 onSuccess={() => {
                     setIsUploadOpen(false);
                     fetchBlueprints(searchQuery);
-                }} 
+                }}
             />
+
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Blueprint</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this blueprint? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

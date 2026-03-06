@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/api';
 import { Loader2, Upload, FileText, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BlueprintUploadModalProps {
     projectId: string;
@@ -27,7 +28,7 @@ export const BlueprintUploadModal: React.FC<BlueprintUploadModalProps> = ({ proj
         if (!file) return;
 
         if (file.type !== 'application/pdf') {
-            alert('PDF only please'); 
+            toast.error('Only PDF files are accepted');
             return;
         }
 

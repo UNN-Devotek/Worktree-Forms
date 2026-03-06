@@ -6,6 +6,10 @@ import { Input } from '@/components/ui/input';
 import { SpecUploadModal } from './SpecUploadModal';
 import { apiClient } from '@/lib/api';
 import { Loader2, Search, FileText, Trash2 } from 'lucide-react';
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Specification {
     id: string;
@@ -26,6 +30,7 @@ export const SpecList: React.FC<SpecListProps> = ({ projectId }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
     const fetchSpecs = async (query = '') => {
         setIsLoading(true);
@@ -53,15 +58,20 @@ export const SpecList: React.FC<SpecListProps> = ({ projectId }) => {
         return () => clearTimeout(timer);
     }, [projectId, searchQuery]);
 
-    const handleDelete = async (e: React.MouseEvent, id: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this spec?')) return;
-        
+        setDeleteTarget(id);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
         try {
-            await apiClient(`/api/specs/${id}`, { method: 'DELETE' });
+            await apiClient(`/api/specs/${deleteTarget}`, { method: 'DELETE' });
             fetchSpecs(searchQuery);
         } catch (e) {
             console.error(e);
+        } finally {
+            setDeleteTarget(null);
         }
     };
 
@@ -121,7 +131,7 @@ export const SpecList: React.FC<SpecListProps> = ({ projectId }) => {
                                                 variant="ghost" 
                                                 size="sm" 
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={(e) => handleDelete(e, spec.id)}
+                                                onClick={(e) => handleDeleteClick(e, spec.id)}
                                             >
                                                 <Trash2 className="h-4 w-4 text-red-500" />
                                             </Button>
@@ -134,15 +144,30 @@ export const SpecList: React.FC<SpecListProps> = ({ projectId }) => {
                 )}
             </div>
 
-            <SpecUploadModal 
-                projectId={projectId} 
-                isOpen={isUploadOpen} 
+            <SpecUploadModal
+                projectId={projectId}
+                isOpen={isUploadOpen}
                 onClose={() => setIsUploadOpen(false)}
                 onSuccess={() => {
                     setIsUploadOpen(false);
                     fetchSpecs(searchQuery);
-                }} 
+                }}
             />
+
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Specification</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this spec? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

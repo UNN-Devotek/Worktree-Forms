@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { BlueprintViewer } from '@/features/blueprints/components/BlueprintViewer';
 import { apiClient } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BlueprintViewerClientWrapperProps {
     projectId: string;
@@ -41,7 +42,7 @@ export const BlueprintViewerClientWrapper: React.FC<BlueprintViewerClientWrapper
                         setFileUrl(found2.fileUrl);
                      } else {
                          // Not found
-                         alert('Blueprint not found');
+                         toast.error('Blueprint not found');
                          router.push(`/project/${projectSlug}/blueprints`);
                      }
                 }
@@ -63,7 +64,7 @@ export const BlueprintViewerClientWrapper: React.FC<BlueprintViewerClientWrapper
         );
     }
 
-    if (!fileUrl) return null;
+    if (!fileUrl) return <div className="flex h-screen items-center justify-center text-sm text-muted-foreground">Blueprint file not available</div>;
 
     return (
         <BlueprintViewer 

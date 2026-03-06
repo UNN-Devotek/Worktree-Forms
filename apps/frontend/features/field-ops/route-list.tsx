@@ -73,7 +73,7 @@ export function RouteList({ projectId, userId, projectSlug }: { projectId?: stri
      return (
          <div className="p-4 text-center text-red-500">
              <p>{error}</p>
-             <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">Retry</Button>
+             <Button variant="outline" onClick={() => router.refresh()} className="mt-2">Retry</Button>
          </div>
      );
   }

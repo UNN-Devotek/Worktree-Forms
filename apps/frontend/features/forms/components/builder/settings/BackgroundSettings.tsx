@@ -71,7 +71,7 @@ export function BackgroundSettings({ settings, onChange, projectId }: Background
                     </div>
                     <div className="flex-1">
                         <p className="font-medium truncate max-w-[200px]">Background PDF</p>
-                        <a href={`/api/pdf-proxy?key=${backgroundPdfUrl}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View File</a>
+                        <a href={`/api/pdf-proxy?key=${backgroundPdfUrl}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">View File</a>
                     </div>
                     <Button variant="destructive" size="icon" onClick={handleRemove}>
                         <Trash2 className="h-4 w-4" />

@@ -1,6 +1,13 @@
 'use server';
 
-import { ProjectEntity, ProjectMemberEntity, SheetEntity, UserEntity } from '@/lib/dynamo';
+import {
+  ProjectEntity,
+  ProjectMemberEntity,
+  SheetEntity,
+  SheetColumnEntity,
+  SheetRowEntity,
+  UserEntity,
+} from '@/lib/dynamo';
 import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken';
@@ -8,6 +15,18 @@ import { auth } from '@/auth';
 import * as Y from 'yjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+/**
+ * Verifies the current user has access to a project.
+ * Returns the authenticated userId or throws.
+ */
+async function verifyProjectAccess(projectId: string): Promise<string> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+  const member = await ProjectMemberEntity.query.primary({ projectId, userId: session.user.id }).go();
+  if (!member.data.length) throw new Error('Forbidden');
+  return session.user.id;
+}
 
 export async function getSheetToken(sheetId: string) {
   const session = await auth();
@@ -107,16 +126,13 @@ export async function createSheet(
 
 // Get all sheets for a project (by slug)
 export async function getSheets(projectSlug: string) {
-  console.log('[getSheets] Called with slug:', projectSlug);
   try {
     const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
     const project = projectResult.data[0];
-    console.log('[getSheets] Found project:', project ? project.projectId : null);
 
     if (!project) return [];
 
     const sheetsResult = await SheetEntity.query.byProject({ projectId: project.projectId }).go();
-    console.log('[getSheets] Found sheets:', sheetsResult.data.length);
 
     return sheetsResult.data.map((s) => ({
       id: s.sheetId,
@@ -135,7 +151,7 @@ export async function getSheets(projectSlug: string) {
   }
 }
 
-// Get single sheet
+// Get single sheet (metadata only, used internally)
 export async function getSheet(sheetId: string) {
   try {
     // We need projectId to query, but we only have sheetId.
@@ -158,6 +174,41 @@ export async function getSheet(sheetId: string) {
     };
   } catch (error) {
     console.error('Failed to get sheet:', error);
+    return null;
+  }
+}
+
+/**
+ * Get a sheet with its columns and rows for the grid view.
+ * Verifies the caller has project access before returning data.
+ */
+export async function getSheetWithData(projectId: string, sheetId: string) {
+  try {
+    await verifyProjectAccess(projectId);
+
+    const [sheetResult, columnsResult, rowsResult] = await Promise.all([
+      SheetEntity.query.primary({ projectId, sheetId }).go(),
+      SheetColumnEntity.query.primary({ sheetId }).go(),
+      SheetRowEntity.query.bySheet({ sheetId }).go(),
+    ]);
+
+    const sheet = sheetResult.data[0];
+    if (!sheet) return null;
+
+    return {
+      sheet: {
+        id: sheet.sheetId,
+        sheetId: sheet.sheetId,
+        title: sheet.name,
+        projectId: sheet.projectId,
+        createdAt: sheet.createdAt,
+        updatedAt: sheet.updatedAt,
+      },
+      columns: columnsResult.data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+      rows: rowsResult.data,
+    };
+  } catch (error) {
+    console.error('Failed to get sheet with data:', error);
     return null;
   }
 }
@@ -277,7 +328,6 @@ export async function saveSheetData(sheetId: string, _jsonData: unknown) {
       .set({ updatedAt: new Date().toISOString() })
       .go();
 
-    console.log('Sheet saved successfully:', sheetId);
     revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
     return true;
   } catch (error) {
@@ -285,6 +335,122 @@ export async function saveSheetData(sheetId: string, _jsonData: unknown) {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Row CRUD
+// ---------------------------------------------------------------------------
+
+/** Create a new row in a sheet. Returns the new rowId. */
+export async function createRow(
+  sheetId: string,
+  projectId: string,
+  data?: Record<string, unknown>
+): Promise<string | null> {
+  try {
+    const userId = await verifyProjectAccess(projectId);
+    const rowId = nanoid();
+    const now = new Date().toISOString();
+    await SheetRowEntity.create({
+      rowId,
+      sheetId,
+      projectId,
+      data: data ?? {},
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    }).go();
+    return rowId;
+  } catch (error) {
+    console.error('Failed to create row:', error);
+    return null;
+  }
+}
+
+/** Update an existing row's data map. */
+export async function updateRow(
+  sheetId: string,
+  rowId: string,
+  projectId: string,
+  data: Record<string, unknown>
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetRowEntity.patch({ sheetId, rowId })
+      .set({ data, updatedAt: new Date().toISOString() })
+      .go();
+    return true;
+  } catch (error) {
+    console.error('Failed to update row:', error);
+    return false;
+  }
+}
+
+/** Delete a row from a sheet. */
+export async function deleteRow(
+  sheetId: string,
+  rowId: string,
+  projectId: string
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetRowEntity.delete({ sheetId, rowId }).go();
+    return true;
+  } catch (error) {
+    console.error('Failed to delete row:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Column CRUD
+// ---------------------------------------------------------------------------
+
+/** Add a new column to a sheet. Returns the new columnId. */
+export async function addColumn(
+  sheetId: string,
+  projectId: string,
+  name: string,
+  type: string
+): Promise<string | null> {
+  try {
+    await verifyProjectAccess(projectId);
+    const columns = await SheetColumnEntity.query.primary({ sheetId }).go();
+    const maxOrder = columns.data.reduce((max, col) => Math.max(max, col.order ?? 0), -1);
+    const columnId = nanoid();
+    await SheetColumnEntity.create({
+      columnId,
+      sheetId,
+      name,
+      type,
+      order: maxOrder + 1,
+      createdAt: new Date().toISOString(),
+    }).go();
+    return columnId;
+  } catch (error) {
+    console.error('Failed to add column:', error);
+    return null;
+  }
+}
+
+/** Delete a column from a sheet. */
+export async function deleteColumn(
+  sheetId: string,
+  columnId: string,
+  projectId: string
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetColumnEntity.delete({ sheetId, columnId }).go();
+    return true;
+  } catch (error) {
+    console.error('Failed to delete column:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Misc
+// ---------------------------------------------------------------------------
 
 export async function getFormProjectSlug(formId: string) {
   try {

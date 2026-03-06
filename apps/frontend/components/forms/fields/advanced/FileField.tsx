@@ -382,7 +382,7 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
               <p className="text-sm font-medium text-muted-foreground mb-2">Uploaded Images ({completedImages.length})</p>
               <div className={cn('grid gap-3', completedImages.length === 1 ? 'grid-cols-1' : completedImages.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3')}>
                 {completedImages.map((fileItem, index) => (
-                  <div key={`gallery-${fileItem.file.name}-${index}`} className="group relative aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-primary/50" onClick={() => openLightbox(index)}>
+                  <div key={`gallery-${fileItem.file.name}-${index}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(index); } }} className="group relative aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-primary/50" onClick={() => openLightbox(index)}>
                     <Image src={fileItem.preview!} alt={fileItem.file.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
                     <div className="absolute inset-0 bg-background/0 group-hover:bg-background/60 transition-all duration-300 flex items-center justify-center">
                       <div className="transform scale-0 group-hover:scale-100 transition-transform duration-300 bg-background/90 rounded-full p-2"><ZoomIn className="h-5 w-5 text-foreground" /></div>

@@ -50,7 +50,7 @@ export function ProfileForm() {
     }
   };
 
-  if (!session?.user) return null;
+  if (!session?.user) return <div className="animate-pulse space-y-4"><div className="h-8 w-48 rounded bg-muted" /><div className="h-32 w-full rounded bg-muted" /></div>;
 
   const initials = session.user.name
     ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase().substring(0, 2)
@@ -117,7 +117,7 @@ export function ProfileForm() {
                 htmlFor="light"
                 className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
               >
-                <div className="mb-3 h-6 w-6 rounded-full border bg-[#ffffff] shadow-sm" />
+                <div className="mb-3 h-6 w-6 rounded-full border bg-white shadow-sm" />
                 Light
               </Label>
             </div>
@@ -127,7 +127,7 @@ export function ProfileForm() {
                 htmlFor="dark"
                 className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
               >
-                <div className="mb-3 h-6 w-6 rounded-full border bg-[#09090b] shadow-sm" />
+                <div className="mb-3 h-6 w-6 rounded-full border bg-zinc-950 shadow-sm" />
                 Dark
               </Label>
             </div>

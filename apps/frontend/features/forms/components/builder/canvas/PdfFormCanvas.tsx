@@ -86,7 +86,7 @@ export function PdfFormCanvas({ pdfUrl }: PdfFormCanvasProps) {
                             <div className="space-y-2">
                                 <p className="text-red-500 font-medium">Error loading PDF</p>
                                 <p className="text-xs max-w-[200px] break-words">Unable to load PDF</p>
-                                <a href={`/api/pdf-proxy?key=${pdfUrl}`} target="_blank" rel="noreferrer" className="text-sm underline text-blue-500">
+                                <a href={`/api/pdf-proxy?key=${pdfUrl}`} target="_blank" rel="noopener noreferrer" className="text-sm underline text-blue-500">
                                     Download File
                                 </a>
                             </div>
