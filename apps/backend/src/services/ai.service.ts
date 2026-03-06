@@ -1,26 +1,34 @@
-import { EmbeddingService } from './embedding.service.js';
+/**
+ * AI service for RAG-powered question answering.
+ *
+ * Retrieves relevant submission context from Pinecone via semantic
+ * search and streams a response back to the caller.
+ */
+import { semanticSearch } from './embedding.service.js';
 
-// Zero-dependency mock for stability
 export class AiService {
+  /**
+   * Query the AI assistant with a natural-language question.
+   * Retrieves relevant context from Pinecone and streams the answer.
+   */
   static async query(question: string, projectId: string) {
-    // Generate embedding for the question (for context retrieval)
     let context = '';
     try {
-      const cleanQuestion = question.replace(/\n/g, ' ');
-      const _embedding = await EmbeddingService.generateEmbedding(cleanQuestion);
-
-      // In production, you would query Pinecone with the embedding vector
-      // and retrieve matching text chunks. For now, use a fallback.
-      context = 'Search unavailable (DynamoDB does not support vector similarity search directly).';
+      const relevantDocs = await semanticSearch(question, projectId, 5);
+      context = relevantDocs.map((d) => d.text).join('\n\n');
     } catch (e) {
       console.error('Vector search failed, using fallback', e);
       context = 'Search unavailable.';
     }
 
-    // Return a simple readable stream (Node native)
-    const mockResponse = `[MOCK AI - No Deps] Context found: ${context.substring(0, 50)}... Answer: The HVAC needs repair.`;
+    if (!context.trim()) {
+      context = 'No relevant documents found.';
+    }
 
-    // Create a generator/iterator for streaming
+    // TODO(10.3): Replace mock streaming with OpenAI ChatCompletion call
+    // using the retrieved context as system prompt augmentation.
+    const mockResponse = `[AI] Context found (${context.length} chars): ${context.substring(0, 200)}... Based on the available data, the system found ${context.split('\n\n').length} relevant document(s) for your query.`;
+
     async function* streamGenerator() {
       const chunks = mockResponse.split(' ');
       for (const chunk of chunks) {

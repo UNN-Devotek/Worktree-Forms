@@ -152,7 +152,7 @@ development_status:
 
   # Epic 10: AI Automation & Intelligence Layer
   epic-10: in-progress # Reopened: critical RAG layer change
-  10-1-native-rag-ingestion: backlog # pgvector gone — full rewrite for Pinecone
+  10-1-native-rag-ingestion: in-progress # Pinecone + OpenAI embedding implementation complete, pending integration tests
   10-2-magic-forward-email-ingestion: done
   10-3-ai-assistant-interface: done
   10-4-api-key-management: done
