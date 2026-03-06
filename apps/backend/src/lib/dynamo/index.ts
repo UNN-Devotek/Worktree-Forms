@@ -21,3 +21,4 @@ export { PublicTokenEntity } from "./entities/public-token.entity.js";
 export { ApiKeyEntity } from "./entities/api-key.entity.js";
 export { WebhookEntity } from "./entities/webhook.entity.js";
 export { InvitationEntity } from "./entities/invitation.entity.js";
+export { FolderEntity } from "./entities/folder.entity.js";

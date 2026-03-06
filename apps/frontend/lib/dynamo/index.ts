@@ -25,3 +25,4 @@ export { PublicTokenEntity } from "../../../backend/src/lib/dynamo/entities/publ
 export { ApiKeyEntity } from "../../../backend/src/lib/dynamo/entities/api-key.entity";
 export { WebhookEntity } from "../../../backend/src/lib/dynamo/entities/webhook.entity";
 export { InvitationEntity } from "../../../backend/src/lib/dynamo/entities/invitation.entity";
+export { FolderEntity } from "../../../backend/src/lib/dynamo/entities/folder.entity";
