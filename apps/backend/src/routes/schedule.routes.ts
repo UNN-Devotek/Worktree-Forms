@@ -25,10 +25,10 @@ router.post('/projects/:projectId/schedule', async (req: Request, res: Response)
         const task = await ScheduleService.createTask({
             projectId: req.params.projectId,
             title,
-            startDate: new Date(startDate),
-            endDate: new Date(endDate),
+            startDate: startDate ? new Date(startDate).toISOString() : undefined,
+            endDate: endDate ? new Date(endDate).toISOString() : undefined,
             status,
-            assignedToId
+            assignedTo: assignedToId,
         });
         res.json({ success: true, data: task });
     } catch (error) {
@@ -38,15 +38,14 @@ router.post('/projects/:projectId/schedule', async (req: Request, res: Response)
 });
 
 // Update Task
-router.patch('/schedule/:taskId', async (req: Request, res: Response) => {
+router.patch('/projects/:projectId/schedule/:taskId', async (req: Request, res: Response) => {
     const { title, startDate, endDate, status, assignedToId } = req.body;
     try {
-        const task = await ScheduleService.updateTask(req.params.taskId, {
+        const task = await ScheduleService.updateTask(req.params.projectId, req.params.taskId, {
             title,
-            startDate: startDate ? new Date(startDate) : undefined,
-            endDate: endDate ? new Date(endDate) : undefined,
+            dueDate: endDate ? new Date(endDate).toISOString() : undefined,
             status,
-            assignedToId
+            assignedTo: assignedToId,
         });
         res.json({ success: true, data: task });
     } catch (error) {
@@ -56,9 +55,9 @@ router.patch('/schedule/:taskId', async (req: Request, res: Response) => {
 });
 
 // Delete Task
-router.delete('/schedule/:taskId', async (req: Request, res: Response) => {
+router.delete('/projects/:projectId/schedule/:taskId', async (req: Request, res: Response) => {
     try {
-        await ScheduleService.deleteTask(req.params.taskId);
+        await ScheduleService.deleteTask(req.params.projectId, req.params.taskId);
         res.json({ success: true });
     } catch (error) {
         console.error('Delete Task Error:', error);

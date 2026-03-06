@@ -1,109 +1,90 @@
-
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import axios from 'axios';
-import { prisma } from '../db.js';
+import { SubmissionEntity, FormEntity } from '../lib/dynamo/index.js';
 import { StorageService } from '../storage.js';
 
 export class PdfExportService {
-  async exportSubmissionToPdf(submissionId: number): Promise<Uint8Array> {
-    // 1. Fetch Submission & Form Structure
-    const submission = await prisma.submission.findUnique({
-      where: { id: submissionId },
-      include: { form: true }
-    });
+  async exportSubmissionToPdf(submissionId: string, projectId: string): Promise<Uint8Array> {
+    // 1. Fetch Submission
+    const subResult = await SubmissionEntity.get({ projectId, submissionId }).go();
+    const submission = subResult.data;
+    if (!submission) throw new Error('Submission not found');
 
-    if (!submission || !submission.form) {
-      throw new Error('Submission or Form not found');
-    }
+    // 2. Fetch Form
+    const formResult = await FormEntity.get({ projectId, formId: submission.formId }).go();
+    const form = formResult.data;
+    if (!form) throw new Error('Form not found');
 
-    const formSchema = submission.form.form_schema as any; // Typed as Json in Prisma, need cast
-    const backgroundPdfUrl = formSchema.settings?.backgroundPdfUrl;
+    const formSchema = form.schema as Record<string, unknown>;
+    const settings = formSchema.settings as Record<string, unknown> | undefined;
+    const backgroundPdfUrl = settings?.backgroundPdfUrl as string | undefined;
 
     if (!backgroundPdfUrl) {
       throw new Error('Form does not have a background PDF configured');
     }
 
-    // 2. Fetch Background PDF
+    // 3. Fetch Background PDF
     const response = await axios.get(backgroundPdfUrl, { responseType: 'arraybuffer' });
     const pdfDoc = await PDFDocument.load(response.data);
     const pages = pdfDoc.getPages();
-    const firstPage = pages[0]; // Assuming single page background for now, or match page index
-    const { height } = firstPage.getSize();
+    const firstPage = pages[0];
 
-    // 3. Prepare Font
+    // 4. Prepare Font
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 10;
 
-    // 4. Map Data to Overlay Coordinates
-    const responseData = submission.data as Record<string, any>; // JSON
-    
-    // Helper to find field in recursive schema
-    const findFieldById = (fields: any[], id: string): any => {
-        for(const field of fields) {
-            if (field.id === id) return field;
-            if (field.columns) { // Smart Table / Column Layout
-                 const found = findFieldById(field.columns, id);
-                 if(found) return found;
-            }
-            if(field.fields) { // Section
-                const found = findFieldById(field.fields, id);
-                if(found) return found;
-            }
-        }
-        return null;
-    };
+    // 5. Map Data to Overlay Coordinates
+    const responseData = submission.data as Record<string, unknown>;
 
-    // Flatten all fields to iterate
-    const allFields: any[] = [];
-    formSchema.pages.forEach((page: any) => {
-        page.sections.forEach((section: any) => {
-            const extractFields = (fields: any[]) => {
-                fields.forEach(f => {
-                    allFields.push(f);
-                    if(f.columns) extractFields(f.columns);
-                    if(f.fields) extractFields(f.fields);
-                });
-            };
-            extractFields(section.fields);
-        });
-    });
+    // Flatten all fields from schema
+    const allFields: Array<{ name?: string; id?: string; overlay?: { x: number; y: number; pageIndex?: number } }> = [];
+    const schemaPages = (formSchema.pages ?? []) as Array<{
+      sections: Array<{
+        fields: Array<{
+          name?: string;
+          id?: string;
+          overlay?: { x: number; y: number; pageIndex?: number };
+          columns?: Array<Record<string, unknown>>;
+          fields?: Array<Record<string, unknown>>;
+        }>;
+      }>;
+    }>;
+
+    for (const page of schemaPages) {
+      for (const section of page.sections) {
+        const extractFields = (fields: Array<Record<string, unknown>>) => {
+          for (const f of fields) {
+            allFields.push(f as typeof allFields[number]);
+            if (Array.isArray(f.columns)) extractFields(f.columns as Array<Record<string, unknown>>);
+            if (Array.isArray(f.fields)) extractFields(f.fields as Array<Record<string, unknown>>);
+          }
+        };
+        extractFields(section.fields as Array<Record<string, unknown>>);
+      }
+    }
 
     // Draw Data
     for (const [key, value] of Object.entries(responseData)) {
-        // Matches by name or ID? Usually data is stored by field Name or Name key.
-        // Let's assume response_data keys matches field.name
-        const field = allFields.find(f => f.name === key);
+      const field = allFields.find((f) => f.name === key);
+      if (field?.overlay) {
+        const { x, y, pageIndex } = field.overlay;
+        const targetPage = pages[pageIndex || 0] || firstPage;
 
-        if (field && field.overlay) {
-             const { x, y, pageIndex } = field.overlay;
-             // Coordinates are typically from bottom-left in PDF, but frontend usually top-left.
-             // Need to invert Y if frontend sends top-left Y.
-             // Assuming frontend sends top-left (0,0 is top-left).
-             // PDF (0,0) is bottom-left.
-             // pdfY = height - cssY - (optional textHeight correction)
-             
-             // If we validated 72 DPI in 8.1, we assume x/y are points.
-             
-             const targetPage = pages[pageIndex || 0] || firstPage;
-             
-             // Convert Value to String
-             let text = String(value);
-             if (value === true) text = "Yes"; // Checkbox
-             if (value === false) text = "No";
-             if (Array.isArray(value)) text = value.join(", "); // Multi-select
-             
-             targetPage.drawText(text, {
-                 x: x, 
-                 y: targetPage.getHeight() - y - fontSize, // Invert Y
-                 size: fontSize,
-                 font: font,
-                 color: rgb(0, 0, 0),
-             });
-        }
+        let text = String(value);
+        if (value === true) text = 'Yes';
+        if (value === false) text = 'No';
+        if (Array.isArray(value)) text = value.join(', ');
+
+        targetPage.drawText(text, {
+          x,
+          y: targetPage.getHeight() - y - fontSize,
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
+      }
     }
 
-    // 5. Flatten & Save
-    // form.flatten(); // Only needed if we used AcroFields. We drew projected text.
     return await pdfDoc.save();
   }
 }
@@ -122,7 +103,7 @@ export async function generateFlattenedPDF(
 
   for (const field of overlayConfig.fields) {
     const page = doc.getPage(field.page - 1);
-    let value = submissionData[field.fieldId];
+    const value = submissionData[field.fieldId];
     let text: string;
     if (value === true) text = 'Yes';
     else if (value === false) text = 'No';

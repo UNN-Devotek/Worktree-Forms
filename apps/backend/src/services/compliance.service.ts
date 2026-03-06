@@ -1,32 +1,31 @@
-
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ComplianceRecordEntity } from '../lib/dynamo/index.js';
+import { nanoid } from 'nanoid';
 
 export class ComplianceService {
   /**
-   * Submit insurance document and update status
+   * Submit a compliance record for a user within a project
    */
-  static async submitInsurance(userId: string, insuranceUrl: string) {
+  static async submitInsurance(userId: string, projectId: string, insuranceUrl: string) {
     console.log(`[Compliance] User ${userId} submitted insurance: ${insuranceUrl}`);
-    
-    return await prisma.user.update({
-      where: { id: userId },
-      data: { 
-        insuranceUrl,
-        complianceStatus: 'VERIFIED' // Auto-verify for MVP
-      }
-    });
+
+    const record = await ComplianceRecordEntity.create({
+      recordId: nanoid(),
+      projectId,
+      userId,
+      type: 'INSURANCE',
+      status: 'VERIFIED',
+      data: { insuranceUrl },
+    }).go();
+
+    return record.data;
   }
 
   /**
-   * Get user compliance status
+   * Get compliance records for a user within a project
    */
-  static async getStatus(userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { complianceStatus: true, insuranceUrl: true }
-    });
-    return user;
+  static async getStatus(userId: string, projectId: string) {
+    const result = await ComplianceRecordEntity.query.byUser({ userId }).go();
+    const records = result.data.filter((r) => r.projectId === projectId);
+    return records;
   }
 }

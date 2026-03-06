@@ -1,5 +1,4 @@
-
-import { prisma } from '../db';
+import { ApiKeyEntity } from '../lib/dynamo/index.js';
 import crypto, { timingSafeEqual, createHash } from 'crypto';
 
 /**
@@ -19,35 +18,19 @@ export class ApiKeyService {
    * Generates a new API Key.
    * Returns the RAW key (to be shown once) and the created DB record.
    */
-  static async generateKey(userId: string, note?: string, scope: string = 'read-only') {
-    console.log(`🔑 Generating API Key for userId: ${userId}, note: ${note}, scope: ${scope}`);
-    
-    // 1. Generate Random Key (sk_...)
+  static async generateKey(projectId: string, createdBy: string, name?: string, scopes: string[] = ['READ']) {
     const rawKey = `sk_${crypto.randomBytes(24).toString('hex')}`;
-    
-    // 2. Hash the key for storage (SHA256 for speed/security balance)
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-    console.log(`🔑 Generated keyHash: ${keyHash.substring(0, 16)}...`);
+    const result = await ApiKeyEntity.create({
+      keyHash,
+      projectId,
+      name: name ?? 'API Key',
+      scopes,
+      createdBy,
+    }).go();
 
-    // 3. Store in DB
-    try {
-      const apiKey = await prisma.apiKey.create({
-        data: {
-          userId,
-          keyHash,
-          note,
-          scope,
-          // expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Optional: 30 days default
-        }
-      });
-
-      console.log(`✅ API Key created: ${apiKey.id}`);
-      return { rawKey, apiKey };
-    } catch (error) {
-      console.error('❌ Prisma Create Error:', error);
-      throw error;
-    }
+    return { rawKey, apiKey: result.data };
   }
 
   /**
@@ -59,47 +42,40 @@ export class ApiKeyService {
 
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-    const apiKey = await prisma.apiKey.findUnique({
-      where: { keyHash },
-      include: { user: true } // Include user context
-    });
+    const result = await ApiKeyEntity.get({ keyHash }).go();
+    const apiKey = result.data;
 
     if (!apiKey) return null;
 
-    // Timing-safe verification: re-confirm the stored hash matches the input key
-    // using constant-time comparison to prevent timing side-channel attacks.
+    // Timing-safe verification
     if (!safeCompareHashes(rawKey, apiKey.keyHash)) return null;
 
     // Check Expiry
-    if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+    if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
       return null;
     }
 
-    // Async Update LastUsed (Fire & Forget to not block)
-    prisma.apiKey.update({
-      where: { id: apiKey.id },
-      data: { lastUsedAt: new Date() }
-    }).catch(console.error);
+    // Async Update LastUsed (Fire & Forget)
+    ApiKeyEntity.patch({ keyHash })
+      .set({ lastUsedAt: new Date().toISOString() })
+      .go()
+      .catch(console.error);
 
     return apiKey;
   }
 
   /**
-   * List keys for a user.
+   * List keys for a project.
    */
-  static async listKeys(userId: string) {
-    return prisma.apiKey.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
+  static async listKeys(projectId: string) {
+    const result = await ApiKeyEntity.query.byProject({ projectId }).go();
+    return result.data;
   }
 
   /**
-   * Revoke (Delete) a key.
+   * Revoke (Delete) a key by hash.
    */
-  static async revokeKey(keyId: string, userId: string) {
-    return prisma.apiKey.deleteMany({
-      where: { id: keyId, userId } // Ensure ownership
-    });
+  static async revokeKey(keyHash: string) {
+    await ApiKeyEntity.delete({ keyHash }).go();
   }
 }

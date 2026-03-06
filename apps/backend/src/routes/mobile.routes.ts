@@ -11,7 +11,7 @@ router.get('/projects/:projectId/routes/my-daily', async (req: Request, res: Res
     const projectId = req.params.projectId;
     const userId = req.query.userId as string; // TODO: Get from Auth Context
     const dateStr = req.query.date as string || new Date().toISOString();
-    
+
     if (!userId) {
          return res.status(400).json({ success: false, error: 'userId required' });
     }
@@ -38,9 +38,9 @@ router.post('/projects/:projectId/routes', async (req: Request, res: Response) =
     }
 });
 
-router.get('/routes/stops/:stopId', async (req: Request, res: Response) => {
+router.get('/routes/:routeId/stops/:stopId', async (req: Request, res: Response) => {
     try {
-        const stop = await RouteService.getStop(parseInt(req.params.stopId));
+        const stop = await RouteService.getStop(req.params.routeId, req.params.stopId);
         if (!stop) return res.status(404).json({ success: false, error: 'Stop not found' });
         res.json({ success: true, data: { stop } });
     } catch (e) {
@@ -49,10 +49,10 @@ router.get('/routes/stops/:stopId', async (req: Request, res: Response) => {
     }
 });
 
-router.patch('/routes/stops/:stopId/status', async (req: Request, res: Response) => {
+router.patch('/routes/:routeId/stops/:stopId/status', async (req: Request, res: Response) => {
     const { status, location } = req.body;
     try {
-        const stop = await RouteService.updateStopStatus(parseInt(req.params.stopId), status, location);
+        const stop = await RouteService.updateStopStatus(req.params.routeId, req.params.stopId, status, location);
         res.json({ success: true, data: { stop } });
     } catch (e: any) {
         console.error(e);

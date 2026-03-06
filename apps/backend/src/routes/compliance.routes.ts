@@ -1,48 +1,32 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { prisma } from '../db.js';
+import { ComplianceRecordEntity } from '../lib/dynamo/index.js';
+import { nanoid } from 'nanoid';
 
 const router = Router();
 
 // GET /api/projects/:projectId/compliance/status
-// Returns { compliant: boolean, pendingRequirements: [] }
 router.get('/projects/:projectId/compliance/status', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
     const userId = (req as any).user.id;
 
-    const requirements = await prisma.complianceRequirement.findMany({
-      where: { projectId },
-      orderBy: { order: 'asc' },
-    });
+    // Get all compliance records for this user
+    const result = await ComplianceRecordEntity.query.byUser({ userId }).go();
+    const records = result.data.filter((r) => r.projectId === projectId);
 
-    const records = await prisma.complianceRecord.findMany({
-      where: {
-        userId,
-        requirementId: { in: requirements.map(r => r.id) },
-      },
-    });
-
-    const recordMap = new Map(records.map(r => [r.requirementId, r]));
-
-    const pendingRequirements = requirements
-      .filter(req => {
-        const record = recordMap.get(req.id);
-        return !record || record.status === 'PENDING';
-      })
-      .map(req => ({
-        id: req.id,
-        label: req.label,
-        type: req.type,
-        required: req.required,
-        status: recordMap.get(req.id)?.status ?? 'NOT_STARTED',
-      }));
+    const pendingRecords = records.filter((r) => r.status === 'PENDING' || !r.status);
 
     res.json({
       success: true,
       data: {
-        compliant: pendingRequirements.filter(r => r.required).length === 0,
-        pendingRequirements,
+        compliant: pendingRecords.length === 0 && records.length > 0,
+        pendingRequirements: pendingRecords.map((r) => ({
+          id: r.recordId,
+          type: r.type,
+          status: r.status,
+        })),
+        totalRecords: records.length,
       },
     });
   } catch (error) {
@@ -52,7 +36,7 @@ router.get('/projects/:projectId/compliance/status', async (req: Request, res: R
 });
 
 const submitSchema = z.object({
-  requirementId: z.string(),
+  type: z.string(),
   fileUrl: z.string().optional(),
   textAnswer: z.string().optional(),
 });
@@ -65,28 +49,22 @@ router.post('/projects/:projectId/compliance/submit', async (req: Request, res: 
     const parsed = submitSchema.safeParse(req.body);
 
     if (!parsed.success) {
-      return res.status(400).json({ success: false, error: 'requirementId is required' });
+      return res.status(400).json({ success: false, error: 'type is required' });
     }
 
-    const { requirementId, fileUrl } = parsed.data;
+    const { type, fileUrl } = parsed.data;
+    const recordId = nanoid();
 
-    const record = await prisma.complianceRecord.upsert({
-      where: { userId_requirementId: { userId, requirementId } },
-      update: {
-        fileUrl,
-        status: 'PENDING',
-        submittedAt: new Date(),
-      },
-      create: {
-        userId,
-        requirementId,
-        fileUrl,
-        status: 'PENDING',
-        submittedAt: new Date(),
-      },
-    });
+    const result = await ComplianceRecordEntity.create({
+      recordId,
+      projectId,
+      userId,
+      type,
+      status: 'PENDING',
+      data: { fileUrl },
+    }).go();
 
-    res.json({ success: true, data: record });
+    res.json({ success: true, data: result.data });
   } catch (error) {
     console.error('Compliance submit error:', error);
     res.status(500).json({ success: false, error: 'Failed to submit compliance record' });

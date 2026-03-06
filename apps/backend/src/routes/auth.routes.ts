@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../db.js';
+import { UserEntity } from '../lib/dynamo/index.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
 import { auditMiddleware } from '../middleware/audit.middleware.js';
+import { nanoid } from 'nanoid';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -20,7 +21,7 @@ const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
 
 // ==========================================
-// AUTH ENDPOINTS (DB Integration)
+// AUTH ENDPOINTS (DynamoDB)
 // ==========================================
 
 router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) => {
@@ -28,21 +29,21 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: 'Invalid input: email and password are required' });
   }
-  const { email, password } = parsed.data;
+  const { email } = parsed.data;
 
   try {
     if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_LOGIN === 'true') {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const userResult = await UserEntity.query.byEmail({ email }).go();
+      const user = userResult.data[0];
 
-      // Allow login if user exists (Dev/Test mode - Passwordless)
       if (user) {
         const accessToken = jwt.sign(
-          { sub: user.id, email: user.email, systemRole: (user as any).systemRole ?? 'MEMBER' },
+          { sub: user.userId, email: user.email, systemRole: user.role ?? 'MEMBER' },
           process.env.JWT_SECRET!,
           { algorithm: 'HS256', expiresIn: (process.env.JWT_EXPIRE || '15m') as jwt.SignOptions['expiresIn'] },
         );
         const refreshToken = jwt.sign(
-          { sub: user.id },
+          { sub: user.userId },
           process.env.JWT_SECRET!,
           { algorithm: 'HS256', expiresIn: (process.env.JWT_REFRESH_EXPIRE || '7d') as jwt.SignOptions['expiresIn'] },
         );
@@ -51,14 +52,14 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
           httpOnly: true,
           secure: isProduction,
           sameSite: 'lax',
-          maxAge: 15 * 60 * 1000, // 15 minutes
+          maxAge: 15 * 60 * 1000,
           path: '/',
         });
         res.cookie('refresh_token', refreshToken, {
           httpOnly: true,
           secure: isProduction,
           sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
           path: '/api/auth/refresh',
         });
 
@@ -66,10 +67,10 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
           success: true,
           data: {
             user: {
-              id: user.id,
+              id: user.userId,
               email: user.email,
               name: user.name,
-              role: (user as any).systemRole || 'MEMBER',
+              role: user.role || 'MEMBER',
             },
           },
           message: 'Login successful',
@@ -77,10 +78,7 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
       }
     }
 
-    res.status(401).json({
-      success: false,
-      error: 'Invalid credentials',
-    });
+    res.status(401).json({ success: false, error: 'Invalid credentials' });
   } catch (error: unknown) {
     res.status(500).json({ success: false, error: 'Auth failed' });
   }
@@ -97,34 +95,38 @@ router.post('/register', rateLimitTiers.auth, auditMiddleware('user.register'), 
   const { email, name } = parsed.data;
 
   try {
-    const newUser = await prisma.user.create({
-        data: {
-            email,
-            // password removed
-            name,
-            systemRole: 'MEMBER'
-        }
-    });
+    const userId = nanoid();
+    const result = await UserEntity.create({
+      userId,
+      email,
+      name,
+      role: 'MEMBER',
+    }).go();
+
+    const newUser = result.data;
 
     res.status(201).json({
       success: true,
       data: {
         user: {
-          id: newUser.id,
+          id: newUser.userId,
           email: newUser.email,
           name: newUser.name,
-          role: newUser.systemRole, // Map systemRole to role
+          role: newUser.role,
         },
       },
       message: 'Registration successful',
     });
   } catch (error: unknown) {
-     console.error('Registration Error:', error);
-     res.status(400).json({ success: false, error: `Registration failed: ${error instanceof Error ? error.message : String(error)}` });
+    console.error('Registration Error:', error);
+    res.status(400).json({
+      success: false,
+      error: `Registration failed: ${error instanceof Error ? error.message : String(error)}`,
+    });
   }
 });
 
-router.post('/logout', (req: Request, res: Response) => {
+router.post('/logout', (_req: Request, res: Response) => {
   res.clearCookie('access_token', { path: '/' });
   res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
   res.json({ success: true, message: 'Logged out successfully' });

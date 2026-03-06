@@ -1,147 +1,88 @@
-import { prisma } from '../db.js';
+import { HelpArticleEntity } from '../lib/dynamo/index.js';
+import { nanoid } from 'nanoid';
 
 export class HelpArticleService {
   /**
    * Create a new help article (draft by default)
    */
-  static async createArticle(authorId: string, data: { title: string; content: any; category?: string; projectId?: string }) {
-    const slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    
-    const article = await prisma.helpArticle.create({
-      data: {
-        title: data.title,
-        slug: `${slug}-${Date.now()}`, // Ensure uniqueness
-        content: data.content,
-        category: data.category || 'General',
-        authorId,
-        projectId: data.projectId,
-        status: 'draft'
-      }
-    });
+  static async createArticle(authorId: string, data: { title: string; content: unknown; category?: string }) {
+    const articleId = nanoid();
+    const article = await HelpArticleEntity.create({
+      articleId,
+      title: data.title,
+      content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
+      category: data.category || 'general',
+      authorId,
+      status: 'DRAFT',
+    }).go();
 
-    // Create initial version
-    await prisma.helpArticleVersion.create({
-      data: {
-        articleId: article.id,
-        version: 1,
-        content: data.content,
-        createdById: authorId,
-        changelog: 'Initial version'
-      }
-    });
-
-    return article;
+    return article.data;
   }
 
   /**
-   * Update article and create new version
+   * Update article
    */
-  static async updateArticle(articleId: string, userId: string, data: { title?: string; content?: any; category?: string; changelog?: string }) {
-    const article = await prisma.helpArticle.findUnique({
-      where: { id: articleId },
-      include: { versions: { orderBy: { version: 'desc' }, take: 1 } }
-    });
+  static async updateArticle(articleId: string, _userId: string, data: { title?: string; content?: unknown; category?: string }) {
+    const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+    if (data.title) updates.title = data.title;
+    if (data.content) updates.content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+    if (data.category) updates.category = data.category;
 
-    if (!article) throw new Error('Article not found');
+    await HelpArticleEntity.patch({ articleId })
+      .set(updates as Parameters<typeof HelpArticleEntity.patch>[0] extends infer T ? Record<string, unknown> : never)
+      .go();
 
-    const latestVersion = article.versions[0]?.version || 0;
-
-    // Update article
-    const updated = await prisma.helpArticle.update({
-      where: { id: articleId },
-      data: {
-        ...(data.title && { title: data.title }),
-        ...(data.content && { content: data.content }),
-        ...(data.category && { category: data.category })
-      }
-    });
-
-    // Create new version if content changed
-    if (data.content) {
-      await prisma.helpArticleVersion.create({
-        data: {
-          articleId,
-          version: latestVersion + 1,
-          content: data.content,
-          createdById: userId,
-          changelog: data.changelog || 'Updated content'
-        }
-      });
-    }
-
-    return updated;
+    const result = await HelpArticleEntity.get({ articleId }).go();
+    return result.data;
   }
 
   /**
    * Publish an article
    */
   static async publishArticle(articleId: string) {
-    return prisma.helpArticle.update({
-      where: { id: articleId },
-      data: {
-        status: 'published',
-        publishedAt: new Date()
-      }
-    });
+    await HelpArticleEntity.patch({ articleId })
+      .set({ status: 'PUBLISHED', publishedAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+      .go();
+
+    const result = await HelpArticleEntity.get({ articleId }).go();
+    return result.data;
   }
 
   /**
    * List articles with filters
    */
-  static async listArticles(filters: { category?: string; status?: string; projectId?: string }) {
-    return prisma.helpArticle.findMany({
-      where: {
-        ...(filters.category && { category: filters.category }),
-        ...(filters.status && { status: filters.status }),
-        ...(filters.projectId && { projectId: filters.projectId })
-      },
-      include: {
-        author: { select: { id: true, name: true, email: true } }
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
-  }
-
-  /**
-   * Get article by slug
-   */
-  static async getArticleBySlug(slug: string) {
-    return prisma.helpArticle.findUnique({
-      where: { slug },
-      include: {
-        author: { select: { id: true, name: true, email: true } }
+  static async listArticles(filters: { category?: string; status?: string }) {
+    if (filters.category) {
+      const result = await HelpArticleEntity.query.byCategory({ category: filters.category }).go();
+      if (filters.status) {
+        return result.data.filter((a) => a.status === filters.status);
       }
-    });
+      return result.data;
+    }
+    // Scan all articles (no efficient way without category in DynamoDB)
+    const result = await HelpArticleEntity.scan.go();
+    let articles = result.data;
+    if (filters.status) {
+      articles = articles.filter((a) => a.status === filters.status);
+    }
+    return articles;
   }
 
   /**
-   * Get article versions
+   * Get article by ID
    */
-  static async getArticleVersions(articleId: string) {
-    return prisma.helpArticleVersion.findMany({
-      where: { articleId },
-      include: {
-        createdBy: { select: { id: true, name: true, email: true } }
-      },
-      orderBy: { version: 'desc' }
-    });
+  static async getArticle(articleId: string) {
+    const result = await HelpArticleEntity.get({ articleId }).go();
+    return result.data;
   }
+
   /**
    * Get all published articles for offline sync
    */
   static async getPublishedArticlesForSync() {
-    return prisma.helpArticle.findMany({
-      where: { status: 'published' },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        category: true,
-        content: true,
-        updatedAt: true,
-        publishedAt: true
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
+    const result = await HelpArticleEntity.scan
+      .where((attr, op) => op.eq(attr.status, 'PUBLISHED'))
+      .go();
+    return result.data;
   }
 }

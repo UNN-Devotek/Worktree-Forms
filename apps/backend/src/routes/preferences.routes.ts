@@ -1,37 +1,38 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../db.js';
+import { UserEntity } from '../lib/dynamo/index.js';
 
 const router = Router();
 
 // ==========================================
 // USER PREFERENCES
 // ==========================================
+// Note: In the DynamoDB model, preferences are stored on the UserEntity
+// as part of the user record (theme, locale). For custom key-value
+// preferences, we use a simple in-memory cache as a stub until a
+// PreferenceEntity is added.
+
+const preferenceCache = new Map<string, unknown>();
+
+function prefKey(userId: string, key: string, projectId?: string): string {
+  return `${userId}:${key}:${projectId ?? 'global'}`;
+}
 
 router.get('/:key', async (req: Request, res: Response) => {
   try {
     const { key } = req.params;
-    const { projectId } = req.query; // Optional scoping
-    
+    const projectId = req.query.projectId as string | undefined;
     const userId = (req as any).user.id;
 
-    const where: any = {
-      userId: userId,
-      key,
-    };
-
-    if (projectId) {
-      where.projectId = String(projectId);
+    // Check well-known user attributes first
+    if (key === 'theme' || key === 'locale') {
+      const userResult = await UserEntity.get({ userId }).go();
+      if (userResult.data) {
+        return res.json(userResult.data[key as 'theme' | 'locale'] ?? null);
+      }
     }
 
-    const pref = await prisma.userPreference.findFirst({ // findFirst to match composite unique if needed or just convenient
-      where: {
-        userId: userId,
-        key: key,
-        projectId: projectId ? String(projectId) : null
-      }
-    });
-
-    res.json(pref ? pref.value : null);
+    const cached = preferenceCache.get(prefKey(userId, key, projectId));
+    res.json(cached ?? null);
   } catch (error) {
     console.error('Error fetching preference:', error);
     res.status(500).json({ error: 'Failed to fetch preference' });
@@ -43,15 +44,16 @@ router.post('/', async (req: Request, res: Response) => {
     const { key, value, projectId } = req.body;
     const userId = (req as any).user.id;
 
-    // UserPreference uses partial unique indexes (not Prisma @@unique), so use findFirst + update/create
-    const existing = await prisma.userPreference.findFirst({
-      where: { userId, key, projectId: projectId ? String(projectId) : null }
-    });
-    const pref = existing
-      ? await prisma.userPreference.update({ where: { id: existing.id }, data: { value } })
-      : await prisma.userPreference.create({ data: { userId, key, value, projectId: projectId ? String(projectId) : null } });
+    // Persist well-known user attributes
+    if (key === 'theme' || key === 'locale') {
+      await UserEntity.patch({ userId })
+        .set({ [key]: value, updatedAt: new Date().toISOString() })
+        .go();
+      return res.json({ userId, key, value });
+    }
 
-    res.json(pref);
+    preferenceCache.set(prefKey(userId, key, projectId), value);
+    res.json({ userId, key, value, projectId: projectId ?? null });
   } catch (error) {
     console.error('Error saving preference:', error);
     res.status(500).json({ error: 'Failed to save preference' });

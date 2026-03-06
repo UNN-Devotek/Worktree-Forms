@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../db.js';
+import { UserEntity } from '../lib/dynamo/index.js';
 import { ComplianceService } from '../services/compliance.service.js';
-import { parsePaginationParam } from '../utils/query.js';
 
 const router = Router();
 
@@ -11,19 +10,14 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const requester = await prisma.user.findUnique({ where: { id: userId }, select: { systemRole: true } });
-  if (!requester || requester.systemRole !== 'ADMIN') {
+  const userResult = await UserEntity.get({ userId }).go();
+  if (!userResult.data || userResult.data.role !== 'ADMIN') {
     return res.status(403).json({ success: false, error: 'Admin access required' });
   }
   try {
-    const take = parsePaginationParam(req.query.take, 100, 500);
-    const skip = parsePaginationParam(req.query.skip, 0, 100000);
-    const [users, total] = await prisma.$transaction([
-      prisma.user.findMany({ take, skip }),
-      prisma.user.count()
-    ]);
-    const safeUsers = users.map((u: any) => ({ ...u, password: undefined }));
-    res.json({ success: true, data: safeUsers, meta: { total, take, skip } });
+    const result = await UserEntity.scan.go();
+    const safeUsers = result.data.map((u) => ({ ...u, passwordHash: undefined }));
+    res.json({ success: true, data: safeUsers, meta: { total: safeUsers.length } });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch users' });
   }
@@ -31,27 +25,26 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/me', async (req: Request, res: Response) => {
   try {
-      const userId = (req as any).user.id;
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-      res.json({ success: true, data: { ...user, password: undefined } });
+    const userId = (req as any).user.id;
+    const result = await UserEntity.get({ userId }).go();
+    if (!result.data) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, data: { ...result.data, passwordHash: undefined } });
   } catch (error) {
-      res.status(500).json({ success: false, error: 'Error' });
+    res.status(500).json({ success: false, error: 'Error' });
   }
 });
 
 router.post('/compliance', async (req: Request, res: Response) => {
-    try {
-        const { insuranceUrl } = req.body;
-        // Mock Auth or Header Auth
-        const userId = (req as any).user.id;
+  try {
+    const { insuranceUrl, projectId } = req.body;
+    const userId = (req as any).user.id;
 
-        const result = await ComplianceService.submitInsurance(userId, insuranceUrl);
-        res.json({ success: true, data: result });
-    } catch (error) {
-        console.error('Compliance Error:', error);
-        res.status(500).json({ error: 'Failed to submit compliance' });
-    }
+    const result = await ComplianceService.submitInsurance(userId, projectId || 'global', insuranceUrl);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Compliance Error:', error);
+    res.status(500).json({ error: 'Failed to submit compliance' });
+  }
 });
 
 export default router;

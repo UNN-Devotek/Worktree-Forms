@@ -53,7 +53,8 @@ router.patch('/tasks/:taskId', async (req: Request, res: Response) => {
     const { taskId } = req.params;
     const updates = req.body;
     try {
-        const task = await TaskService.updateTask(taskId, updates);
+        const projectId = req.query.projectId as string || req.body.projectId;
+        const task = await TaskService.updateTask(projectId, taskId, updates);
         res.json({ success: true, data: task });
     } catch (error) {
         console.error('Update Task Error:', error);

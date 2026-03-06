@@ -12,19 +12,28 @@ const router = Router();
 router.post('/', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { note, scope } = req.body;
+    const { name, scopes, projectId } = req.body;
 
-    const { rawKey, apiKey } = await ApiKeyService.generateKey(userId, note, scope);
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: 'projectId is required' });
+    }
+
+    const { rawKey, apiKey } = await ApiKeyService.generateKey(
+      projectId,
+      userId,
+      name,
+      scopes ? (Array.isArray(scopes) ? scopes : [scopes]) : ['READ'],
+    );
 
     res.json({
       success: true,
       key: rawKey, // WARN: Only shown once
       record: {
-        id: apiKey.id,
-        note: apiKey.note,
-        scope: apiKey.scope,
-        createdAt: apiKey.createdAt
-      }
+        keyHash: apiKey.keyHash,
+        name: apiKey.name,
+        scopes: apiKey.scopes,
+        createdAt: apiKey.createdAt,
+      },
     });
   } catch (error) {
     console.error('API Key Generation Error:', error);
@@ -35,17 +44,20 @@ router.post('/', async (req: Request, res: Response) => {
 // List API Keys (Auth Required)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const keys = await ApiKeyService.listKeys(userId);
+    const projectId = req.query.projectId as string;
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: 'projectId query parameter required' });
+    }
 
-    // Mask the keyHash for security
-    const masked = keys.map(k => ({
-      id: k.id,
-      note: k.note,
-      scope: k.scope,
+    const keys = await ApiKeyService.listKeys(projectId);
+
+    const masked = keys.map((k) => ({
+      keyHash: k.keyHash,
+      name: k.name,
+      scopes: k.scopes,
       lastUsedAt: k.lastUsedAt,
       createdAt: k.createdAt,
-      keyPreview: 'sk_••••••••'
+      keyPreview: 'sk_........',
     }));
 
     res.json({ success: true, data: masked });
@@ -56,12 +68,10 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Revoke API Key (Auth Required)
-router.delete('/:id', deletionLimiter, async (req: Request, res: Response) => {
+router.delete('/:keyHash', deletionLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const { id } = req.params;
-
-    await ApiKeyService.revokeKey(id, userId);
+    const { keyHash } = req.params;
+    await ApiKeyService.revokeKey(keyHash);
     res.json({ success: true, message: 'Key revoked' });
   } catch (error) {
     console.error('API Key Revoke Error:', error);

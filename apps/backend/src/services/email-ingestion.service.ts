@@ -1,6 +1,5 @@
-
-import { prisma } from '../db';
-import { AiService } from './ai.service'; // We'll assume we can eventually reuse parse logic or just regex for MVP
+import { UserEntity, ProjectEntity, ProjectMemberEntity } from '../lib/dynamo/index.js';
+import { nanoid } from 'nanoid';
 
 export class EmailIngestionService {
   /**
@@ -11,46 +10,46 @@ export class EmailIngestionService {
    * 3. Else, treat as a generic log or ignore for MVP.
    */
   static async processInboundEmail(payload: { from: string; subject: string; text: string }) {
-    console.log(`📧 Processing Inbound Email from ${payload.from}`);
+    console.log(`Processing Inbound Email from ${payload.from}`);
 
     // 1. Authenticate User via Email
-    const user = await prisma.user.findUnique({
-      where: { email: payload.from },
-    });
+    const userResult = await UserEntity.query.byEmail({ email: payload.from }).go();
+    const user = userResult.data[0];
 
     if (!user) {
-      console.warn(`❌ User not found for email: ${payload.from}`);
+      console.warn(`User not found for email: ${payload.from}`);
       return { success: false, error: 'User not found' };
     }
 
-    // 2. Parse Intent (Simple Regex for MVP, could be LLM later)
+    // 2. Parse Intent (Simple Regex for MVP)
     if (payload.subject.startsWith('Create Project:')) {
       const projectName = payload.subject.replace('Create Project:', '').trim();
       const description = payload.text.trim();
-      const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slugBase = projectName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+      const slug = `${slugBase}-${Math.floor(Math.random() * 1000)}`;
+      const projectId = nanoid();
 
       // Create Project
-      const project = await prisma.project.create({
-        data: {
-          name: projectName,
-          slug: `${slug}-${Math.floor(Math.random() * 1000)}`, // Ensure uniqueness
-          description: description,
-          createdById: user.id, // Fixed: ownerId -> createdById
-          // status: 'ACTIVE', // Removed: Not in schema
-        },
-      });
+      const projectResult = await ProjectEntity.create({
+        projectId,
+        name: projectName,
+        slug,
+        description,
+        ownerId: user.userId,
+      }).go();
 
       // Add User as Member (Owner)
-      await prisma.projectMember.create({
-        data: {
-          projectId: project.id,
-          userId: user.id,
-          roles: ['OWNER'], // Fixed: role -> roles array
-        },
-      });
+      await ProjectMemberEntity.create({
+        projectId,
+        userId: user.userId,
+        roles: ['OWNER'],
+      }).go();
 
-      console.log(`✅ Magic Project Created: ${project.name} (ID: ${project.id})`);
-      return { success: true, action: 'CREATE_PROJECT', data: project };
+      console.log(`Magic Project Created: ${projectResult.data.name} (ID: ${projectId})`);
+      return { success: true, action: 'CREATE_PROJECT', data: projectResult.data };
     }
 
     return { success: false, error: 'Unknown Intent' };

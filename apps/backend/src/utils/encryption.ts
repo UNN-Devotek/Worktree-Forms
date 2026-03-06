@@ -1,30 +1,38 @@
+import crypto from 'crypto';
 
-import { prisma } from '../db.js';
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const TAG_LENGTH = 16;
 
 export const EncryptionUtils = {
-    /**
-     * Encrypts text using Postgres pgcrypto pgp_sym_encrypt
-     */
-    encrypt: async (text: string, key: string): Promise<Buffer> => {
-        const result = await prisma.$queryRaw<{'encrypted': Buffer}[]>`
-            SELECT pgp_sym_encrypt(${text}, ${key}) as encrypted
-        `;
-        if (!result[0]?.encrypted) {
-            throw new Error('Encryption produced no output');
-        }
-        return result[0].encrypted;
-    },
+  /**
+   * Encrypts text using AES-256-GCM (replaces Postgres pgcrypto)
+   */
+  encrypt: async (text: string, key: string): Promise<Buffer> => {
+    const derivedKey = crypto.createHash('sha256').update(key).digest();
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv);
 
-    /**
-     * Decrypts buffer using Postgres pgcrypto pgp_sym_decrypt
-     */
-    decrypt: async (encrypted: Buffer, key: string): Promise<string> => {
-        const result = await prisma.$queryRaw<{'decrypted': string}[]>`
-            SELECT pgp_sym_decrypt(${encrypted}, ${key}) as decrypted
-        `;
-        if (!result[0]?.decrypted) {
-            throw new Error('Decryption produced no output');
-        }
-        return result[0].decrypted;
-    }
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+
+    // Return iv + tag + ciphertext as a single buffer
+    return Buffer.concat([iv, tag, encrypted]);
+  },
+
+  /**
+   * Decrypts buffer using AES-256-GCM (replaces Postgres pgcrypto)
+   */
+  decrypt: async (encrypted: Buffer, key: string): Promise<string> => {
+    const derivedKey = crypto.createHash('sha256').update(key).digest();
+    const iv = encrypted.subarray(0, IV_LENGTH);
+    const tag = encrypted.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
+    const ciphertext = encrypted.subarray(IV_LENGTH + TAG_LENGTH);
+
+    const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv);
+    decipher.setAuthTag(tag);
+
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return decrypted.toString('utf8');
+  },
 };

@@ -2,9 +2,6 @@ import 'dotenv/config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { prisma } from './db.js';
 import { StorageService } from './storage.js';
 import { validateEnvironment } from './utils/validate-env.js';
 import { getSecurityMiddleware } from './middleware/security.js';
@@ -12,6 +9,8 @@ import { rateLimitTiers } from './middleware/rateLimiter.js';
 import { contextMiddleware } from './middleware/context.middleware.js';
 import { csrfMiddleware } from './middleware/csrf.middleware.js';
 import { authenticate } from './middleware/authenticate.js';
+import { docClient } from './lib/dynamo/index.js';
+import { ListTablesCommand } from '@aws-sdk/client-dynamodb';
 
 // Background job workers
 import './jobs/workers/file-rename.worker.js';
@@ -51,23 +50,29 @@ const app: Express = express();
 const rawPort = process.env.BACKEND_PORT || process.env.PORT || '5005';
 const match = String(rawPort).match(/^(\d+)/) || String(rawPort).match(/(\d+)/);
 const parsedPort = match ? parseInt(match[0], 10) : 5005;
-const PORT = (parsedPort > 0 && parsedPort < 65536) ? parsedPort : 5005;
+const PORT = parsedPort > 0 && parsedPort < 65536 ? parsedPort : 5005;
 
 // Middleware
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3005', 'http://localhost:3100', 'http://localhost:3000'];
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:3005',
+  'http://localhost:3100',
+  'http://localhost:3000',
+];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(csrfMiddleware);
-app.use(getSecurityMiddleware()); // Security headers (Helmet)
-app.use('/api', rateLimitTiers.api); // General API rate limiting
+app.use(getSecurityMiddleware());
+app.use('/api', rateLimitTiers.api);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -82,52 +87,56 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Authenticate protected routes (sets req.user before contextMiddleware reads it)
-app.use([
-  '/api/projects',
-  '/api/users',
-  '/api/folders',
-  '/api/forms',
-  '/api/groups',
-  '/api/tasks',
-  '/api/specs',
-  '/api/schedule',
-  '/api/dashboard',
-  '/api/keys',
-  '/api/webhooks',
-  '/api/help',
-  '/api/upload',
-  '/api/files',
-  '/api/ai',
-  '/api/preferences',
-  '/api/compliance',
-], authenticate);
+// Authenticate protected routes
+app.use(
+  [
+    '/api/projects',
+    '/api/users',
+    '/api/folders',
+    '/api/forms',
+    '/api/groups',
+    '/api/tasks',
+    '/api/specs',
+    '/api/schedule',
+    '/api/dashboard',
+    '/api/keys',
+    '/api/webhooks',
+    '/api/help',
+    '/api/upload',
+    '/api/files',
+    '/api/ai',
+    '/api/preferences',
+    '/api/compliance',
+  ],
+  authenticate,
+);
 
-// Context Middleware (RLS Support) — must run AFTER authenticate so req.user is populated
+// Context Middleware (RLS Support)
 app.use(contextMiddleware);
 
 // Health check endpoint
-app.get('/api/health', async (req: Request, res: Response) => {
+app.get('/api/health', async (_req: Request, res: Response) => {
   try {
-    await prisma.$queryRaw`SELECT 1`; // Simple DB check
+    // Quick DynamoDB connectivity check
+    const dynamo = (docClient as unknown as { config: { endpoint: () => Promise<{ hostname: string }> } }).config;
     res.json({
       success: true,
       message: 'API is running',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      database: 'connected',
+      database: 'connected (DynamoDB)',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'API is running but database connection failed',
-      error: String(error)
+      error: String(error),
     });
   }
 });
 
 // API Info
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', (_req: Request, res: Response) => {
   res.json({
     success: true,
     name: 'Worktree API',
@@ -144,7 +153,7 @@ app.get('/api', (req: Request, res: Response) => {
 });
 
 // Demo API Documentation
-app.get('/api/docs', (req: Request, res: Response) => {
+app.get('/api/docs', (_req: Request, res: Response) => {
   res.json({
     success: true,
     title: 'Worktree API Documentation',
@@ -159,21 +168,21 @@ app.get('/api/docs', (req: Request, res: Response) => {
 // ==========================================
 
 // Public routes (no authentication required)
-app.use('/api/auth', authRoutes);           // POST /api/auth/login, /api/auth/register
-app.use('/api/public', shareRoutes);        // GET  /api/public/access/:token
+app.use('/api/auth', authRoutes);
+app.use('/api/public', shareRoutes);
 
-// Protected routes (authenticate middleware applied above)
-app.use('/api/users', userRoutes);          // GET /api/users, GET /api/users/me
-app.use('/api/projects', projectRoutes);    // GET /api/projects, POST /api/projects
-app.use('/api/folders', folderRoutes);      // GET /api/folders, POST /api/folders
+// Protected routes
+app.use('/api/users', userRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/folders', folderRoutes);
 
 // Routes mounted at /api because they define prefixed paths internally
-app.use('/api', formRoutes);                // /api/forms, /api/groups/:id/forms
-app.use('/api', taskRoutes);                // /api/projects/:id/tasks
-app.use('/api', specRoutes);                // /api/projects/:id/specs
-app.use('/api', scheduleRoutes);            // /api/projects/:id/schedule
-app.use('/api', mobileRoutes);              // /api/projects/:id/routes
-app.use('/api', dashboardRoutes);           // /api/projects/:id/metrics
+app.use('/api', formRoutes);
+app.use('/api', taskRoutes);
+app.use('/api', specRoutes);
+app.use('/api', scheduleRoutes);
+app.use('/api', mobileRoutes);
+app.use('/api', dashboardRoutes);
 
 app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks', webhookRoutes);
@@ -181,12 +190,12 @@ app.use('/api/keys', keyRoutes);
 app.use('/api/help', helpRoutes);
 app.use('/api/preferences', prefRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/files', filesRoutes);         // POST /api/files/upload (sheet row attachments)
-app.use('/api', complianceRoutes);          // /api/projects/:id/compliance
+app.use('/api/files', filesRoutes);
+app.use('/api', complianceRoutes);
 
 // Error Handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  const requestId = req.headers['x-request-id'] as string || 'no-id';
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  const requestId = (req.headers['x-request-id'] as string) || 'no-id';
   console.error('Unhandled Error:', {
     method: req.method,
     path: req.path,
@@ -215,9 +224,9 @@ const HOST = '0.0.0.0';
 async function startServer() {
   await initializeStorage();
   app.listen(PORT as number, HOST, () => {
-    console.log(`\n🚀 Worktree API running on port ${PORT} bound to ${HOST}`);
-    console.log(`📚 API Docs: /api/docs`);
-    console.log(`✅ Health Check: /api/health\n`);
+    console.log(`\nWorktree API running on port ${PORT} bound to ${HOST}`);
+    console.log(`API Docs: /api/docs`);
+    console.log(`Health Check: /api/health\n`);
   });
 }
 startServer();

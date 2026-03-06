@@ -45,12 +45,10 @@ router.post('/projects/:projectId/specs', async (req: Request, res: Response) =>
 });
 
 // Delete Spec
-router.delete('/specs/:specId', async (req: Request, res: Response) => {
-    const { specId } = req.params;
+router.delete('/projects/:projectId/specs/:specId', async (req: Request, res: Response) => {
+    const { projectId, specId } = req.params;
     try {
-        // Find first to get object key? (Optional cleanup)
-        // For MVP, just delete record.
-        await SpecService.deleteSpec(specId);
+        await SpecService.deleteSpec(projectId, specId);
         res.json({ success: true });
     } catch (error) {
          console.error('Delete Spec Error:', error);

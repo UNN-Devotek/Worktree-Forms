@@ -1,15 +1,14 @@
-import { prisma } from '../db.js';
+import { SheetEntity, SheetRowEntity, RouteStopEntity } from '../lib/dynamo/index.js';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import ws from 'ws';
 import jwt from 'jsonwebtoken';
+import { nanoid } from 'nanoid';
 
 // Polyfill the global WebSocket with the `ws` package so HocuspocusProvider
-// can open its own internal connection in Node.js. This removes the need for
-// an external HocuspocusProviderWebsocket instance and the undocumented
-// provider.attach() call that was previously required to make onSynced fire.
+// can open its own internal connection in Node.js.
 if (typeof globalThis.WebSocket === 'undefined') {
-  (globalThis as any).WebSocket = ws;
+  (globalThis as Record<string, unknown>).WebSocket = ws;
 }
 
 const WS_URL = process.env.WS_INTERNAL_URL || 'ws://worktree-ws:1234';
@@ -27,32 +26,26 @@ export class SheetIntegrationService {
   /**
    * Appends a submission data as a new row to a target sheet.
    */
-  async appendSubmissionToSheet(sheetId: string, submissionData: any) {
+  async appendSubmissionToSheet(sheetId: string, projectId: string, submissionData: unknown) {
     console.log(`Integrating submission to sheet ${sheetId}`);
 
     try {
-      // 1. Verify sheet exists — columns are already defined by the form schema
-      // (created when the form was saved). Never auto-create columns from submission
-      // data keys, which would add polluting metadata columns.
-      const sheet = await prisma.sheet.findUnique({
-        where: { id: sheetId },
-        select: { id: true }
-      });
+      // 1. Verify sheet exists
+      const sheetResult = await SheetEntity.get({ projectId, sheetId }).go();
+      if (!sheetResult.data) return;
 
-      if (!sheet) return;
-
-      // 2. Create the row in SQL (for persistence and snapshots)
-      const newRow = await prisma.sheetRow.create({
-        data: {
-          sheetId,
-          data: submissionData,
-          rank: 'a0', // Simplistic rank for now
-        }
-      });
+      // 2. Create the row in DynamoDB
+      const rowId = nanoid();
+      const newRow = await SheetRowEntity.create({
+        rowId,
+        sheetId,
+        projectId,
+        data: submissionData,
+        order: 0,
+      }).go();
 
       // 3. Inject into Yjs document so active users see it instantly
-      await this.injectRowIntoYjs(sheetId, newRow);
-
+      await this.injectRowIntoYjs(sheetId, { id: newRow.data.rowId, data: newRow.data.data });
     } catch (error) {
       console.error('Sheet integration failed:', error);
     }
@@ -61,24 +54,15 @@ export class SheetIntegrationService {
   /**
    * Updates a linked SheetRow when a RouteStop changes.
    */
-  async syncRouteStopToSheet(stopId: number, updates: any) {
+  async syncRouteStopToSheet(routeId: string, stopId: string, updates: Record<string, unknown>) {
     try {
-      const stop = await prisma.routeStop.findUnique({
-        where: { id: stopId },
-        include: { sheetRow: true }
-      });
+      const stopResult = await RouteStopEntity.get({ routeId, stopId }).go();
+      const stop = stopResult.data;
+      if (!stop) return;
 
-      if (!stop?.sheetRowId) return;
-
-      const currentRowData = stop.sheetRow?.data as any || {};
-      const newData = { ...currentRowData, ...updates };
-
-      await prisma.sheetRow.update({
-        where: { id: stop.sheetRowId },
-        data: { data: newData }
-      });
-
-      await this.injectRowIntoYjs(stop.sheetRow!.sheetId, { id: stop.sheetRowId, data: newData });
+      // In DynamoDB, we'd need the sheetRowId stored on the stop or a lookup
+      // For now, this is a no-op until the data model links stops to rows
+      console.log('syncRouteStopToSheet: Stop-to-row linking not yet implemented in DynamoDB model');
     } catch (error) {
       console.error('Sync Stop to Sheet failed:', error);
     }
@@ -87,36 +71,14 @@ export class SheetIntegrationService {
   /**
    * Updates linked RouteStops when a SheetRow changes.
    */
-  async syncSheetToRoute(rowId: string, rowData: any) {
-    try {
-      const row = await prisma.sheetRow.findUnique({
-        where: { id: rowId },
-        include: { routeStops: true }
-      });
-
-      if (!row || row.routeStops.length === 0) return;
-
-      for (const stop of row.routeStops) {
-        const updates: any = {};
-        if (rowData.address) updates.address = rowData.address;
-        if (rowData.status) updates.status = rowData.status.toLowerCase();
-        if (rowData.title) updates.title = rowData.title;
-
-        if (Object.keys(updates).length > 0) {
-          await prisma.routeStop.update({
-            where: { id: stop.id },
-            data: updates
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Sync Sheet to Route failed:', error);
-    }
+  async syncSheetToRoute(_rowId: string, _rowData: unknown) {
+    // In DynamoDB, reverse lookups from row -> route stops require a GSI or scan.
+    // For now, this is a no-op placeholder.
+    console.log('syncSheetToRoute: Row-to-stop reverse sync not yet implemented in DynamoDB model');
   }
 
   /**
    * Syncs columns from a form schema into the Yjs document for a sheet.
-   * Clears existing columns and replaces them with the new set.
    */
   async syncColumnsToYjs(sheetId: string, columns: Array<{ id: string; label: string; type: string }>) {
     return new Promise<boolean>((resolve, reject) => {
@@ -135,7 +97,6 @@ export class SheetIntegrationService {
         doc.destroy();
       };
 
-      // Guard against the WS server being unavailable or onSynced never firing.
       const outerTimer = setTimeout(() => {
         settle(() => reject(new Error(`syncColumnsToYjs timed out after ${SYNC_TIMEOUT_MS}ms for sheet ${sheetId}`)));
         cleanup();
@@ -145,12 +106,9 @@ export class SheetIntegrationService {
         url: WS_URL,
         name: sheetId,
         document: doc,
-        // Token sent as a Hocuspocus auth message — not embedded in the URL —
-        // so it does not appear in proxy access logs.
         token: makeSystemToken(),
         onSynced: ({ state }: { state: boolean }) => {
           if (!state) {
-            // Connection dropped before sync completed.
             clearTimeout(outerTimer);
             settle(() => reject(new Error('Column sync failed: connection dropped before sync completed')));
             cleanup();
@@ -164,24 +122,24 @@ export class SheetIntegrationService {
           doc.transact(() => {
             if (yColumns.length > 0) yColumns.delete(0, yColumns.length);
             for (const col of columns) {
-              yColumns.push([{
-                id: col.id,
-                label: col.label,
-                type: col.type.toUpperCase(),
-                width: 150,
-              }]);
+              yColumns.push([
+                {
+                  id: col.id,
+                  label: col.label,
+                  type: col.type.toUpperCase(),
+                  width: 150,
+                },
+              ]);
             }
           });
 
-          // Allow ~1 s for Hocuspocus to broadcast the update to connected
-          // clients before closing this temporary provider.
           setTimeout(() => {
             settle(() => resolve(true));
             cleanup();
           }, 1000);
         },
-        onDisconnect: (data: any) => {
-          const code = data?.event?.code;
+        onDisconnect: (data: Record<string, unknown>) => {
+          const code = (data?.event as Record<string, unknown>)?.code;
           if (code && code !== 1000) {
             clearTimeout(outerTimer);
             settle(() => reject(new Error(`Column sync WebSocket closed with error code ${code}`)));
@@ -194,8 +152,6 @@ export class SheetIntegrationService {
 
   /**
    * Creates an initial Yjs document binary with columns pre-populated.
-   * Use this when creating a new sheet (no active connections yet).
-   * Returns a Buffer to save as Sheet.content.
    */
   static createInitialYjsDoc(columns: Array<{ id: string; label: string; type: string }>): Buffer {
     const doc = new Y.Doc();
@@ -203,19 +159,21 @@ export class SheetIntegrationService {
 
     doc.transact(() => {
       for (const col of columns) {
-        yColumns.push([{
-          id: col.id,
-          label: col.label,
-          type: col.type.toUpperCase(),
-          width: 150,
-        }]);
+        yColumns.push([
+          {
+            id: col.id,
+            label: col.label,
+            type: col.type.toUpperCase(),
+            width: 150,
+          },
+        ]);
       }
     });
 
     return Buffer.from(Y.encodeStateAsUpdate(doc));
   }
 
-  private async injectRowIntoYjs(sheetId: string, row: { id: string; data: any }) {
+  private async injectRowIntoYjs(sheetId: string, row: { id: string; data: unknown }) {
     return new Promise<boolean>((resolve, reject) => {
       let settled = false;
       const doc = new Y.Doc();
@@ -233,7 +191,9 @@ export class SheetIntegrationService {
       };
 
       const outerTimer = setTimeout(() => {
-        settle(() => reject(new Error(`injectRowIntoYjs timed out after ${SYNC_TIMEOUT_MS}ms for sheet ${sheetId}`)));
+        settle(() =>
+          reject(new Error(`injectRowIntoYjs timed out after ${SYNC_TIMEOUT_MS}ms for sheet ${sheetId}`)),
+        );
         cleanup();
       }, SYNC_TIMEOUT_MS);
 
@@ -256,7 +216,7 @@ export class SheetIntegrationService {
           const yOrder = doc.getArray('order');
 
           doc.transact(() => {
-            yRows.set(row.id, { ...row.data, id: row.id, parentId: null });
+            yRows.set(row.id, { ...(row.data as object), id: row.id, parentId: null });
             yOrder.push([row.id]);
           });
 
@@ -265,8 +225,8 @@ export class SheetIntegrationService {
             cleanup();
           }, 1000);
         },
-        onDisconnect: (data: any) => {
-          const code = data?.event?.code;
+        onDisconnect: (data: Record<string, unknown>) => {
+          const code = (data?.event as Record<string, unknown>)?.code;
           if (code && code !== 1000) {
             clearTimeout(outerTimer);
             settle(() => reject(new Error(`Row injection WebSocket closed with error code ${code}`)));

@@ -36,12 +36,17 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    const { webhook, secret } = await WebhookService.registerWebhook(userId, url, events, projectId);
+    if (!projectId) {
+      return res.status(400).json({ error: 'projectId is required' });
+    }
+
+    // WebhookService.registerWebhook(projectId, createdBy, url, events)
+    const { webhook, secret } = await WebhookService.registerWebhook(projectId, userId, url, events);
 
     res.json({
       success: true,
       webhook: {
-        id: webhook.id,
+        id: webhook.webhookId,
         url: webhook.url,
         events: webhook.events,
         createdAt: webhook.createdAt
@@ -57,10 +62,13 @@ router.post('/', async (req: Request, res: Response) => {
 // List Webhooks (Auth Required)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const projectId = req.query.projectId as string | undefined;
+    const projectId = req.query.projectId as string;
 
-    const webhooks = await WebhookService.listWebhooks(userId, projectId);
+    if (!projectId) {
+      return res.status(400).json({ error: 'projectId query parameter required' });
+    }
+
+    const webhooks = await WebhookService.listWebhooks(projectId);
     res.json(webhooks);
   } catch (error) {
     console.error('Webhook List Error:', error);
@@ -69,12 +77,16 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Delete Webhook (Auth Required)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:webhookId', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const { id } = req.params;
+    const { webhookId } = req.params;
+    const projectId = req.query.projectId as string || req.body.projectId;
 
-    await WebhookService.deleteWebhook(id, userId);
+    if (!projectId) {
+      return res.status(400).json({ error: 'projectId is required' });
+    }
+
+    await WebhookService.deleteWebhook(projectId, webhookId);
     res.json({ success: true, message: 'Webhook deleted' });
   } catch (error) {
     console.error('Webhook Delete Error:', error);
@@ -103,7 +115,7 @@ router.post('/inbound-email', async (req: Request, res: Response) => {
 
       const result = await EmailIngestionService.processInboundEmail({ from: sanitized.from, subject: sanitized.subject, text: sanitized.text });
       res.json(result);
-  
+
     } catch (error) {
       console.error('Email Webhook Error:', error);
       res.status(500).json({ error: 'Failed to process email' });

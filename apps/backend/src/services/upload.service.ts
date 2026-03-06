@@ -1,69 +1,80 @@
 import { v4 as uuidv4 } from 'uuid';
 import { StorageService } from '../storage.js';
-import { prisma } from '../db.js';
+import { FileUploadEntity } from '../lib/dynamo/index.js';
+import { nanoid } from 'nanoid';
 
 export interface FileUploadRecord {
-  id: string;
+  fileId: string;
   objectKey: string;
-  filename: string;
-  contentType: string;
-  size: number;
-  folder: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  projectId: string;
   uploadedBy: string | null;
-  uploadedAt: Date;
+  createdAt: string;
+  // Aliases for backward compat with route handlers
+  id?: string;
+  filename?: string;
+  contentType?: string;
+  size?: number;
+  folder?: string;
+  uploadedAt?: Date;
+}
+
+function toFileUploadRecord(record: Record<string, any>, folder: string): FileUploadRecord {
+  return {
+    fileId: record.fileId,
+    objectKey: record.objectKey,
+    originalName: record.originalName ?? '',
+    mimeType: record.mimeType ?? '',
+    sizeBytes: record.sizeBytes ?? 0,
+    projectId: record.projectId,
+    uploadedBy: record.uploadedBy ?? null,
+    createdAt: record.createdAt,
+    id: record.fileId,
+    filename: record.originalName ?? '',
+    contentType: record.mimeType ?? '',
+    size: record.sizeBytes ?? 0,
+    folder,
+    uploadedAt: record.createdAt ? new Date(record.createdAt) : new Date(),
+  };
 }
 
 export class UploadService {
   /**
    * Upload file to S3 and create database record
    * Returns file metadata including object key
-   *
-   * @param file - Express multer file object
-   * @param folder - Organization folder (default: 'uploads')
-   * @param uploadedBy - User ID who uploaded the file
-   * @returns File upload record with object key
    */
   static async uploadFile(
     file: Express.Multer.File,
     folder: string = 'uploads',
-    uploadedBy?: string
+    uploadedBy?: string,
+    projectId: string = 'global',
   ): Promise<FileUploadRecord> {
-    console.log(`📤 UploadService: Processing file "${file.originalname}" (${file.size} bytes)`);
+    console.log(`UploadService: Processing file "${file.originalname}" (${file.size} bytes)`);
 
-    // Generate unique filename using UUID
     const ext = file.originalname.split('.').pop() || 'bin';
     const uniqueFilename = `${uuidv4()}.${ext}`;
     const objectKey = `${folder}/${uniqueFilename}`;
 
-    console.log(`🔑 Generated object key: ${objectKey}`);
-
     try {
-      // Ensure bucket exists
       await StorageService.ensureBucket();
-
-      // Upload to S3
-      console.log(`⏳ Uploading to S3...`);
       await StorageService.uploadFile(objectKey, file.buffer, file.mimetype);
-      console.log(`✅ File uploaded to S3 successfully`);
 
-      // Create database record
-      console.log(`💾 Creating database record...`);
-      const fileRecord = await prisma.fileUpload.create({
-        data: {
-          objectKey,
-          filename: file.originalname,
-          contentType: file.mimetype,
-          size: file.size,
-          folder,
-          uploadedBy: uploadedBy || null,
-        }
-      });
+      const fileId = nanoid();
+      const result = await FileUploadEntity.create({
+        fileId,
+        projectId,
+        objectKey,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        uploadedBy: uploadedBy || undefined,
+      }).go();
 
-      console.log(`✅ Database record created: ${fileRecord.id}`);
-      return fileRecord;
-
+      return toFileUploadRecord(result.data, folder);
     } catch (error) {
-      console.error(`❌ UploadService error:`, error);
+      console.error('UploadService error:', error);
       throw error;
     }
   }
@@ -74,30 +85,27 @@ export class UploadService {
   static async uploadFileRaw(
     file: { buffer: Buffer; filename: string; mimetype: string; size: number; objectKey: string },
     uploadedBy?: string,
+    projectId: string = 'global',
   ): Promise<FileUploadRecord> {
     await StorageService.ensureBucket();
     await StorageService.uploadFile(file.objectKey, file.buffer, file.mimetype);
 
-    const fileRecord = await prisma.fileUpload.create({
-      data: {
-        objectKey: file.objectKey,
-        filename: file.filename,
-        contentType: file.mimetype,
-        size: file.size,
-        folder: file.objectKey.split('/')[0],
-        uploadedBy: uploadedBy || null,
-      }
-    });
+    const fileId = nanoid();
+    const result = await FileUploadEntity.create({
+      fileId,
+      projectId,
+      objectKey: file.objectKey,
+      originalName: file.filename,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      uploadedBy: uploadedBy || undefined,
+    }).go();
 
-    return fileRecord;
+    return toFileUploadRecord(result.data, file.objectKey.split('/')[0]);
   }
 
   /**
    * Get file URL from object key
-   * Returns backend proxy URL (not presigned URL)
-   *
-   * @param objectKey - S3 object key (e.g., "form_uploads/abc123.pdf")
-   * @returns Full URL for browser access
    */
   static getFileUrl(objectKey: string): string {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3005';
@@ -105,62 +113,37 @@ export class UploadService {
   }
 
   /**
-   * Get file record from database by object key
-   *
-   * @param objectKey - S3 object key
-   * @returns File upload record or null
+   * Get file record from database by object key (scan-based, not ideal for DynamoDB)
    */
   static async getFileByObjectKey(objectKey: string): Promise<FileUploadRecord | null> {
-    return await prisma.fileUpload.findUnique({
-      where: { objectKey }
-    });
+    const result = await FileUploadEntity.scan
+      .where((attr, op) => op.eq(attr.objectKey, objectKey))
+      .go();
+    const record = result.data[0];
+    if (!record) return null;
+    return toFileUploadRecord(record, record.objectKey.split('/')[0]);
   }
 
   /**
    * Delete file from S3 and database
-   *
-   * @param objectKey - S3 object key to delete
    */
-  static async deleteFile(objectKey: string): Promise<void> {
-    console.log(`🗑️  Deleting file: ${objectKey}`);
-
-    try {
-      // Delete from S3
-      await StorageService.deleteFile(objectKey);
-      console.log(`✅ File deleted from S3`);
-
-      // Delete from database
-      await prisma.fileUpload.delete({
-        where: { objectKey }
-      });
-      console.log(`✅ Database record deleted`);
-
-    } catch (error) {
-      console.error(`❌ Error deleting file:`, error);
-      throw error;
-    }
+  static async deleteFile(objectKey: string, projectId: string, fileId: string): Promise<void> {
+    console.log(`Deleting file: ${objectKey}`);
+    await StorageService.deleteFile(objectKey);
+    await FileUploadEntity.delete({ projectId, fileId }).go();
+    console.log('File and database record deleted');
   }
 
   /**
-   * Associate uploaded files with a form submission
-   *
-   * @param objectKeys - Array of S3 object keys
-   * @param submissionId - Form submission ID
+   * Link files to a submission (update submissionId on file records)
    */
-  static async linkFilesToSubmission(objectKeys: string[], submissionId: number): Promise<void> {
-    console.log(`🔗 Linking ${objectKeys.length} files to submission ${submissionId}`);
-
-    await prisma.fileUpload.updateMany({
-      where: {
-        objectKey: {
-          in: objectKeys
-        }
-      },
-      data: {
-        submissionId
-      }
-    });
-
-    console.log(`✅ Files linked to submission`);
+  static async linkFilesToSubmission(projectId: string, fileIds: string[], submissionId: string): Promise<void> {
+    console.log(`Linking ${fileIds.length} files to submission ${submissionId}`);
+    for (const fileId of fileIds) {
+      await FileUploadEntity.patch({ projectId, fileId })
+        .set({ submissionId })
+        .go();
+    }
+    console.log('Files linked to submission');
   }
 }
