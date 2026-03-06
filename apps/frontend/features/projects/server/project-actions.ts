@@ -57,7 +57,6 @@ export async function getProjects() {
       }))
       .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
 
-    console.log(`[getProjects] Found ${projects.length} projects for user ${session.user.id}`);
     return projects;
   } catch (error) {
     console.error("Failed to get projects:", error);

@@ -41,17 +41,13 @@ function rewriteForBrowser(url: string): string {
 
 export class StorageService {
   static async ensureBucket(): Promise<void> {
-    console.log(`Checking if bucket '${S3_BUCKET}' exists...`);
     try {
       await s3.send(new HeadBucketCommand({ Bucket: S3_BUCKET }));
-      console.log(`S3 bucket '${S3_BUCKET}' already exists`);
     } catch (error: unknown) {
       const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
       if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
         try {
-          console.log(`Creating bucket '${S3_BUCKET}'...`);
           await s3.send(new CreateBucketCommand({ Bucket: S3_BUCKET }));
-          console.log(`S3 bucket '${S3_BUCKET}' created successfully`);
         } catch (createError: unknown) {
           const ce = createError as { name?: string };
           if (
@@ -61,7 +57,6 @@ export class StorageService {
             console.error("Failed to create S3 bucket:", createError);
             throw createError;
           }
-          console.log(`S3 bucket '${S3_BUCKET}' already exists`);
         }
       } else {
         console.error("Error checking S3 bucket:", error);
@@ -85,7 +80,6 @@ export class StorageService {
     body: Buffer | Uint8Array,
     contentType: string
   ): Promise<void> {
-    console.log(`Uploading file to S3: ${key} (${contentType})`);
     const command = new PutObjectCommand({
       Bucket: S3_BUCKET,
       Key: key,
@@ -93,7 +87,6 @@ export class StorageService {
       ContentType: contentType,
     });
     await s3.send(command);
-    console.log(`File uploaded successfully: ${key}`);
   }
 
   static async getDownloadUrl(key: string): Promise<string> {

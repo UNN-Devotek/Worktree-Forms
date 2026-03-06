@@ -13,14 +13,12 @@ import { nanoid } from 'nanoid';
 
 // Create a new sheet
 export async function createSheet(projectId: string, title?: string) {
-  console.log('[createSheet] Starting - projectId:', projectId, 'title:', title);
   let sheetId: string | null = null;
 
   try {
     sheetId = nanoid();
     const now = new Date().toISOString();
 
-    console.log('[createSheet] Step 1: Creating DynamoDB sheet record...');
     await SheetEntity.create({
       sheetId,
       projectId,
@@ -28,9 +26,6 @@ export async function createSheet(projectId: string, title?: string) {
       createdAt: now,
       updatedAt: now,
     }).go();
-    console.log('[createSheet] Step 1 SUCCESS - Sheet ID:', sheetId);
-
-    console.log('[createSheet] Step 2: Creating NocoDB table...');
     const columns = [
       { column_name: 'A', title: 'A', uidt: 'LongText' },
       { column_name: 'B', title: 'B', uidt: 'LongText' },
@@ -41,26 +36,19 @@ export async function createSheet(projectId: string, title?: string) {
 
     const sheetTitle = title || 'Untitled Sheet';
     const nocoTitle = `${sheetTitle} [${sheetId.substring(sheetId.length - 4)}]`;
-    console.log('[createSheet] Creating NocoDB table with title:', nocoTitle);
     const nocoTable = await nocoDBService.createTable(nocoTitle, columns, sheetId);
-    console.log('[createSheet] Step 2 SUCCESS - NocoDB Table ID:', nocoTable.id);
 
-    console.log('[createSheet] Step 3: Getting views for table...');
     const views = await nocoDBService.getViews(nocoTable.id);
-    console.log('[createSheet] Found', views.length, 'views');
     if (!views || views.length === 0) {
       throw new Error('No views found for the new NocoDB table');
     }
 
-    console.log('[createSheet] Step 4: Sharing view...');
     const shareId = await nocoDBService.shareView(views[0].id);
-    console.log('[createSheet] Step 4 SUCCESS - Share ID:', shareId);
 
     // NocoDB IDs are not stored on SheetEntity (no nocodbTableId/nocodbViewId attributes).
     // If needed, store them in the description or a separate entity.
 
     revalidatePath(`/project/[slug]/sheets`);
-    console.log('[createSheet] COMPLETE - Returning sheet');
     return { id: sheetId, sheetId, title: sheetTitle, projectId, createdAt: now, updatedAt: now };
   } catch (error) {
     console.error('Failed to create sheet:', error);
@@ -73,7 +61,6 @@ export async function createSheet(projectId: string, title?: string) {
     if (sheetId) {
       try {
         await SheetEntity.delete({ projectId, sheetId }).go();
-        console.log('Rolled back DynamoDB sheet creation');
       } catch (re) {
         console.error('DynamoDB rollback failed', re);
       }
@@ -171,7 +158,6 @@ export async function renameSheet(sheetId: string, title: string) {
 // Save sheet data (from AG Grid / collaborative editor)
 export async function saveSheetData(sheetId: string, cellData: Array<Record<string, unknown>>) {
   try {
-    console.log('[saveSheetData] Saving cells for sheet:', sheetId);
 
     const slug = `sheet-${sheetId}`;
     const nocoSheet = await nocoDBService.getSheetBySlug(slug);
@@ -208,7 +194,6 @@ export async function saveSheetData(sheetId: string, cellData: Array<Record<stri
         .go();
     }
 
-    console.log('[saveSheetData] Sheet saved successfully:', sheetId);
     revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
 
     return true;

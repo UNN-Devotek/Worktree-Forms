@@ -3,8 +3,6 @@ import { auth } from '@/auth';
 import { getProjects } from '@/features/projects/server/project-actions';
 import { ProjectList } from '@/features/projects/components/project-list';
 export default async function DashboardPage() {
-  console.log('[DashboardPage] Rendering FULL MODE...');
-
   const session = await auth();
   if (!session?.user) {
     redirect('/login');

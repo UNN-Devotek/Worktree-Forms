@@ -143,9 +143,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything..."
-            className="focus:ring-brand-foreground bg-accent/50 hover:bg-accent/60 border-border dark:border-border/10 w-full resize-none rounded-lg border p-3 pr-10 focus:ring-2 focus:outline-none"
+            className="focus:ring-brand-foreground bg-accent/50 hover:bg-accent/60 border-border dark:border-border/10 w-full resize-none rounded-lg border p-3 pr-10 focus:ring-2 focus:outline-none min-h-[100px] max-h-[200px]"
             rows={1}
-            style={{ minHeight: "100px", maxHeight: "200px" }}
             disabled={disabled}
           />
           {message ? (

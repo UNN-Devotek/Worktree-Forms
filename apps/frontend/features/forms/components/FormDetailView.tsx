@@ -75,7 +75,6 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
       )
       if (res.success) {
         // toast handled by surrounding UI
-        console.log(res.message)
       }
     } catch (err) {
       console.error('Failed to sync columns', err)

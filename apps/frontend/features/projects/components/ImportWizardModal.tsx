@@ -28,7 +28,7 @@ export function ImportWizardModal({ open, onClose, projectId, onImportComplete }
     const [forms, setForms] = useState<FormOption[]>([]);
     const [selectedFormId, setSelectedFormId] = useState<string>('');
     const [rawInput, setRawInput] = useState('');
-    const [parsedData, setParsedData] = useState<any[]>([]);
+    const [parsedData, setParsedData] = useState<Record<string, unknown>[]>([]);
     const [headers, setHeaders] = useState<string[]>([]);
     const [mappings, setMappings] = useState<Record<string, string>>({}); // Header -> FieldName
     const [fields, setFields] = useState<{name: string, label: string}[]>([]);
@@ -37,9 +37,15 @@ export function ImportWizardModal({ open, onClose, projectId, onImportComplete }
     // 1. Fetch Forms
     useEffect(() => {
         if (open) {
-            apiClient<{data: FormOption[]}>(`/api/projects/${projectId}/forms`)
-                .then(res => setForms(res.data || []))
-                .catch(err => console.error("Failed to load forms", err));
+            const loadForms = async () => {
+                try {
+                    const res = await apiClient<{data: FormOption[]}>(`/api/projects/${projectId}/forms`);
+                    setForms(res.data || []);
+                } catch (err) {
+                    console.error("Failed to load forms", err);
+                }
+            };
+            loadForms();
         }
     }, [open, projectId]);
 
@@ -74,7 +80,7 @@ export function ImportWizardModal({ open, onClose, projectId, onImportComplete }
             skipEmptyLines: true,
             complete: (results) => {
                 if (results.data && results.data.length > 0) {
-                    setParsedData(results.data);
+                    setParsedData(results.data as Record<string, unknown>[]);
                     setHeaders(results.meta.fields || []);
                     
                     // Auto-map based on name similarity

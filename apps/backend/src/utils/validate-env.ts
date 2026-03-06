@@ -38,5 +38,4 @@ export function validateEnvironment(): void {
     }
   }
 
-  console.log('Environment validation passed')
 }

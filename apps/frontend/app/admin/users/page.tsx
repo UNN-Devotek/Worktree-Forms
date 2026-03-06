@@ -29,14 +29,17 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const controller = new AbortController()
 
-    apiRequest<UsersResponse>('/api/users', { signal: controller.signal })
-      .then((response) => {
+    const fetchUsers = async () => {
+      try {
+        const response = await apiRequest<UsersResponse>('/api/users', { signal: controller.signal })
         setUsers(response?.data ?? [])
-      })
-      .catch((err: Error) => {
-        if (err.name !== 'AbortError') setError(err.message)
-      })
-      .finally(() => setLoading(false))
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUsers()
 
     return () => controller.abort()
   }, [])

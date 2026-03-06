@@ -18,8 +18,10 @@ async function buildStore() {
     const client = createClient({ url: process.env.REDIS_URL });
     client.on('error', (err: Error) => console.error('Redis rate-limit client error:', err.message));
     await client.connect();
-    console.log('✓ Rate limiter connected to Redis');
-    return new RedisStore({ sendCommand: (...args: string[]) => (client as any).sendCommand(args) });
+    return new RedisStore({
+      sendCommand: (...args: string[]) =>
+        (client as unknown as { sendCommand: (args: string[]) => Promise<boolean | number | string> }).sendCommand(args),
+    });
   } catch (err) {
     console.warn('Rate limiter: failed to connect to Redis, falling back to in-memory store:', err instanceof Error ? err.message : err);
     return undefined;
@@ -35,7 +37,7 @@ async function getStore() {
     _store = await buildStore();
     _storeInitialized = true;
   }
-  return _store as any;
+  return _store;
 }
 
 function makeRateLimiter(opts: Parameters<typeof rateLimit>[0]) {
@@ -44,7 +46,7 @@ function makeRateLimiter(opts: Parameters<typeof rateLimit>[0]) {
   // Attach store after it's ready (non-blocking; requests during init use in-memory)
   getStore().then(store => {
     if (store) {
-      (limiter as any).store = store;
+      Object.assign(limiter, { store });
     }
   }).catch(() => {/* already handled in getStore */});
   return limiter;
@@ -70,7 +72,7 @@ export const authenticatedRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as any).user?.id,
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
 });
 
 /**
@@ -94,7 +96,7 @@ export const uploadRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many upload requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as any).user?.id,
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
 });
 
 /**
@@ -106,7 +108,7 @@ export const apiRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many API requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as any).user?.id,
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
 });
 
 /**

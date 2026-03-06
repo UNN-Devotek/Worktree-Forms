@@ -45,7 +45,7 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
              }
          };
          
-         migrate().then(() => updateQueueLength());
+         migrate().then(updateQueueLength).catch(() => {});
      }
   }, []);
 

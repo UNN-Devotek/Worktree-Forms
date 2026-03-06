@@ -46,34 +46,36 @@ export function ShareModal({ children }: ShareModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
-    setIsGenerating(true);
-    setError(null);
+    const generateLink = async () => {
+      setIsGenerating(true);
+      setError(null);
 
-    fetch('/api/share/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        resourceType: 'SHEET',
-        resourceId: sheetId,
-        expiresInDays: null, // no expiry by default
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
+      try {
+        const response = await fetch('/api/share/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            resourceType: 'SHEET',
+            resourceId: sheetId,
+            expiresInDays: null,
+          }),
+        });
+        const data = await response.json();
         if (data.success) {
           setShareLink(data.data.link);
         } else {
           setError(data.error || 'Failed to generate link');
-          // Fallback to current URL
           setShareLink(typeof window !== 'undefined' ? window.location.href : '');
         }
-      })
-      .catch(() => {
+      } catch {
         setError('Failed to generate share link');
         setShareLink(typeof window !== 'undefined' ? window.location.href : '');
-      })
-      .finally(() => setIsGenerating(false));
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+    generateLink();
   }, [isOpen, sheetId]);
 
   const handleCopyLink = async () => {

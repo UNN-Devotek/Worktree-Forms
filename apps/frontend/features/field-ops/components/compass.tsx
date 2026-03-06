@@ -22,11 +22,11 @@ export function Compass({ heading: propHeading, targetBearing, className }: Comp
             // alpha: 0 is North, usually. 
             // iOS might need webkitCompassHeading
             let compass = event.alpha;
-            
-            // @ts-ignore - iOS specific property
-            if (event.webkitCompassHeading) {
-                // @ts-ignore
-                compass = event.webkitCompassHeading;
+
+            // iOS-specific property for compass heading
+            const iosEvent = event as DeviceOrientationEvent & { webkitCompassHeading?: number };
+            if (iosEvent.webkitCompassHeading) {
+                compass = iosEvent.webkitCompassHeading;
             }
 
             if (compass !== null) {

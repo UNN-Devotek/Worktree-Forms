@@ -6,7 +6,6 @@ export class ComplianceService {
    * Submit a compliance record for a user within a project
    */
   static async submitInsurance(userId: string, projectId: string, insuranceUrl: string) {
-    console.log(`[Compliance] User ${userId} submitted insurance: ${insuranceUrl}`);
 
     const record = await ComplianceRecordEntity.create({
       recordId: nanoid(),

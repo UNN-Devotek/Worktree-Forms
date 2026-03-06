@@ -42,7 +42,7 @@ export async function requireProjectAccessServer(
     throw new Error("Forbidden: Not a project member");
   }
 
-  if (!hasRole(member.roles, minRole)) {
+  if (!hasRole(member.roles ?? [], minRole)) {
     throw new Error(`Forbidden: Requires ${minRole} role`);
   }
 

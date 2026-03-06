@@ -1,5 +1,5 @@
 import { getProject } from "@/features/projects/server/project-actions";
-import { getSheetToken } from "@/features/sheets/server/sheet-actions";
+
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 import { FormEntity } from "@/lib/dynamo";
@@ -25,7 +25,7 @@ export default async function ProjectFormDetailPage({
 
   // Get sheet token if the form has a linked sheet
   // Note: FormEntity schema doesn't have targetSheetId; adapt as needed
-  let sheetToken: string | null = null;
+  const sheetToken: string | null = null;
 
   const user = {
     name: session?.user?.name || "Anonymous",

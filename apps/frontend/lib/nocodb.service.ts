@@ -123,11 +123,6 @@ class NocoDBService {
       this.sheetsTableId = sheetsTable.id;
       this.cellsTableId = cellsTable.id;
 
-      console.log('[NocoDB] Initialized:', {
-        projectId: this.projectId,
-        sheetsTableId: this.sheetsTableId,
-        cellsTableId: this.cellsTableId,
-      });
     } catch (error) {
       console.error('[NocoDB] Initialization failed:', error);
       throw error;

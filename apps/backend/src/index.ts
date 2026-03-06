@@ -81,11 +81,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
-});
+// Request logging is handled by the Logger extension or structured logging in production.
 
 // Authenticate protected routes
 app.use(

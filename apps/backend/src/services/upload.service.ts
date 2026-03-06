@@ -21,7 +21,18 @@ export interface FileUploadRecord {
   uploadedAt?: Date;
 }
 
-function toFileUploadRecord(record: Record<string, any>, folder: string): FileUploadRecord {
+interface FileUploadData {
+  fileId: string;
+  objectKey: string;
+  originalName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  projectId: string;
+  uploadedBy?: string;
+  createdAt?: string;
+}
+
+function toFileUploadRecord(record: FileUploadData, folder: string): FileUploadRecord {
   return {
     fileId: record.fileId,
     objectKey: record.objectKey,
@@ -30,7 +41,7 @@ function toFileUploadRecord(record: Record<string, any>, folder: string): FileUp
     sizeBytes: record.sizeBytes ?? 0,
     projectId: record.projectId,
     uploadedBy: record.uploadedBy ?? null,
-    createdAt: record.createdAt,
+    createdAt: record.createdAt ?? new Date().toISOString(),
     id: record.fileId,
     filename: record.originalName ?? '',
     contentType: record.mimeType ?? '',
@@ -51,7 +62,6 @@ export class UploadService {
     uploadedBy?: string,
     projectId: string = 'global',
   ): Promise<FileUploadRecord> {
-    console.log(`UploadService: Processing file "${file.originalname}" (${file.size} bytes)`);
 
     const ext = file.originalname.split('.').pop() || 'bin';
     const uniqueFilename = `${uuidv4()}.${ext}`;
@@ -128,22 +138,18 @@ export class UploadService {
    * Delete file from S3 and database
    */
   static async deleteFile(objectKey: string, projectId: string, fileId: string): Promise<void> {
-    console.log(`Deleting file: ${objectKey}`);
     await StorageService.deleteFile(objectKey);
     await FileUploadEntity.delete({ projectId, fileId }).go();
-    console.log('File and database record deleted');
   }
 
   /**
    * Link files to a submission (update submissionId on file records)
    */
   static async linkFilesToSubmission(projectId: string, fileIds: string[], submissionId: string): Promise<void> {
-    console.log(`Linking ${fileIds.length} files to submission ${submissionId}`);
     for (const fileId of fileIds) {
       await FileUploadEntity.patch({ projectId, fileId })
         .set({ submissionId })
         .go();
     }
-    console.log('Files linked to submission');
   }
 }

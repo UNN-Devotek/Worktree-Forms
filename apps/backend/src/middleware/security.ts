@@ -84,10 +84,8 @@ export function getSecurityMiddleware() {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   if (isDevelopment) {
-    console.log('🔓 Using development security headers (relaxed CSP)');
     return developmentSecurityMiddleware;
   }
 
-  console.log('🔒 Using production security headers (strict CSP)');
   return securityMiddleware;
 }

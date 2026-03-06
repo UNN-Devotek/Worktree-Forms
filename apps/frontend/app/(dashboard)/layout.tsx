@@ -16,7 +16,6 @@ export default async function Layout({ children }: LayoutProps) {
     redirect("/login");
   }
 
-  // @ts-expect-error — session.user.complianceStatus is a custom field not in NextAuth's default types
   if (session.user?.complianceStatus === 'PENDING') {
      redirect("/onboarding");
   }

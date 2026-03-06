@@ -5,7 +5,7 @@ import {
   setupDynamoDBTests,
   getTestDocClient,
   TEST_TABLE,
-} from "../../../../../../../tests/setup/dynamodb.js";
+} from "../../../../test/setup/dynamodb.js";
 
 /**
  * Builds a ProjectMemberEntity wired to the test dynalite instance.

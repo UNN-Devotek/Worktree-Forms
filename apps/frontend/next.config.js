@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -76,6 +78,12 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;
+    // Redirect backend dynamo client imports to the frontend's own client
+    // so that cross-package entity imports resolve correctly during build
+    config.resolve.alias[path.resolve(__dirname, '../backend/src/lib/dynamo/client.js')] =
+      path.resolve(__dirname, 'lib/dynamo/client.ts');
+    config.resolve.alias[path.resolve(__dirname, '../backend/src/lib/dynamo/client')] =
+      path.resolve(__dirname, 'lib/dynamo/client.ts');
     // Fix resolution for vendored fast-formula-parser dependencies
     // Use require.resolve to find the exact entry file, avoiding directory ambiguity
     config.resolve.alias['bahttext'] = require.resolve('bahttext');

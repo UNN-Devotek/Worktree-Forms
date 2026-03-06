@@ -35,10 +35,11 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "Unauthorized" };
   }
 
-  const file = formData.get("file") as File;
-  if (!file) {
+  const rawFile = formData.get("file");
+  if (!rawFile || !(rawFile instanceof File)) {
     return { error: "No file provided" };
   }
+  const file = rawFile;
 
   // Validate type
   if (!file.type.startsWith("image/")) {

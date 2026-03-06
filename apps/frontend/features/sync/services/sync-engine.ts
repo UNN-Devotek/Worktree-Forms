@@ -2,7 +2,7 @@
 import { MutationQueue, MutationRequest } from '@/lib/sync/mutation-queue';
 
 type SyncEvent = 'sync-start' | 'sync-complete' | 'sync-failed' | 'online' | 'offline';
-type SyncListener = (data?: any) => void;
+type SyncListener = (data?: unknown) => void;
 
 class SyncEngineService {
   private isSyncing = false;
@@ -28,18 +28,16 @@ class SyncEngineService {
     };
   }
 
-  private emit(event: SyncEvent, data?: any) {
+  private emit(event: SyncEvent, data?: unknown) {
     this.listeners[event].forEach(l => l(data));
   }
 
   private handleOnline() {
-    console.log('[SyncEngine] Online detected');
     this.emit('online');
     this.processQueue();
   }
 
   private handleOffline() {
-      console.log('[SyncEngine] Offline detected');
       this.emit('offline');
   }
 

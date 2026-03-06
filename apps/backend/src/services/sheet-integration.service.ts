@@ -27,7 +27,6 @@ export class SheetIntegrationService {
    * Appends a submission data as a new row to a target sheet.
    */
   async appendSubmissionToSheet(sheetId: string, projectId: string, submissionData: unknown) {
-    console.log(`Integrating submission to sheet ${sheetId}`);
 
     try {
       // 1. Verify sheet exists
@@ -62,7 +61,7 @@ export class SheetIntegrationService {
 
       // In DynamoDB, we'd need the sheetRowId stored on the stop or a lookup
       // For now, this is a no-op until the data model links stops to rows
-      console.log('syncRouteStopToSheet: Stop-to-row linking not yet implemented in DynamoDB model');
+      // Stop-to-row linking not yet implemented in DynamoDB model
     } catch (error) {
       console.error('Sync Stop to Sheet failed:', error);
     }
@@ -74,7 +73,7 @@ export class SheetIntegrationService {
   async syncSheetToRoute(_rowId: string, _rowData: unknown) {
     // In DynamoDB, reverse lookups from row -> route stops require a GSI or scan.
     // For now, this is a no-op placeholder.
-    console.log('syncSheetToRoute: Row-to-stop reverse sync not yet implemented in DynamoDB model');
+    // Row-to-stop reverse sync not yet implemented in DynamoDB model
   }
 
   /**
@@ -116,7 +115,6 @@ export class SheetIntegrationService {
           }
 
           clearTimeout(outerTimer);
-          console.log(`Backend Yjs: syncing ${columns.length} columns to sheet ${sheetId}`);
           const yColumns = doc.getArray('columns');
 
           doc.transact(() => {
@@ -211,7 +209,6 @@ export class SheetIntegrationService {
           }
 
           clearTimeout(outerTimer);
-          console.log(`Backend Yjs: injecting row ${row.id} into sheet ${sheetId}`);
           const yRows = doc.getMap('rows');
           const yOrder = doc.getArray('order');
 

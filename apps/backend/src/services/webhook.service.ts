@@ -43,12 +43,8 @@ export class WebhookService {
    * Trigger an event - finds matching webhooks and delivers.
    */
   static async triggerEvent(event: string, payload: unknown, projectId: string) {
-    console.log(`Triggering event: ${event} (projectId: ${projectId})`);
-
     const result = await WebhookEntity.query.byProject({ projectId }).go();
     const webhooks = result.data.filter((wh) => wh.isActive && (wh.events ?? []).includes(event));
-
-    console.log(`Found ${webhooks.length} webhook(s) for event: ${event}`);
 
     for (const webhook of webhooks) {
       this.deliverWebhook(webhook, event, payload).catch((err) =>
@@ -82,8 +78,6 @@ export class WebhookService {
 
     if (!response.ok) {
       console.warn(`Webhook delivery failed (${response.status}): ${webhook.webhookId}`);
-    } else {
-      console.log(`Webhook delivered successfully: ${webhook.webhookId}`);
     }
   }
 }

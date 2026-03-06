@@ -63,7 +63,11 @@ export function SheetList({ projectSlug }: SheetListProps) {
   const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
-    getProjectMembers(projectSlug).then(setMembers);
+    const loadMembers = async () => {
+      const result = await getProjectMembers(projectSlug);
+      setMembers(result);
+    };
+    loadMembers();
   }, [projectSlug]);
 
   // ---- create table modal ---------------------------------------------------

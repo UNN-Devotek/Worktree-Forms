@@ -17,7 +17,6 @@ export class MigrationService {
     for (const [id, oldField] of Object.entries(oldFields)) {
       const newField = newFields[id];
       if (newField && oldField.name !== newField.name) {
-        console.log(`[Migration] Detected rename: ${oldField.name} -> ${newField.name} (ID: ${id})`);
         renames[oldField.name] = newField.name;
       }
     }
@@ -30,7 +29,6 @@ export class MigrationService {
   static async migrateSubmissions(formId: string, projectId: string, renames: RenameMap) {
     if (Object.keys(renames).length === 0) return;
 
-    console.log(`[Migration] Migrating submissions for Form ${formId}...`);
 
     const result = await SubmissionEntity.query.byForm({ formId }).go();
     const submissions = result.data;
@@ -55,7 +53,6 @@ export class MigrationService {
         count++;
       }
     }
-    console.log(`[Migration] Updated ${count} submissions.`);
   }
 
   /**

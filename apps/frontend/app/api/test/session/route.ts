@@ -1,6 +1,4 @@
-// import { headers } from "next/headers"; // Unused
 import { signIn } from "@/auth";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -17,26 +15,17 @@ export async function POST(req: Request) {
       return new Response("Email required", { status: 400 });
     }
 
-    console.log("[BACKDOOR] Attempting signIn for:", email);
-    const cookieStore = await cookies();
-    console.log("[BACKDOOR] Cookies before:", cookieStore.getAll().map(c => c.name));
-
     // Use NextAuth's signIn server-side function
     await signIn("credentials", {
         email: email,
         redirect: false,
     });
 
-    const cookieStoreAfter = await cookies();
-    console.log("[BACKDOOR] Cookies after:", cookieStoreAfter.getAll().map(c => c.name));
-
     // Explicitly return success. Cookies set via cookies() API should be attached automatically.
     return Response.json({ success: true });
 
   } catch (error) {
       if (isRedirectError(error)) {
-          const cookieStoreRedirect = await cookies();
-          console.log("[BACKDOOR] Caught Redirect (Success). Cookies:", cookieStoreRedirect.getAll().map(c => c.name));
           return Response.json({ success: true });
       }
 
@@ -45,6 +34,12 @@ export async function POST(req: Request) {
   }
 }
 
-function isRedirectError(error: any) {
-    return error?.digest?.startsWith?.('NEXT_REDIRECT');
+function isRedirectError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'digest' in error &&
+      typeof (error as { digest: unknown }).digest === 'string' &&
+      (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    );
 }

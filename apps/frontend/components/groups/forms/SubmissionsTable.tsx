@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { ApiResponse } from '@/types/api'
 import { FormSchema, FormFieldBase } from '@/types/group-forms'
 import { 
@@ -182,7 +183,6 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
     }, [exportingPdfId])
 
     const handleExportPhotos = async (submissionId: number) => {
-        console.log(`Starting Photo export for submission ${submissionId}`)
         
         if (!formSchema) {
             console.warn("No form schema available")
@@ -212,7 +212,6 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
             }
             
             formSchema.pages.forEach(p => p.sections.forEach(s => traverseFields(s.fields)))
-            console.log("File fields identified:", fileFieldNames)
             
             if (fileFieldNames.length === 0) {
                  toast("Info", { description: "No file/image fields found in this form." })
@@ -225,7 +224,6 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
             for (const fieldName of fileFieldNames) {
                 // Check both data locations
                 const value = submission.data?.[fieldName] || submission.response_data?.[fieldName]
-                console.log(`Checking field ${fieldName}:`, value)
                 
                 if (!value) continue
                 
@@ -239,7 +237,6 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
                     }
                     
                     try {
-                        console.log(`Fetching ${url}...`)
                         const response = await fetch(url, { mode: 'cors' }) // Ensure CORS mode
                         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
                         
@@ -258,12 +255,10 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
             }
             
             if (photoCount === 0) {
-                console.log("No photos successfully fetched")
                 toast("Info", { description: "No photos found (or failed to download)." })
                 return
             }
             
-            console.log(`Zipping ${photoCount} photos...`)
             const content = await zip.generateAsync({ type: "blob" })
             saveAs(content, `submission-${submissionId}-photos.zip`)
             toast.success("Success", { description: `Exported ${photoCount} photos.` })
@@ -443,7 +438,7 @@ export function SubmissionsTable({ formId, formSchema, submissionsApiPath }: Sub
             </AlertDialog>
 
             {/* Hidden PDF Render Container */}
-            <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -50, width: '210mm', minHeight: '297mm', background: 'white', padding: '10mm', opacity: exportingPdfId ? 1 : 0, pointerEvents: 'none' }}>
+            <div className={cn("fixed top-0 left-0 -z-50 w-[210mm] min-h-[297mm] bg-white p-[10mm] pointer-events-none", exportingPdfId ? "opacity-100" : "opacity-0")}>
                 {pdfSubmission && formSchema && (
                     <div ref={pdfContainerRef}>
                         <h1 className="text-2xl font-bold mb-4">{formSchema.settings.title || 'Form Submission'}</h1>

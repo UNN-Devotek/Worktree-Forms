@@ -26,7 +26,7 @@ export default function VisaWizard() {
     const handleUpload = async () => {
         if (!file) return;
 
-        console.log("Starting upload...", insuranceUrl); // Use insuranceUrl to satisfy lint
+        void insuranceUrl; // referenced for future upload flow
         setUploading(true);
         setError('');
 

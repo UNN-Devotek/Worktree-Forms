@@ -47,9 +47,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ doc, currentUser, users, i
                if (prefs) {
                    const parsed = JSON.parse(prefs);
                    if (parsed && typeof parsed.emailMentions === 'boolean' && parsed.emailMentions) {
-                       console.log(`[Notification System] Email sent to ${currentUser.name} for mention.`);
+                       // Email notification would be sent here via server action
                    } else {
-                       console.log(`[Notification System] Email suppressed for ${currentUser.name} (User Pref).`);
+                       // Email suppressed by user preference
                    }
                }
              } catch (e) {

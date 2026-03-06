@@ -55,13 +55,11 @@ export function useAutoSave({
           const storageKey = `form-draft-${formId}`;
           localStorage.setItem(storageKey, schemaString);
           localStorage.setItem(`${storageKey}-timestamp`, new Date().toISOString());
-          console.log(`[AutoSave] Saved to localStorage: ${storageKey}`);
         }
 
         // Call optional API save callback
         if (onSave) {
           await onSave(formSchema);
-          console.log('[AutoSave] API save complete');
         }
 
         lastSavedRef.current = schemaString;
@@ -94,7 +92,6 @@ export function useAutoSave({
 
         // Only load drafts less than 24 hours old
         if (hoursSince < 24) {
-          console.log(`[AutoSave] Loaded draft from ${timestamp}`);
           return JSON.parse(draft);
         } else {
           // Clean up old draft
@@ -118,7 +115,6 @@ export function useAutoSave({
     const storageKey = `form-draft-${formId}`;
     localStorage.removeItem(storageKey);
     localStorage.removeItem(`${storageKey}-timestamp`);
-    console.log('[AutoSave] Draft cleared');
   };
 
   return {

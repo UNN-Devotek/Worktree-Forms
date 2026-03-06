@@ -1,6 +1,7 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/no-var-requires */
 // Redis-backed Next.js cache handler for stateless ECS Fargate deployment.
-// Reads REDIS_URL env var — same as BullMQ and rate-limiter connections.
+// Reads REDIS_URL env var -- same as BullMQ and rate-limiter connections.
 const { Redis } = require("ioredis");
 
 const CACHE_PREFIX = "nextjs:cache:";

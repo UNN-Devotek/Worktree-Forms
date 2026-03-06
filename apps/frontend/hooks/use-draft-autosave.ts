@@ -9,7 +9,7 @@ export function useDraftAutosave(formId: number, enabled: boolean = false) {
   const draftKey = `${DRAFT_KEY_PREFIX}${formId}`
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const saveDraft = useCallback((data: any) => {
+  const saveDraft = useCallback((data: unknown) => {
     if (!enabled) return
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)

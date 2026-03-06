@@ -351,7 +351,13 @@ describe('Form Builder - Validation & Conditional Logic', () => {
     });
 
     it('should handle undefined validation', () => {
-      const field = {
+      const field: {
+        id: string;
+        type: 'text';
+        name: string;
+        label: string;
+        validation?: unknown;
+      } = {
         id: 'field_1',
         type: 'text' as const,
         name: 'test',

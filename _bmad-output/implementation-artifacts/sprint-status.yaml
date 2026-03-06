@@ -35,18 +35,18 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # Epic 0: AWS Infrastructure Migration (NEW - prerequisite for all DB-touching work)
   epic-0: in-progress
-  0-1-dynamodb-schema-electrodb-entities: backlog
-  0-2-s3-bucket-storage-service-swap: backlog
+  0-1-dynamodb-schema-electrodb-entities: done
+  0-2-s3-bucket-storage-service-swap: done
   0-3-elasticache-redis-provisioning: backlog
   0-4-pinecone-vector-search-setup: backlog
-  0-5-nextauth-dynamodb-adapter: backlog
+  0-5-nextauth-dynamodb-adapter: done
   0-6-ecs-fargate-ecr-alb-pipeline: backlog
-  0-7-environment-variable-migration: backlog
-  0-8-local-dev-environment-seed-script: backlog
-  0-9-integration-test-infrastructure-dynamodb: backlog
-  0-10-redis-backed-nextjs-cache-stateless: backlog
+  0-7-environment-variable-migration: done
+  0-8-local-dev-environment-seed-script: done
+  0-9-integration-test-infrastructure-dynamodb: done
+  0-10-redis-backed-nextjs-cache-stateless: done
   0-11-playwright-collaboration-test-infrastructure: backlog
-  0-12-codebase-sanitization-legacy-removal: ready-for-dev
+  0-12-codebase-sanitization-legacy-removal: done
   0-13-frontend-actions-tests-sanitization: ready-for-dev
   0-14-code-quality-sanitization: ready-for-dev
   0-15-system-hardening-sweep: ready-for-dev

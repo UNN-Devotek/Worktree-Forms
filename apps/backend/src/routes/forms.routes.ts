@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Readable } from 'stream';
 import { z } from 'zod';
 import {
   FormEntity,
@@ -15,7 +16,7 @@ import { generateFlattenedPDF } from '../services/pdf-export.service.js';
 import { MigrationService } from '../services/migration-service.js';
 import { rateLimitTiers } from '../middleware/rateLimiter.js';
 import { auditMiddleware } from '../middleware/audit.middleware.js';
-import { authenticate } from '../middleware/authenticate.js';
+import { authenticate, AuthenticatedRequest } from '../middleware/authenticate.js';
 import { StorageService } from '../storage.js';
 import archiver from 'archiver';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -98,9 +99,9 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
     }
 
     // Verify access
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user.id;
     const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
-    const isAdmin = (req as any).user?.systemRole === 'ADMIN';
+    const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
     if (!memberResult.data && !isAdmin) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
@@ -132,7 +133,7 @@ router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req
   }
 
   const { title, form_json } = parsed.data;
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
 
   try {
     const formId = nanoid();
@@ -174,7 +175,7 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
   const projectId = req.params.groupId;
   const formId = req.params.formId;
   const updates = req.body;
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
 
   try {
     const formResult = await FormEntity.get({ projectId, formId }).go();
@@ -184,7 +185,7 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
     const existingForm = formResult.data;
 
     // Check membership
-    const isAdmin = (req as any).user?.systemRole === 'ADMIN';
+    const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
     if (!isAdmin) {
       const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
       if (!memberResult.data) {
@@ -195,7 +196,6 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
     // Check for schema changes and create version
     if (updates.form_json) {
       if (JSON.stringify(existingForm.schema) !== JSON.stringify(updates.form_json)) {
-        console.log(`Schema change detected for Form ${formId}. Creating new version.`);
 
         const renames = MigrationService.detectRenames(existingForm.schema, updates.form_json);
         if (Object.keys(renames).length > 0) {
@@ -347,7 +347,7 @@ router.post(
       const fileRecord = await UploadService.uploadFile(
         req.file,
         'form_uploads',
-        (req as any).user?.id,
+        (req as AuthenticatedRequest).user?.id,
         projectId,
       );
       const displayUrl = UploadService.getFileUrl(fileRecord.objectKey);
@@ -486,7 +486,7 @@ router.get(['/forms/:formId/analytics', '/:formId/analytics'], async (req: Reque
 // Get Submissions
 router.get(['/forms/:formId/submissions', '/:formId/submissions'], async (req: Request, res: Response) => {
   const formId = req.params.formId;
-  const userId = (req as any).user?.id;
+  const userId = (req as AuthenticatedRequest).user?.id;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Authentication required' });
   }
@@ -535,8 +535,7 @@ router.get('/submissions/:id/zip', async (req: Request, res: Response) => {
         const command = new GetObjectCommand({ Bucket: bucketName, Key: file.objectKey });
         const s3Response = await s3Client.send(command);
         if (s3Response.Body) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          archive.append(s3Response.Body as any, { name: file.originalName ?? file.objectKey });
+          archive.append(Readable.fromWeb(s3Response.Body as import('stream/web').ReadableStream), { name: file.originalName ?? file.objectKey });
         }
       } catch (fileErr) {
         archive.append(`Failed to download: ${file.originalName}`, {

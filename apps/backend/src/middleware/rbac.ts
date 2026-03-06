@@ -57,7 +57,7 @@ export function requireProjectAccess(minRole: ProjectRole = "VIEWER") {
           .json({ success: false, error: "Not a project member" });
       }
 
-      if (!hasRole(member.roles, minRole)) {
+      if (!hasRole(member.roles ?? [], minRole)) {
         return res
           .status(403)
           .json({ success: false, error: `Requires ${minRole} role` });

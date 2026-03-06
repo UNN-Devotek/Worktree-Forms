@@ -9,8 +9,8 @@ import { IncomingMessage } from 'http';
 
 const wsReadyStateConnecting = 0;
 const wsReadyStateOpen = 1;
-const wsReadyStateClosing = 2; // eslint-disable-line
-const wsReadyStateClosed = 3; // eslint-disable-line
+const _wsReadyStateClosing = 2;
+const _wsReadyStateClosed = 3;
 
 const docs: Map<string, WSSharedDoc> = new Map();
 

@@ -32,7 +32,6 @@ new Worker(
         .go();
     }
 
-    console.log(`Renamed ${files.length} files from "${oldPattern}" to "${newPattern}"`);
   },
   { connection },
 );

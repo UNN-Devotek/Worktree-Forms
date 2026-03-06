@@ -78,18 +78,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ projectId, isO
             if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
             return [];
         };
-        setAssignees(parseArr(editTask.assignees).map((a: any) => ({ id: a.id, name: a.name })));
+        setAssignees(parseArr(editTask.assignees).map((a: Record<string, unknown>) => ({ id: String(a.id ?? ''), name: String(a.name ?? '') })));
         setAttachments(parseArr(editTask.attachments));
         setMentions(parseArr(editTask.mentions));
-        setImages(parseArr(editTask.images).map((img: any) => ({ url: img.url, objectKey: img.objectKey, name: img.objectKey ?? 'Image' })));
+        setImages(parseArr(editTask.images).map((img: Record<string, unknown>) => ({ url: String(img.url ?? ''), objectKey: String(img.objectKey ?? ''), name: String(img.objectKey ?? 'Image') })));
     }, [isOpen, editTask]);
 
     // Fetch project members on open
     useEffect(() => {
         if (!isOpen) return;
-        apiClient<{ success: boolean; data: ProjectMember[] }>(`/api/projects/${projectId}/members`)
-            .then(r => { if (r.success) setMembers(r.data); })
-            .catch(() => {});
+        const loadMembers = async () => {
+            try {
+                const r = await apiClient<{ success: boolean; data: ProjectMember[] }>(`/api/projects/${projectId}/members`);
+                if (r.success) setMembers(r.data);
+            } catch { /* members load is non-critical */ }
+        };
+        loadMembers();
     }, [isOpen, projectId]);
 
     // Mention search
@@ -98,22 +102,30 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ projectId, isO
         const q = mentionQuery.toLowerCase();
         setMentionLoading(true);
 
-        Promise.all([
-            apiClient<{ success: boolean; data: any[] }>(`/api/projects/${projectId}/sheets-list`).catch(() => ({ success: false, data: [] })),
-            apiClient<{ success: boolean; data: any[] }>(`/api/projects/${projectId}/specs?q=${encodeURIComponent(mentionQuery)}`).catch(() => ({ success: false, data: [] })),
-        ]).then(([sheetsRes, specsRes]) => {
-            const results: TaskMention[] = [];
-            if (sheetsRes.success) {
-                (sheetsRes.data as any[])
-                    .filter((s: any) => s.title?.toLowerCase().includes(q))
-                    .forEach((s: any) => results.push({ type: 'sheet', id: s.id, label: s.title }));
+        interface MentionItem { id: string; title?: string; section?: string }
+
+        const searchMentions = async () => {
+            try {
+                const [sheetsRes, specsRes] = await Promise.all([
+                    apiClient<{ success: boolean; data: MentionItem[] }>(`/api/projects/${projectId}/sheets-list`).catch(() => ({ success: false, data: [] as MentionItem[] })),
+                    apiClient<{ success: boolean; data: MentionItem[] }>(`/api/projects/${projectId}/specs?q=${encodeURIComponent(mentionQuery)}`).catch(() => ({ success: false, data: [] as MentionItem[] })),
+                ]);
+                const results: TaskMention[] = [];
+                if (sheetsRes.success) {
+                    sheetsRes.data
+                        .filter((s) => s.title?.toLowerCase().includes(q))
+                        .forEach((s) => results.push({ type: 'sheet', id: s.id, label: s.title ?? '' }));
+                }
+                if (specsRes.success) {
+                    specsRes.data
+                        .forEach((s) => results.push({ type: 'spec', id: s.id, label: `${s.section ?? ''} ${s.title ?? ''}` }));
+                }
+                setMentionResults(results.slice(0, 8));
+            } finally {
+                setMentionLoading(false);
             }
-            if (specsRes.success) {
-                (specsRes.data as any[])
-                    .forEach((s: any) => results.push({ type: 'spec', id: s.id, label: `${s.section} ${s.title}` }));
-            }
-            setMentionResults(results.slice(0, 8));
-        }).finally(() => setMentionLoading(false));
+        };
+        searchMentions();
     }, [mentionQuery, projectId]);
 
     const toggleAssignee = (member: ProjectMember) => {

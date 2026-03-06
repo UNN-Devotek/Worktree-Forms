@@ -37,7 +37,6 @@ const server = new Server({
        */
       fetch: async ({ documentName, document }) => {
         const { sheetId } = parseDocumentName(documentName);
-        console.log(`[ws] Fetching document data for sheet: ${sheetId}`);
 
         try {
           const [rowsResult, columnsResult] = await Promise.all([
@@ -78,9 +77,7 @@ const server = new Server({
               }
             });
 
-            console.log(`[ws] Hydrated ${rowsResult.data.length} rows, ${sortedCols.length} columns`);
           } else {
-            console.log(`[ws] Document ${sheetId} already has state, skipping hydration`);
           }
         } catch (err) {
           console.error(`[ws] Failed to hydrate document ${sheetId}:`, err);
@@ -107,7 +104,6 @@ const server = new Server({
           const yRows = document.getMap('rows');
           const now = new Date().toISOString();
 
-          console.log(`[ws] Persisting ${yRows.size} rows for sheet: ${sheetId}`);
 
           for (const [rowId, yRow] of yRows.entries()) {
             const data: Record<string, unknown> = {};
@@ -147,7 +143,6 @@ const server = new Server({
   // Authentication via Hocuspocus auth message
   async onAuthenticate({ token, documentName }) {
     if (!token) {
-      console.log(`[ws] Auth failed: No token provided for ${documentName}`);
       throw new Error('Unauthorized');
     }
 
@@ -155,13 +150,11 @@ const server = new Server({
       const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
       const userId = (decoded.sub ?? decoded.userId) as string;
       const userName = (decoded.name ?? decoded.email ?? 'Unknown') as string;
-      console.log(`[ws] User ${userId} authenticated for ${documentName}`);
 
       return {
         user: { id: userId, name: userName },
       };
     } catch {
-      console.log(`[ws] Auth verification failed for ${documentName}`);
       throw new Error('Unauthorized');
     }
   },

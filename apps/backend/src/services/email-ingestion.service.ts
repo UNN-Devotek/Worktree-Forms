@@ -10,7 +10,6 @@ export class EmailIngestionService {
    * 3. Else, treat as a generic log or ignore for MVP.
    */
   static async processInboundEmail(payload: { from: string; subject: string; text: string }) {
-    console.log(`Processing Inbound Email from ${payload.from}`);
 
     // 1. Authenticate User via Email
     const userResult = await UserEntity.query.byEmail({ email: payload.from }).go();
@@ -48,7 +47,6 @@ export class EmailIngestionService {
         roles: ['OWNER'],
       }).go();
 
-      console.log(`Magic Project Created: ${projectResult.data.name} (ID: ${projectId})`);
       return { success: true, action: 'CREATE_PROJECT', data: projectResult.data };
     }
 
