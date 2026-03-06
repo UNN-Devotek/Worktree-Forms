@@ -23,7 +23,7 @@ So that I can document procedures.
   - [x] 1.1 Create story file
 
 - [x] 2. Backend Logic
-  - [x] 2.1 Implement `HelpArticle` Model & Migration
+  - [x] 2.1 Implement `HelpArticleEntity` in DynamoDB
   - [x] 2.2 Implement `HelpArticleService` (CRUD + Versions)
   - [x] 2.3 Add API Endpoints
 

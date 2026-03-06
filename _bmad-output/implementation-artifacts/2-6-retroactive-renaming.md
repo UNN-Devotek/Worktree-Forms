@@ -26,7 +26,7 @@
 - [ ] **Scenario**: File uploaded as `Qty_2024-01-01.pdf`.
 - [ ] System finds `FileUpload` records linked to this field.
 - [ ] Updates the `filename` metadata to `Quantity_2024-01-01.pdf`.
-- [ ] (Bonus) Updates the S3/MinIO Object Key if feasible (might be expensive, metadata update is MVP).
+- [ ] (Bonus) Updates the S3 Object Key if feasible (might be expensive, metadata update is MVP).
 
 ### 4. Background Processing (Simulated)
 

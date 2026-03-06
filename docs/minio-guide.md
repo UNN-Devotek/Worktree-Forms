@@ -1,4 +1,11 @@
-# MinIO Image Upload and Serving Guide
+# [DEPRECATED] MinIO Image Upload and Serving Guide
+
+> [!CAUTION]
+> **DEPRECATED:** This document is obsolete as of 2026-03-05.
+> The project has migrated from MinIO to **AWS S3 / LocalStack**.
+> Please refer to the [Architecture Specification](../_bmad-output/planning-artifacts/architecture.md) for the current S3 implementation details.
+
+1: # MinIO Image Upload and Serving Guide
 
 This guide documents the current implementation of image uploads and serving using MinIO (or S3-compatible storage) in the Worktree-Forms application.
 

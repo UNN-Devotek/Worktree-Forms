@@ -21,11 +21,11 @@ So that I can see upcoming milestones.
   - [x] 1.1 Create story file
 
 - [x] 2. Implement Data Model
-  - [x] 2.1 Create `ScheduleTask` Prisma Model (Dates, Status, Assignee)
-  - [x] 2.2 Create `ScheduleDependency` (optional/future)
+  - [x] 2.1 Create `ScheduleTaskEntity` in ElectroDB
+  - [x] 2.2 Create `ScheduleDependencyEntity` (optional/future)
 
 - [x] 3. Backend Services
-  - [x] 3.1 Implement `ScheduleService` (CRUD Tasks)
+  - [x] 3.1 Implement repository for `ScheduleTaskEntity`
   - [x] 3.2 Add `/api/projects/:projectId/schedule` endpoints
 
 - [x] 4. Frontend UI
@@ -41,5 +41,5 @@ Antigravity (Retroactive Generation)
 
 ### File List
 
-- `apps/backend/src/services/schedule.service.ts`
+- `apps/backend/src/entities/schedule-task.entity.ts`
 - `apps/frontend/features/schedule/components/ScheduleView.tsx`

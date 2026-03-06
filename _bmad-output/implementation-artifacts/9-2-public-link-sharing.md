@@ -24,7 +24,7 @@ So that they don't need to create an account.
   - [x] 1.1 Create story file
 
 - [x] 2. Backend Logic
-  - [x] 2.1 Create `PublicToken` Model (token, passwordHash, type, expiresAt)
+  - [x] 2.1 Create `PublicTokenEntity` (token, passwordHash, type, expiresAt)
   - [x] 2.2 Create `ShareService` (generate, validate, revoke)
   - [x] 2.3 Implement `/api/public/:token` endpoints
 

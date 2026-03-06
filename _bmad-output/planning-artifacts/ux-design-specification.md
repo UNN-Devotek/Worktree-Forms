@@ -3,7 +3,6 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/research/technical-PRD-Feasibility-research-2026-01-08.md
-  - docs/minio-guide.md
 ---
 
 # UX Design Specification Worktree
@@ -164,7 +163,7 @@ The core experience is defined by **"Contextual Execution."** The application ac
     - **Published:** Live on the mobile app.
 2.  **Editor Canvas (Center):** **Plate.js** rich-text environment.
     - **Block-Based:** Typing `/` triggers the block menu (Header, List, Image, Callout).
-    - **Image Drop:** Dragging an image instantly uploads to MinIO and inserts the Markdown.
+    - **Image Drop:** Dragging an image instantly uploads to S3 and inserts the Markdown.
 3.  **Preview Toggle (Top Bar):** "View as Mobile" toggle to inspect how it renders on a phone (375px width).
 
 **Key Interactions:**
@@ -339,7 +338,7 @@ graph TD
 - **Features:**
   - **Slash Command:** Notion-like `/` menu.
   - **Serialization:** Saves as JSON (Database) -> Renders as Markdown (Mobile).
-  - **Image Handler:** Middleware to catch pasted images -> Upload to MinIO -> Insert URL.
+  - **Image Handler:** Middleware to catch pasted images → Generate S3 presigned PUT URL from backend → Upload directly to S3/LocalStack → Store `objectKey` in DynamoDB `FileAttachmentEntity` → Insert presigned GET URL for display.
 
 ### Implementation Roadmap
 
@@ -498,7 +497,7 @@ The application moves from a "Global Dashboard" (Project Selector) to a "Project
         - _Actions:_ "Create Group" -> Set Name & Visibility (Public/Private).
       - **Direct Messages:** 1:1 chat with Project Members.
     - **Features:**
-      - **Real-Time:** Socket.io powered.
+      - **Real-Time:** Hocuspocus/Redis powered.
       - **Integrations:** File Uploads, File Referencing (`@filename`), AI Participation in Groups (`@Agent`).
 
 7.  **Users**:

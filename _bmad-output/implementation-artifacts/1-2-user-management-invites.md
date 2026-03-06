@@ -26,7 +26,7 @@ so that I can manage my team's access.
   - [ ] Create `features/users/server/invite-actions.ts`
   - [ ] Implement `inviteUser(email, role, projectId)`
   - [ ] Generate secure token (use `nanoid` or crypto)
-  - [ ] Store invitation in DB (Prisma `Invitation` model?) - _Check Schema first_
+  - [ ] Store invitation in DynamoDB (`InvitationEntity`)
   - [ ] Send email (Mock/Console for now, or Resend if configured)
 
 - [ ] Task 2: Invitation Acceptance Flow
@@ -35,7 +35,7 @@ so that I can manage my team's access.
   - [ ] Server Action `acceptInvite(token)`:
     - [ ] Verify token validity/expiry
     - [ ] Link to existing user OR prompt signup
-    - [ ] Add `ProjectMember` record
+    - [ ] Add `ProjectMemberEntity` record
     - [ ] Delete invitation
 
 - [ ] Task 3: User Management UI
@@ -48,7 +48,7 @@ so that I can manage my team's access.
 
 ### Architecture Patterns & Constraints
 
-- **Invites**: Use a dedicated `Invitation` table if not present.
+- **Invites**: Use a dedicated `InvitationEntity`.
 - **Safety**: Outlook "Safelinks" will GET any link in email. DO NOT auto-accept on basic GET. Require a POST form submission on the landing page ("Click to Join").
 
 ## Dev Agent Record

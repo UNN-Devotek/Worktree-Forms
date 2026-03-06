@@ -74,16 +74,16 @@ bash scripts/seed-dev.sh
 
 ### Local Service Map
 
-| Service | Docker Image | Port | Notes |
-|---|---|---|---|
-| `app` | Project Dockerfile | `3005` | Next.js + Express API |
-| `ws-server` | Project Dockerfile | `1234` | Hocuspocus WebSocket |
-| `worker` | Project Dockerfile | — | BullMQ background jobs |
-| `dynamodb-local` | `amazon/dynamodb-local` | `8100` | Full DynamoDB API emulation |
-| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8101` | Browser table inspector (DX only) |
-| `redis` | `redis:7` | `6380` | ElastiCache equivalent |
-| `localstack` | `localstack/localstack` | `4510` | AWS S3 local emulation |
-| `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory Pinecone emulator |
+| Service                       | Docker Image                 | Port   | Notes                             |
+| ----------------------------- | ---------------------------- | ------ | --------------------------------- |
+| `app`                         | Project Dockerfile           | `3005` | Next.js + Express API             |
+| `ws-server`                   | Project Dockerfile           | `1234` | Hocuspocus WebSocket              |
+| `worker`                      | Project Dockerfile           | —      | BullMQ background jobs            |
+| `dynamodb-local`              | `amazon/dynamodb-local`      | `8100` | Full DynamoDB API emulation       |
+| `dynamodb-admin`              | `aaronshaf/dynamodb-admin`   | `8101` | Browser table inspector (DX only) |
+| `redis`                       | `redis:7`                    | `6380` | ElastiCache equivalent            |
+| `localstack`                  | `localstack/localstack`      | `4510` | AWS S3 local emulation            |
+| `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory Pinecone emulator       |
 
 ### Required Environment Variables (`.env.local`)
 
@@ -283,6 +283,13 @@ All logic lives in `apps/frontend/features/{domain}`. No loose files in `compone
 - Do NOT add `export const runtime = 'edge'` to any route that uses these clients.
 - Default runtime (no export) is Node.js — this is correct.
 
+### Defensive Coding (Anti-Patterns to Avoid)
+
+- **No `as any`, `@ts-expect-error`, or `eslint-disable-next-line`**: Enforce strict types and fix root compiler issues.
+- **No Hardcoded Hex/Z-Index**: Rely strictly on `globals.css` scales and Tailwind `hsl` vars. NEVER interpolate classes via raw strings (`className={\`...\`}`); securely use `cn(...)`.
+- **No Unmanaged Browser Operations**: NEVER utilize `window.localStorage` directly or raw `fetch(...)` arbitrarily. State relies on Context/Zustand wrappers, and data fetches use server actions or centralized bounded clients. NEVER use raw `<a>` tags for internal links; use `<Link>`.
+- **No Silent UI Failures**: NEVER `return null;` as a fail-safe against broken props. Map failures to Skeletons or application `<ErrorBoundary>` wrappers.
+
 ### Component Library
 
 > [!IMPORTANT]
@@ -309,28 +316,34 @@ All logic lives in `apps/frontend/features/{domain}`. No loose files in `compone
 
 ```typescript
 // Never mock the SDK. Run real queries against Dynalite.
-import { describe, it, expect } from 'vitest'
-import { UserEntity } from '../entities/user'
+import { describe, it, expect } from "vitest";
+import { UserEntity } from "../entities/user";
 
-describe('UserEntity', () => {
-  it('creates and retrieves a user', async () => {
-    const user = await UserEntity.create({ email: 'test@test.com', name: 'Test' }).go()
-    const found = await UserEntity.get({ pk: user.data.pk, sk: user.data.sk }).go()
-    expect(found.data.email).toBe('test@test.com')
-  })
-})
+describe("UserEntity", () => {
+  it("creates and retrieves a user", async () => {
+    const user = await UserEntity.create({
+      email: "test@test.com",
+      name: "Test",
+    }).go();
+    const found = await UserEntity.get({
+      pk: user.data.pk,
+      sk: user.data.sk,
+    }).go();
+    expect(found.data.email).toBe("test@test.com");
+  });
+});
 ```
 
 **E2E Tests** (Playwright)
 
 ```typescript
-test('user can login and see dashboard', async ({ page }) => {
-  await page.goto('http://localhost:3005/login')
-  await page.fill('input[name="email"]', 'admin@worktree.pro')
-  await page.fill('input[name="password"]', 'password')
-  await page.click('button:has-text("Sign in")')
-  await expect(page).toHaveURL('/dashboard')
-})
+test("user can login and see dashboard", async ({ page }) => {
+  await page.goto("http://localhost:3005/login");
+  await page.fill('input[name="email"]', "admin@worktree.pro");
+  await page.fill('input[name="password"]', "password");
+  await page.click('button:has-text("Sign in")');
+  await expect(page).toHaveURL("/dashboard");
+});
 ```
 
 ---
@@ -415,11 +428,11 @@ No manual steps required after `git push origin main`.
 
 ### ECS Services
 
-| Service | Description |
-|---|---|
-| `app` | Next.js frontend + Express REST API |
+| Service     | Description                                 |
+| ----------- | ------------------------------------------- |
+| `app`       | Next.js frontend + Express REST API         |
 | `ws-server` | Hocuspocus WebSocket (real-time Smart Grid) |
-| `worker` | BullMQ background job processor |
+| `worker`    | BullMQ background job processor             |
 
 ### Production Environment Variables (set in ECS Task Definition / GitHub Secrets)
 
@@ -474,15 +487,15 @@ curl https://worktree.pro/api/health
 
 ```typescript
 // lib/s3.ts
-import { S3Client } from '@aws-sdk/client-s3'
+import { S3Client } from "@aws-sdk/client-s3";
 
 export const s3 = new S3Client({
-  region: process.env.AWS_REGION ?? 'us-east-1',
+  region: process.env.AWS_REGION ?? "us-east-1",
   ...(process.env.S3_ENDPOINT && {
-    endpoint: process.env.S3_ENDPOINT,  // 'http://localstack:4510' in local dev
-    forcePathStyle: true,               // Required for LocalStack
-    credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+    endpoint: process.env.S3_ENDPOINT, // 'http://localstack:4510' in local dev
+    forcePathStyle: true, // Required for LocalStack
+    credentials: { accessKeyId: "local", secretAccessKey: "local" },
   }),
-})
+});
 // S3_ENDPOINT not set in production → SDK uses real AWS S3 with IAM credentials
 ```

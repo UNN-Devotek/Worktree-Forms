@@ -16,7 +16,7 @@ So that I can bulk create records.
 2.  **Given** the data is parsed
     **Then** enables a "Column Mapping Wizard" to align Excel headers with DB fields (PM #5)
 3.  **Given** mappings are confirmed
-    **Then** creates 500 new rows securely (FR4.9)
+    **Then** creates 500 new rows securely via `SubmissionEntity` in DynamoDB (FR4.9)
 
 ## Tasks / Subtasks
 
@@ -24,7 +24,7 @@ So that I can bulk create records.
   - [x] 1.1 Create story file
 
 - [x] 2. Backend Logic
-  - [x] 2.1 Implement `BulkImportService`
+  - [x] 2.1 Implement repository logic for `SubmissionEntity` batch create
   - [x] 2.2 Add `/api/forms/:id/import` endpoint
 
 - [x] 3. Frontend UI
@@ -41,4 +41,4 @@ Antigravity (Retroactive Generation)
 ### File List
 
 - `apps/frontend/features/projects/components/ImportWizardModal.tsx`
-- `apps/backend/src/services/import.service.ts`
+- `apps/backend/src/entities/submission.entity.ts`

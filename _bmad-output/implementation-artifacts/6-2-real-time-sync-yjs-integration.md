@@ -13,11 +13,13 @@ tasks:
 # Story 6.2: Real-Time Sync (Yjs Integration)
 
 ## Story
+
 As a User,
 I want to see my colleague's changes instantly,
 So that we don't work on stale data.
 
 ## Acceptance Criteria
+
 - [x] **Given** two users on the same sheet
 - [x] **When** User A edits a cell
 - [x] **Then** User B sees the update in < 200ms
@@ -25,7 +27,8 @@ So that we don't work on stale data.
 - [x] **And** the state is managed via `Y.Map` (Rows) and `Y.Array` (Order) to ensure eventual consistency.
 
 ## Dev Notes
+
 - **Backend:** `apps/backend/src/ws-server.ts`
 - **Frontend:** `apps/frontend/features/sheets/stores/useYjsStore.ts`
 - **Auth:** WebSocket connection MUST validate JWT from URL query param.
-- **Persistence:** Use `hocuspocus-provider-webhook` to trigger saves to Postgres.
+- **Persistence**: Use `hocuspocus-provider-webhook` or direct persistence to trigger saves to DynamoDB (`SheetEntity`).

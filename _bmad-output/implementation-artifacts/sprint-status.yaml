@@ -34,7 +34,7 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 0: AWS Infrastructure Migration (NEW - prerequisite for all DB-touching work)
-  epic-0: backlog
+  epic-0: in-progress
   0-1-dynamodb-schema-electrodb-entities: backlog
   0-2-s3-bucket-storage-service-swap: backlog
   0-3-elasticache-redis-provisioning: backlog
@@ -44,14 +44,27 @@ development_status:
   0-7-environment-variable-migration: backlog
   0-8-local-dev-environment-seed-script: backlog
   0-9-integration-test-infrastructure-dynamodb: backlog
+  0-10-redis-backed-nextjs-cache-stateless: backlog
+  0-11-playwright-collaboration-test-infrastructure: backlog
+  0-12-codebase-sanitization-legacy-removal: ready-for-dev
+  0-13-frontend-actions-tests-sanitization: ready-for-dev
+  0-14-code-quality-sanitization: ready-for-dev
+  0-15-system-hardening-sweep: ready-for-dev
+  0-16-state-management-refactoring: ready-for-dev
+  0-17-nextjs-anti-patterns-refactoring: ready-for-dev
+  0-18-type-safety-error-boundary-refactoring: ready-for-dev
+  0-19-codebase-marker-storage-sanitization: ready-for-dev
+  0-20-framework-bypasses-lifecycle-leaks: ready-for-dev
+  0-21-component-sanity-docker-networking: ready-for-dev
+  0-22-codebase-polish-security-hardening: ready-for-dev
   epic-0-retrospective: optional
 
   # Epic 1: Core Project Foundation & Identity
   epic-1: in-progress
   1-0-global-dashboard-project-list: done
-  1-1-create-project-generate-slug: in-progress   # MinIO → S3 reference update
+  1-1-create-project-generate-slug: in-progress # MinIO → S3 reference update
   1-2-user-management-invites: done
-  1-3-enforce-rls-rbac: backlog                   # RLS invalidated — DynamoDB tenant isolation rewrite
+  1-3-enforce-rls-rbac: backlog # RLS invalidated — DynamoDB tenant isolation rewrite
   1-4-user-profile-theme-preferences: in-progress # Avatar upload MinIO → S3
   1-5-system-audit-log: done
   1-6-global-shell-providers: done
@@ -68,7 +81,7 @@ development_status:
   2-3-smart-table-field: ready-for-dev
   2-4-form-schema-versioning: done
   2-5-restore-blame-form-history: done
-  2-6-retroactive-renaming: in-progress           # BullMQ + MinIO → ElastiCache + S3
+  2-6-retroactive-renaming: in-progress # BullMQ + MinIO → ElastiCache + S3
   epic-2-retrospective: optional
 
   # Epic 3: Field Operations Mobile App (Offline First)
@@ -91,8 +104,8 @@ development_status:
   epic-5: in-progress
   5-1-project-dashboard-configuration: in-progress # Dashboard metrics Prisma → DynamoDB
   5-2-data-grid-custom-columns: ready-for-dev
-  5-3-lightbox-media-zip: in-progress              # ZIP job storage MinIO → S3
-  5-4-finops-quotas-alerts: in-progress            # Storage quota tracking Prisma → DynamoDB
+  5-3-lightbox-media-zip: in-progress # ZIP job storage MinIO → S3
+  5-4-finops-quotas-alerts: in-progress # Storage quota tracking Prisma → DynamoDB
   5-5-map-dispatcher-interface: backlog
   epic-5-retrospective: optional
 
@@ -116,30 +129,30 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Document Control & Field Tools
-  epic-7: in-progress                              # Reopened: vector search + storage changes
-  7-1-rfi-management: done
-  7-2-spec-library-search: backlog                 # pgvector → Pinecone full rewrite
+  epic-7: in-progress # Reopened: vector search + storage changes
+  7-1-task-management: done
+  7-2-spec-library-search: backlog # pgvector → Pinecone full rewrite
   7-3-pdf-blueprint-viewer: done
   7-4-schedule-visualization: done
   epic-7-retrospective: optional
 
   # Epic 8: Legacy Integration & Data Migration
-  epic-8: in-progress                              # Reopened: storage layer reference updates
+  epic-8: in-progress # Reopened: storage layer reference updates
   8-1-pdf-overlay-mapping: done
   8-2-flattened-pdf-export: done
-  8-3-bulk-import-wizard: in-progress              # Bulk import storage target MinIO → S3
+  8-3-bulk-import-wizard: in-progress # Bulk import storage target MinIO → S3
   epic-8-retrospective: optional
 
   # Epic 9: Compliance, Access & Public Gates
   epic-9: in-progress
-  9-1-visa-wizard-onboarding-gate: in-progress     # ComplianceRecord DB calls Prisma → DynamoDB
-  9-2-public-link-sharing: in-progress             # PublicToken + AuditLog Prisma → DynamoDB
+  9-1-visa-wizard-onboarding-gate: in-progress # ComplianceRecord DB calls Prisma → DynamoDB
+  9-2-public-link-sharing: in-progress # PublicToken + AuditLog Prisma → DynamoDB
   9-3-marketing-landing-page: done
   epic-9-retrospective: optional
 
   # Epic 10: AI Automation & Intelligence Layer
-  epic-10: in-progress                             # Reopened: critical RAG layer change
-  10-1-native-rag-ingestion: backlog               # pgvector gone — full rewrite for Pinecone
+  epic-10: in-progress # Reopened: critical RAG layer change
+  10-1-native-rag-ingestion: backlog # pgvector gone — full rewrite for Pinecone
   10-2-magic-forward-email-ingestion: done
   10-3-ai-assistant-interface: done
   10-4-api-key-management: done
@@ -149,7 +162,7 @@ development_status:
 
   # Epic 11: Help Center & Support System
   epic-11: in-progress
-  11-1-help-article-editor: in-progress            # HelpArticle DB calls Prisma → DynamoDB
+  11-1-help-article-editor: in-progress # HelpArticle DB calls Prisma → DynamoDB
   11-2-mobile-offline-reader: done
   11-3-support-feedback-shake: backlog
   epic-11-retrospective: optional

@@ -14,15 +14,15 @@ so that I can build upon the existing T3/Next.js foundation without data loss.
 
 1.  **Given** the existing code in `apps/frontend`
 2.  **When** I audit the project structure
-3.  **Then** I ensure all required dependencies (Next.js 14, Prisma, Tailwind, NextAuth) are present
+3.  **Then** I ensure all required dependencies (Next.js 14, ElectroDB, Tailwind, NextAuth) are present
 4.  **And** the `features` directory contains all required domains: `projects`, `forms`, `sheets`, `users`, `notifications`, `offline`, `lib`, `server`
 5.  **And** the core configuration (ESLint, Prettier, Docker) matches the Architecture standards.
 
 ## Tasks / Subtasks
 
 - [x] Task 1: Environment Verification (AC: 1, 3, 5)
-  - [x] Verify `package.json` in `apps/frontend` has Next.js 14, Prisma, Tailwind, NextAuth
-  - [x] Verify `docker-compose.yml` exists in root and contains Postgres, Redis, MinIO services
+  - [x] Verify `package.json` in `apps/frontend` has Next.js 14, ElectroDB, Tailwind, NextAuth
+  - [x] Verify `docker-compose.yml` exists in root and contains DynamoDB-local, Redis, LocalStack services
   - [x] Verify `.env` configuration keys exist
 
 - [x] Task 2: Feature Scaffolding (AC: 4)
@@ -41,9 +41,9 @@ so that I can build upon the existing T3/Next.js foundation without data loss.
 
 ### Architecture Patterns & Constraints
 
-- **Stack**: Next.js 14, Prisma, Tailwind, NextAuth (Auth.js v5)
-- **Monolith Structure**: Strictly adhere to `src/features/{domain}` for all business logic.
-- **Self-Hosting**: Ensure `docker-compose.yml` is robust (Postgres 16, Redis, MinIO).
+- **Stack**: Next.js 14, ElectroDB, Tailwind, NextAuth (Auth.js v5)
+- **Monolith Structure**: Strictly adhere to `apps/frontend/features/{domain}` for all business logic.
+- **Self-Hosting**: Ensure `docker-compose.yml` is robust (DynamoDB local, Redis, LocalStack).
 
 ### Project Structure Notes
 
@@ -64,8 +64,8 @@ Gemini 2.0 Flash (Facilitator Agent)
 ### Implementation Notes
 
 - **Environment Verification**:
-  - Confirmed Next.js 14, Prisma, Tailwind, NextAuth in `apps/frontend/package.json`.
-  - Updated `docker-compose.yml` to include `db` (Postgres 16), `redis`, `minio` for robust self-hosting.
+  - Confirmed Next.js 14, ElectroDB, Tailwind, NextAuth in `apps/frontend/package.json`.
+  - Updated `docker-compose.yml` to include `dynamodb-local`, `redis`, `localstack` for robust local dev.
   - Updated `ecosystem.config.js` and `apps/frontend/package.json` to respect environment variables for ports (`PORT`, `BACKEND_PORT`).
   - Added `apps/frontend/.eslintrc.json` and `apps/frontend/.prettierrc` to enforce coding standards.
   - Verified `.env.example` has necessary keys.
@@ -94,6 +94,6 @@ Gemini 2.0 Flash (Facilitator Agent)
 
 ## Change Log
 
-- 2026-01-14: Updated `docker-compose.yml` to add Postgres, Redis, MinIO services.
+- 2026-01-14: Updated `docker-compose.yml` to add DynamoDB-local, Redis, and LocalStack services.
 - 2026-01-14: Configured ESLint and Prettier for frontend.
 - 2026-01-14: Updated `ecosystem.config.js` and start scripts for proper environment variable handling.

@@ -24,8 +24,8 @@ So that we stay compliant.
   - [x] 1.1 Create story file
 
 - [x] 2. Data Model & Backend
-  - [x] 2.1 Update `User` model with `complianceStatus` (PENDING, APPROVED, REJECTED)
-  - [x] 2.2 Create `ComplianceService` (upload, approve, reject)
+  - [x] 2.1 Update `UserEntity` with `complianceStatus` (PENDING, APPROVED, REJECTED)
+  - [x] 2.2 Create `ComplianceEntity` in ElectroDB
   - [x] 2.3 Implement `/api/users/compliance` endpoints
 
 - [x] 3. Frontend Wizard

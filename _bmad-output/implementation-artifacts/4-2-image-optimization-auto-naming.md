@@ -47,7 +47,7 @@ So that the admin can find them easily and upload doesn't timeout.
 - **Library**: `browser-image-compression` is a solid choice for client-side work.
 - **Renaming**: `File` objects are immutable. Need to create new `File` instance with new name.
 - **Context**: The `FileField` might need extra props to know the "Project Name" for standard naming. Or efficient way to lookup. For now, maybe just "ProjectSlug" from URL?
-- **Sync**: This complements Story 4.1. The queue will store the _optimized_ blobs, saving IndexedDB space.
+- **Sync**: This complements Story 4.1. The queue will store the _optimized_ blobs, saving IndexedDB space before S3 upload.
 
 ## References
 

@@ -17,9 +17,9 @@ so that I can calculate totals automatically and perform data analysis without l
     - **Then** the cell displays the calculated result
     - **And** updates automatically if A1 changes (FR12.3).
 2.  **Two-Way Data Binding**
-    - **Given** I edit a cell in the FortuneSheet UI
-    - **Then** the value is propagated to the Yjs `Y.Map` (or `Y.Array`) for synchronization.
-    - **And** incoming Yjs updates from other users update the FortuneSheet UI without full re-creation.
+    - **Given** I edit a cell in the TanStack Table UI
+    - **Then** the value is propagated to the Yjs `Y.Map` (or `Y.Array`) via Hocuspocus.
+    - **And** incoming updates from other users update the grid state without lost focus.
 3.  **Cross-Client Formula Sync**
     - **Given** User A enters a formula
     - **Then** User B sees the calculated result (assuming client-side calculation matches).
@@ -29,9 +29,9 @@ so that I can calculate totals automatically and perform data analysis without l
 
 - [ ] Task 1: Implement Two-Way Data Binding (AC: 2)
   - [ ] Subtask 1.1: Bind `Y.Map` (or `Y.Array`) events to `workbook.setData` updates or granular cell updates.
-  - [ ] Subtask 1.2: Capture `onOp` or `onChange` from FortuneSheet and apply to Yjs Doc.
-- [ ] Task 2: Configure Formula Presets (AC: 1)
-  - [ ] Subtask 2.1: Enable FortuneSheet formula presets (SUM, AVERAGE, MIN, MAX).
+  - [ ] Subtask 1.2: Capture `onChange` from TanStack Table and apply to Yjs Doc.
+- [ ] Task 2: Configure Formula Engine (AC: 1)
+  - [ ] Subtask 2.1: Integrate `Hyperformula` with TanStack Table cell renderers.
   - [ ] Subtask 2.2: Verify formula evaluation logic runs correctly in the browser.
 - [ ] Task 3: Synchronization Verification (AC: 3)
   - [ ] Subtask 3.1: Verify formula strings traverse the WebSocket.
@@ -39,8 +39,8 @@ so that I can calculate totals automatically and perform data analysis without l
 
 ## Dev Notes
 
-- **Architecture**: We are using `@fortune-sheet/react` which has internal formula support. The challenge is syncing the _data_ behind the formula efficiently.
-- **State**: We currently store the whole sheet as a byte blob in Postgres, but live sync is via Yjs.
+- **Architecture**: We are using `Hyperformula` for formula support and TanStack Table for rendering.
+- **State**: Persistent state in DynamoDB (`SheetEntity`), live sync via Hocuspocus/Yjs.
 - **Reference**: `apps/frontend/features/sheets/components/SheetEditor.tsx` relies on `useSheetSync`.
 
 ### Project Structure Notes

@@ -29,11 +29,11 @@ So that existing submissions rely on the schema version at the time of submissio
 - **Requirement:**
   - On Save: Compare current schema with saved schema.
   - If different: Increment version (e.g., `2.0` -> `2.1`).
-  - Store previous versions in a `FormVersion` table (Schema change maybe?).
-  - **Simplification:** For now, just ensuring the JSON blob stores the version and new submissions use it is sufficient. Full archival might be a separate task if not already in DB.
+  - Store previous versions in a `FormVersionEntity` (PK: PROJECT#<id>, SK: FORM#<id>#VERSION#<v>).
+  - **Simplification:** For now, just ensuring the JSON blob stores the version and new submissions use it is sufficient. Full archival via DynamoDB entities is preferred.
 
 ## Implementation Plan
 
-- Check `Form` model in Prisma schema for versioning support.
-- If missing, add `FormVersion` model.
-- Update `saveForm` action to handle version bumping.
+- Check `FormEntity` definition for versioning support.
+- If missing, add `FormVersionEntity`.
+- Update `saveForm` action to handle version bumping in DynamoDB.

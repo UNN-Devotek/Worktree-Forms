@@ -35,11 +35,13 @@ So that all application code has a type-safe, consistent data access layer.
 **Acceptance Criteria:**
 **Given** the existing 20+ Prisma models
 **Then** a single-table DynamoDB design is defined with composite key patterns for all entity types
-**And** ElectroDB `Entity` and `Service` definitions are written for every model (User, Project, Form, Submission, Sheet, Task, Route, etc.)
+**And** ElectroDB `Entity` and `Service` definitions are written for every model (UserEntity, ProjectEntity, FormEntity, SubmissionEntity, SheetEntity, TaskEntity, RouteEntity, etc.)
 **And** all relationships previously handled by Prisma foreign keys are expressed as composite sort key patterns (e.g. `PROJECT#<id>#FORM#<id>`)
 **And** a `lib/dynamo/` module exports the DynamoDB DocumentClient and all entity definitions
 **And** TypeScript types are inferred from ElectroDB schemas — no manual type definitions required.
 **And** a complete access pattern document is produced listing every query, its PK/SK pattern, and which GSI it uses.
+**And** all secondary access patterns use `GSI1PK`/`GSI1SK` overloading on a single `GSI1` index — each entity file documents its `GSI1PK`/`GSI1SK` projection in a comment header at the top of the definition
+**And** a new dedicated GSI is only proposed when an access pattern is provably incompatible with GSI1 overloading; any such addition requires explicit architectural sign-off before the PR is merged.
 
 > **Post-completion task:** Once this story is done, update the **"Data Architecture — Entity Reference"** section in `architecture.md` with the finalized entity list, full key schema table, and GSI map. That section is currently a placeholder pending Story 0.1 output.
 
@@ -56,9 +58,10 @@ So that object storage is fully managed in production and fully offline-capable 
 **And** the storage service abstraction (`services/storage.ts`) is updated to use the S3 client
 **And** presigned URL generation uses `@aws-sdk/s3-request-presigner` (same UX, different SDK)
 **And** all `MINIO_*` environment variables are removed; local dev uses `S3_ENDPOINT=http://localstack:4510`, `S3_BUCKET=worktree-local`; production uses `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=worktree-prod`
-**And** `localstack/localstack` replaces the `minio` service in `docker-compose.yml` with `SERVICES=s3`
+**And** `localstack/localstack` replaces the legacy storage service in `docker-compose.yml` with `SERVICES=s3`
 **And** the `seed-dev.sh` script creates the `worktree-local` bucket in LocalStack on first run.
-**And** presigned GET/PUT URLs generated in local dev are rewritten to replace the internal Docker hostname (`http://localstack:4510`) with the host-accessible address (`http://localhost:4510`) before being returned to the browser — production presigned URLs are returned unchanged.
+**And** presigned GET/PUT URLs generated in local dev are rewritten to replace the internal Docker hostname (`http://localstack:4510`) with the host-accessible address (`http://localhost:4510`) before being returned to the browser — production presigned URLs are returned unchanged
+**And** the production S3 bucket has server-side encryption enabled via bucket policy (`SSE-S3` or `SSE-KMS`) — this satisfies NFR4 (AES-256 at rest). A bucket policy must deny `PutObject` requests that do not include the `x-amz-server-side-encryption` header. See Story 0.6 (CDK stack) for the bucket construct configuration.
 
 #### Story 0.3: ElastiCache Redis Provisioning & Validation
 
@@ -72,7 +75,11 @@ So that caching and queuing are managed by AWS.
 **And** BullMQ workers start and process jobs successfully
 **And** `rate-limiter-flexible` connects and enforces rate limits
 **And** Hocuspocus pub-sub coordinates correctly across WebSocket connections
-**And** zero application code changes are required (connection string change only).
+**And** zero application code changes are required (connection string change only)
+**And** every BullMQ queue definition specifies explicit `attempts` and `backoff` options — no queue relies on global defaults (`attempts: 3`, `backoff: { type: 'exponential', delay: 2000 }` minimum)
+**And** the `app` and `ws-server` services expose a `GET /health` endpoint that returns `503 Service Unavailable` if the Redis connection is unhealthy — the ALB target group health check is pointed at this endpoint
+**And** the Hocuspocus `ws-server` implements exponential backoff reconnection to Redis on disconnect and logs a structured error if reconnection fails after 3 attempts
+**And** a manual Redis failover simulation (stop the `redis` Docker container while the app is running) causes the ALB to drain the unhealthy instance within 30 seconds, confirming the health check guard works.
 
 #### Story 0.4: Pinecone Vector Search Setup & Embedding Service
 
@@ -80,14 +87,14 @@ As a Developer,
 I want vector embeddings stored and queried via Pinecone,
 So that the AI RAG layer has a scalable vector search backend at zero upfront cost.
 
-> **Note:** Amazon OpenSearch Serverless was originally planned but carries a $350/month minimum cost floor — not justified at current scale (technical research 2026-03-05). Pinecone free tier starts at $0 and scales with actual usage. Re-evaluate OpenSearch Provisioned if hybrid BM25+semantic search becomes required.
+> **Note:** Amazon OpenSearch Serverless was originally planned but carries a $350/month minimum cost floor — not justified at current scale (technical research 2026-03-05). Pinecone free tier starts at $0 and scales with actual usage.
 
 **Acceptance Criteria:**
-**Given** the existing `VectorEmbedding` Prisma model (pgvector) being replaced
+**Given** the need for semantic search
 **Then** a Pinecone index is created with `projectId` and `submissionId` as metadata fields for filtered retrieval
 **And** a new `services/vector-search.ts` module wraps the Pinecone client for upsert and query operations
 **And** embeddings are stored with `projectId` and `submissionId` metadata for tenant-scoped retrieval
-**And** the `VectorEmbedding` DynamoDB entity stores metadata only (Pinecone vector ID, projectId, submissionId)
+**And** the `VectorEmbeddingEntity` DynamoDB entity stores metadata only (Pinecone vector ID, projectId, submissionId)
 **And** k-NN semantic search is supported for the AI assistant RAG queries
 **And** the `PINECONE_API_KEY` and `PINECONE_INDEX_NAME` environment variables are documented.
 
@@ -98,10 +105,11 @@ I want NextAuth sessions and accounts stored in DynamoDB,
 So that authentication state is fully migrated off PostgreSQL.
 
 **Acceptance Criteria:**
-**Given** the existing Prisma NextAuth adapter
-**Then** `@auth/dynamodb-adapter` replaces the Prisma adapter in `apps/frontend/lib/auth.ts`
+**Given** the legacy Prisma NextAuth adapter
+**Then** `@auth/dynamodb-adapter` replaces the legacy adapter in `apps/frontend/lib/auth.ts`
 **And** DynamoDB TTL is enabled on the auth table to auto-expire sessions
 **And** existing login flows work identically (email/password, magic links)
+**And** the auth adapter uses a **dedicated, separate DynamoDB table** (e.g., `worktree-auth-local` / `worktree-auth-prod`) — it is NOT co-located in the main application single-table. The adapter uses lowercase `pk`/`sk` keys which would conflict with the application's uppercase `PK`/`SK` schema.
 **And** the auth table uses the standard `pk`/`sk`/`GSI1PK`/`GSI1SK` schema required by the adapter.
 
 #### Story 0.6: ECS Fargate + ECR + ALB Deployment Pipeline
@@ -116,7 +124,8 @@ So that deployment is fully managed with no server provisioning.
 **And** ECS task definitions are written for the Next.js app, Express backend, and Hocuspocus WS server
 **And** an Application Load Balancer routes HTTP/HTTPS traffic to the app service and WS traffic to the ws-server
 **And** the existing `Dockerfile` and `Dockerfile.backend` are compatible with ECS without modification
-**And** a GitHub Actions workflow builds, pushes to ECR, and deploys to ECS on push to `main`.
+**And** a GitHub Actions workflow builds, pushes to ECR, and deploys to ECS on push to `main`
+**And** all AWS infrastructure (ECS cluster, task definitions, ALB, DynamoDB table, ElastiCache, S3 bucket) is defined and provisioned via **AWS CDK TypeScript** in an `infrastructure/` directory — no manual console provisioning; CDK stack is deployed before the first application deploy.
 
 #### Story 0.7: Environment Variable Migration
 
@@ -127,7 +136,7 @@ So that no service attempts to connect to legacy self-hosted infrastructure.
 **Acceptance Criteria:**
 **Given** the existing `.env.example`
 **Then** `DATABASE_URL` is removed
-**And** `MINIO_*` variables are replaced with `AWS_S3_*` variables
+**And** `MINIO_*` variables are replaced with `S3_ENDPOINT`, `S3_BUCKET` variables (matching the `@aws-sdk/client-s3` factory pattern used throughout the codebase — NOT `AWS_S3_*` prefix)
 **And** `REDIS_URL` points to ElastiCache endpoint
 **And** new variables added: `AWS_REGION`, `DYNAMODB_TABLE_NAME`, `PINECONE_API_KEY`, `PINECONE_INDEX_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 **And** local dev variables added: `DYNAMODB_ENDPOINT`, `S3_ENDPOINT`, `S3_BUCKET`, `PINECONE_HOST` (all pointing to Docker service names)
@@ -154,7 +163,7 @@ So that I can develop and test all features without any real AWS credentials or 
 **And** `redis` runs with `--maxmemory-policy noeviction` so BullMQ queues never drop entries
 **And** the `.env.local` template in `.env.example` documents all local-only variables: `DYNAMODB_ENDPOINT`, `S3_ENDPOINT`, `S3_BUCKET`, `PINECONE_HOST`
 
-> **Note:** `seed-dev.sh` is the spiritual successor to the old Prisma `seed-dev.sh`. It replaces `npx prisma migrate deploy && npx prisma db seed` with DynamoDB table creation + LocalStack bucket creation + ElectroDB seed writes. Script runs via `tsx scripts/seed-dev.ts` with no build step required.
+> **Note:** `seed-dev.sh` is the spiritual successor to the old Prisma `seed-dev.sh`. It replaces `npx prisma migrate deploy && npx prisma db seed` with DynamoDB table creation + LocalStack bucket creation + ElectroDB seed writes. Script runs via `bash scripts/seed-dev.sh` with no build step required.
 
 #### Story 0.9: Integration Test Infrastructure (DynamoDB)
 
@@ -163,18 +172,184 @@ I want a working DynamoDB integration test setup that runs real queries against 
 So that repository functions are tested without mocking the SDK and without relying on the old Prisma/PostgreSQL test layer.
 
 **Acceptance Criteria:**
-**Given** the existing stale Prisma-based test files (`rls-integration.test.ts`, `audit-security.test.ts`, `form-builder-validation-logic.test.ts`, `alias.test.ts`, `sanity.test.ts`, `invite-actions.test.ts`) that reference `db`, `getAuthenticatedDb`, and other Prisma APIs
+**Given** the existing stale Prisma-based test files
 **Then** all stale Prisma-based test files are deleted
-**And** `@testcontainers/localstack` is installed as a dev dependency (provides DynamoDB Local via the same `amazon/dynamodb-local` image used in Docker Compose)
-**And** a shared Vitest setup file (`tests/setup/dynamodb.ts`) starts the DynamoDB Local testcontainer before the test suite and tears it down after
-**And** the setup file creates the `worktree-local` table with the correct KeySchema, AttributeDefinitions, and GSIs matching the production table definition
+**And** `vitest-dynalite` is installed and configured as the primary integration testing tool
+**And** a shared Vitest setup file (`tests/setup/dynamodb.ts`) uses `vitest-dynalite` to provide a clean DynamoDB instance for each test suite
+**And** the setup file creates the `worktree-test` table with the correct KeySchema, AttributeDefinitions, and GSIs matching the production table definition
 **And** at least one integration test per repository module is written that exercises a real DynamoDB PutItem + Query round-trip (e.g. `ProjectRepository.create` + `ProjectRepository.findById`)
 **And** integration tests use `ConditionExpression: "attribute_not_exists(PK)"` for write idempotency within test runs
-**And** `vitest.config.ts` defines a separate `integration` project/pool pointing at the Testcontainers setup, distinct from the unit test pool (no Docker required for unit tests)
-**And** `npm run test:integration` runs only the integration suite
-**And** CI (GitHub Actions) runs `docker compose up dynamodb-local` before `npm run test:integration` as an alternative to Testcontainers (either approach acceptable — Testcontainers is preferred locally, Compose service is acceptable in CI)
+**And** `vitest.config.ts` includes the `vitest-dynalite` configuration and seeds the simulated schema
+**And** `npm run test:integration` runs the integration suite
+**And** CI (GitHub Actions) runs the integration tests using the same `vitest-dynalite` configuration for consistency.
 
-> **Rationale:** `vitest-dynalite` was evaluated but shows reduced maintenance activity as of early 2026. `@testcontainers/localstack` is actively maintained and uses the same `amazon/dynamodb-local` image that is already part of the local dev stack, ensuring zero API gap between tests and the running development environment. Never mock the DynamoDB SDK — run real queries.
+> **Rationale:** `vitest-dynalite` is the project's mandated standard for integration testing. It provides a faster, more reliable, and lower-overhead environment compared to Docker-based Testcontainers for standard repository tests. Never mock the DynamoDB SDK — run real queries against a live instance.
+
+#### Story 0.10: Redis-Backed Next.js Cache Handler (Stateless Fargate)
+
+As a Developer,
+I want the Next.js application cache to be backed by ElastiCache Redis instead of in-process memory,
+So that all `app` ECS tasks are fully stateless and can be scaled horizontally without cache drift.
+
+**Acceptance Criteria:**
+**Given** the Next.js application running in ECS Fargate
+**Then** `cacheMaxMemorySize: 0` is set in `next.config.ts` to disable in-memory ISR cache
+**And** a custom `cacheHandler` module (`lib/cache-handler.js`) is configured in `next.config.ts` that uses `ioredis` to store all Next.js cache entries in ElastiCache
+**And** the `cacheHandler` reads the `REDIS_URL` environment variable to connect — no separate cache-specific env var is needed
+**And** local dev connects the `cacheHandler` to the `redis` Docker Compose service via `REDIS_URL=redis://redis:6380` — no code change required between local and production
+**And** a smoke test confirms that cache entries set in one `app` container instance are correctly served by a second container instance (validates statelessness)
+**And** ECS task definition memory for the `app` service is capped at **2 GB** — the absence of in-memory cache makes this sufficient for active request heap only.
+
+#### Story 0.11: Playwright Collaboration Test Infrastructure (CRDT Convergence)
+
+As a Developer,
+I want a Playwright co-browser test suite that validates real-time CRDT convergence between multiple simultaneous clients,
+So that race conditions and sync bugs in the Yjs / Hocuspocus collaboration layer are caught automatically in CI.
+
+**Acceptance Criteria:**
+**Given** the Playwright test framework is configured
+**Then** a dedicated `apps/frontend/e2e/collaboration/` directory exists for all CRDT convergence tests
+**And** a `collaboration` CI job in GitHub Actions spins up the full Docker Compose stack (`app`, `ws-server`, `dynamodb-local`, `redis`) before running the suite
+**And** at least one test opens **two simultaneous Playwright browser contexts** (representing two different users) both connected to the same Yjs room
+**And** the test submits **concurrent edits from both contexts** (e.g. Context A writes to cell A1, Context B writes to cell B1 simultaneously)
+**And** after both edits, the test asserts that **both contexts show identical final state** (CRDT convergence confirmed)
+**And** the test passes consistently across 5 sequential runs with no flakiness (flaky collaboration tests are treated as critical bugs)
+**And** the `collaboration` CI job is required to pass before a PR can be merged to `main`.
+
+#### Story 0.12: Codebase Sanitization & Legacy Technology Removal
+
+As a Developer,
+I want all legacy Prisma, Postgres, and MinIO references removed from the codebase,
+So that the system only depends on the AWS-managed services stack and terminology is consistent.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Passes #6, #7, #12, and #13
+**Then** all Prisma-related dependencies (`prisma`, `@prisma/client`, `@auth/prisma-adapter`) are removed from all `package.json` files
+**And** legacy source files (`apps/backend/src/db.ts`, `apps/backend/src/seed.ts`, `apps/frontend/lib/db.ts`, `apps/frontend/lib/database.ts`, `apps/backend/scripts/local-db.ts`) and all 53 items identified in `adversarial-review-pass-13-2026-03-05.md` are deleted or refactored
+**And** any remaining `y-websocket` dependencies are removed in favor of Hocuspocus/DynamoDB sync
+**And** references to "MinIO" in research, active codebase routes (e.g. `storage.ts`), and documentation are replaced with "S3" (LocalStack)
+**And** "RFI" terminology is completely replaced with "Task" in all implemented features, routes, and schemas
+**And** `ws-server.ts` is decoupled from Prisma and `apps/frontend/auth.ts` uses `@auth/dynamodb-adapter`
+**And** `CLAUDE.md` is updated to reflect correct LocalStack S3 connectivity requirements (`forcePathStyle: true`)
+**And** a global `grep` for "Prisma", "MinIO", and "RFI" returns zero matches in active source code (excluding historical migrations and this epic file).
+
+#### Story 0.14: Code Quality & Consistency Sanitization
+
+As a Developer,
+I want dead scripts, `any` typings, configuration bypasses, and console.log spam removed,
+So that the codebase is type-safe and compilation is strict before feature development begins.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #14
+**Then** all dead debug scripts mapped in the pass are deleted.
+**And** `any` types within the listed components and services are strongly typed.
+**And** `eslint-disable` and `@ts-ignore` suppressions are analyzed and removed or appropriately narrowed.
+**And** development `console.log` traces are stripped from production logic.
+
+#### Story 0.15: System Hardening & Defensive Coding Sweep
+
+As a Developer,
+I want inline styles mapped to Tailwind, inputs validated strictly through Zod, module boundaries enforced, and console exceptions properly boundary-caught,
+So that the codebase guarantees defensive operation and maintains performance expectations at scale.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #15
+**Then** all 30 occurrences of inline `style={{...}}` injection are refactored to standard Tailwind utilities/components.
+**And** `lucide-react` imports are consolidated and appropriately modularized.
+**And** raw `formData.get()` fetches are replaced entirely by strong Next.js Schema parsing loops utilizing Zod.
+**And** unhandled/suppressed `console.warn` and `console.error` blocks provide valid status hooks or context propagation upwards.
+
+#### Story 0.16: State Management & Promise Chain Refactoring
+
+As a Developer,
+I want unmanaged state leaks (localStorage), legacy Promise chains, and direct DOM manipulation hooks removed,
+So that the codebase conforms strictly to SSR synchronization limits and React hydration principles.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #16
+**Then** all mapped components utilizing raw `localStorage` or `sessionStorage` are refactored to server-side cookies or Redis caching configurations.
+**And** technical debt comments (`FIXME`, `HACK`) are either resolved directly or migrated to formal Epic backlog items.
+**And** legacy `.then().catch()` chains mapped in the report are modernized to `async/await`.
+**And** unmanaged timers (`setTimeout`, `setInterval`) are wiped or replaced with robust job polling / socket integrations.
+**And** direct `document.getElement...` queries inside React DOM nodes are replaced by strictly bound React `useRef` hooks.
+
+#### Story 0.17: Next.js Anti-Patterns & Raw HTML Refactoring
+
+As a Developer,
+I want unmanaged `fetch` connections, raw anchor tags, and raw string interpolations replaced by framework tooling,
+So that Next.js controls the App Router seamlessly and CSS merges cleanly.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #17
+**Then** all mapped uses of raw `<a href=...>` are swapped for `<Link href=...>` from `next/link`.
+**And** `target="_blank"` attributes are secured globally with `rel="noopener noreferrer"`.
+**And** string interpolation mapped for Tailwind classes is refactored directly into the `cn(...)` utility standard.
+**And** raw `fetch` commands are standardized and replaced with typed internal services/actions.
+
+#### Story 0.18: Type-Safety & Error Boundary Refactoring
+
+As a Developer,
+I want explicit TypeScript types everywhere, proper UI Error Boundaries, and standardized UI palettes,
+So that I don't introduce unseen runtime bugs via type casing limitations or silently dropped components.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #18
+**Then** all mapped instances of `as any` casting are strictly typed conforming to schema contracts in frontend and backend.
+**And** linter suppressions utilizing `eslint-disable` and `@ts-expect-error` are eliminated and the actual source warning is rectified.
+**And** components utilizing raw `return null` early returns on bad props are swapped out with proper skeleton fallbacks or mapped directly to application-level `<ErrorBoundary>` configurations.
+**And** hardcoded CSS hexadecimal strings bypasses are ported formally into `hsl` tailwind variables.
+
+#### Story 0.19: Codebase Marker & Storage Sanitization
+
+As a Developer,
+I want unmanaged `console.log` statements removed, local storage accesses abstracted securely, and `TODO` flags resolved,
+So that technical debt is eliminated from production code and side effects do not crash SSR context renders.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #19
+**Then** all mapped instances of `console.log` and `console.error` are removed or ported to a secure structured logging service.
+**And** unmanaged calls to `window.localStorage` and `window.sessionStorage` are moved to secure abstraction hooks conforming with Zustand/React state architectures.
+**And** `TODO`, `FIXME`, and `HACK` comments mapped across source distributions are either resolved with implementation or formally documented inside Epic tracking.
+**And** hardcoded massive `z-index` offsets (`z-[9999]`) are converted into layered design system token classes.
+
+#### Story 0.20: Framework Bypasses & Lifecycle Memory Leaks
+
+As a Developer,
+I want unmanaged timers cleared, DOM routing replaced by Next JS Navigation, and raw HTML forms swapped for Shadcn components,
+So that I don't introduce memory leaks, destroy page states during routing, or break accessibility constraints.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #20
+**Then** all mapped instances of `window.location.href` assignments are replaced with `useRouter().push()` or `useRouter().replace()`.
+**And** unmanaged interval routines `setTimeout` and `setInterval` within React scopes are explicitly bound to unmount clearance via hooks like `useInterval`.
+**And** pure HTML tags `<input>` and `<select>` are universally replaced by their `@/components/ui/input` and `@/components/ui/select` equivalents for design conformity.
+**And** the Live Sheet collaboration engine (`useYjsStore`, `LiveTable`) is NOT functionally deprecated, but specifically refactored and encapsulated into a self-managing `LiveSheetEngine` Class or equivalent stable architectural pattern to cleanly manage its internal WebSocket and render lifecycles.
+
+#### Story 0.21: Component Sanity & Docker Networking
+
+As a Developer,
+I want inline CSS replaced by Tailwind patterns, unmanaged HTML sanitizations mapped into parsers, and explicit endpoints configured,
+So that I don't introduce cross-site vulnerabilities, fracture containerized networks natively, or bypass the core design system.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #21
+**Then** all mapped instances of explicit `localhost` or `127.0.0.1` definitions are strictly replaced with environment bindings inside `.env` configurations.
+**And** unmanaged `style={{}}` logic is refactored seamlessly across React rendering frames explicitly into mapped tailwind properties using the `cn()` utility scope.
+**And** aggressive TypeScript non-null checks (`!.`) are swapped structurally with valid optional chains referencing actual compilation logic checks.
+**And** exposed `dangerouslySetInnerHTML` React scopes are protected comprehensively utilizing `DOMPurify` input sanitizations.
+
+#### Story 0.22: Codebase Polish & Security Hardening
+
+As a Developer,
+I want explicit hardcoded Tailwind values removed, linter bugs resolved structurally, raw dialogues refactored into components, and accessibility wrappers fixed,
+So that I don't introduce visual fractures across devices, infinite state loops via bypassed dependency bounds, or trap screen readers on un-navigable DIV elements.
+
+**Acceptance Criteria:**
+**Given** the findings from Adversarial Review Pass #22
+**Then** arbitrary Tailwind block allocations (`w-[10px]`, `text-[#000]`) are migrated explicitly to design-system standard classes inside global configs.
+**And** all instances of `eslint-disable react-hooks/exhaustive-deps` are deleted, resolving the internal hook with stable `useCallback` or `useMemo` caching.
+**And** native blocking functions like `alert()` and `confirm()` are stripped immediately and substituted globally by asynchronous Shadcn `AlertDialog` interactions.
+**And** accessibility bounds on clickable `<div>` shells lacking `role="button"` are formally converted into native `<button>` or `<Toggle>` semantics.
 
 ---
 
@@ -182,77 +357,77 @@ So that repository functions are tested without mocking the SDK and without rely
 
 **Goal:** Establish the multi-tenant "Project" container, user authentication, and role-based access control system that underpins the entire application.
 **Value:** Sarah can create a secure workspace and invite her team.
-**Key Database Entities:** `User`, `Project`, `ProjectRoleDefinitions`, `ProjectMember`.
+**Key Database Entities:** `UserEntity`, `ProjectEntity`, `ProjectRoleDefinitionsEntity`, `ProjectMemberEntity`.
 **FRs covered:** FR3.1, FR3.3, FR5.1, FR5.2, FR5.3, FR5.4, FR5.9, FR10.1, FR10.2, FR10.3, NFR4, NFR8, NFR13.
 
 ### Epic 2: Visual Form Builder & Schema Engine
 
 **Goal:** Enable Admins to create complex, versioned data entry forms with validation, logic, and intelligent file naming.
 **Value:** Sarah can digitize her paper forms in minutes without coding.
-**Key Database Entities:** `Form`, `FormVersion`, `FormField` (JSONB), `VisibilityConfig`.
+**Key Database Entities:** `FormEntity`, `FormVersionEntity`, `FormFieldEntity` (JSONB), `VisibilityConfigEntity`.
 **FRs covered:** FR1.1, FR1.2, FR1.3, FR1.4, FR1.5, FR1.5.1, FR1.6, FR9.1, FR9.2, FR9.3, FR9.4 (Forms), NFR10.
 
 ### Epic 3: Field Operations Mobile App (Offline First)
 
 **Goal:** Provide Technicians with a robust, offline-capable PWA for viewing routes, navigating to jobs, and managing their work queue.
 **Value:** Mike can see his work and navigate to the site, even without cell service.
-**Key Database Entities:** `Route`, `RouteStop`, `Project` (Geofence Config).
+**Key Database Entities:** `RouteEntity`, `RouteStopEntity`, `ProjectEntity` (Geofence Config).
 **FRs covered:** FR2.1, FR2.2, FR2.3, FR2.4, FR8.3, NFR2, NFR3.
 
 ### Epic 4: Submission Lifecycle & Sync Engine
 
 **Goal:** Handle the end-to-end flow of data capture, local persistence, background synchronization, and image optimization from the field to the cloud.
 **Value:** Mike can capture photos and sign forms in the rain, knowing the data will "just sync" when he's back online.
-**Key Database Entities:** `Submission`, `replicache_client_view` (Sync Ledger), `QuarantinedSubmission`.
+**Key Database Entities:** `SubmissionEntity`, `SyncLedgerEntity`, `QuarantinedSubmissionEntity`.
 **FRs covered:** FR2.4, FR2.4.1, FR2.5, FR2.6, NFR1, NFR5.
 
 ### Epic 5: Smart Grid & Mission Control
 
 **Goal:** Give Admins a high-density, customizable view of all project data to monitor progress and review submissions efficiently, while managing project-level settings and quotas.
 **Value:** Sarah can spot a "Failed" inspection instantly across 500 submissions using the Dashboard, and ensure her project stays within storage limits.
-**Key Database Entities:** `GridConfig` (User Prefs), `ProjectMetrics` (Aggregated), `ProjectSettings`.
+**Key Database Entities:** `GridConfigEntity` (User Prefs), `ProjectMetricsEntity` (Aggregated), `ProjectSettingsEntity`.
 **FRs covered:** FR3.2, FR4.1, FR4.2, FR4.3, FR4.5, FR17.1, FR17.2, FR18.1, FR18.2, NFR6.
 
 ### Epic 6: Live Smart Grid & Collaboration
 
 **Goal:** Implement a custom, high-performance "Smart Grid" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
 **Value:** The office team can manage complex project schedules and trackers with hierarchy, rich data types, and real-time concurrency.
-**Key Database Entities:** `Sheet`, `SheetColumn` (Definitions), `SheetRow` (Data + Metadata), `YjsDocument` (Binary State).
-**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, FR9.3, FR9.4 (Sheets), NFR9, NFR12.
+**Key Database Entities:** `SheetEntity`, `SheetColumnEntity` (Definitions), `SheetRowEntity` (Data + Metadata).
+**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR12.5, FR12.6, FR12.7, FR12.8, FR12.9, FR13.1, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, FR9.3, FR9.4 (Sheets), NFR9, NFR12.
 
 ### Epic 7: Document Control & Field Tools
 
-**Goal:** Implement the PDF Engine for hosting specs/plans, rendering blueprints on mobile, and the suite of Field Tools (RFIs, Schedule, Specs) for execution.
+**Goal:** Implement the PDF Engine for hosting specs/plans, rendering blueprints on mobile, and the suite of Field Tools (Tasks, Schedule, Specs) for execution.
 **Value:** James can markup a blueprint change and immediately link it to an RFI, while Mike can check the Schedule dependencies offline.
-**Key Database Entities:** `Document`, `DocumentVersion`, `RFI`, `SpecSection`, `EntityLink`, `ScheduleTask`, `ScheduleDependency`.
+**Key Database Entities:** `DocumentEntity`, `DocumentVersionEntity`, `TaskEntity`, `SpecSectionEntity`, `EntityLinkEntity`, `ScheduleTaskEntity`, `ScheduleDependencyEntity`.
 **FRs covered:** FR20.1, FR20.2, FR20.3, FR20.4, FR21.1, FR21.2, FR21.3, FR21.4, FR22.1, FR22.2, FR22.3, FR22.4, NFR7.
 
 ### Epic 8: Legacy Integration & Data Migration
 
 **Goal:** Build the bridges for the "old world" including PDF Overlay Mapping (Government Forms) and Bulk Excel/CSV Imports.
 **Value:** Sarah can keep using her mandatory State Compliance PDF forms but fill them digitally.
-**Key Database Entities:** `FormPDFOverlay` (Mapping Config).
+**Key Database Entities:** `FormPDFOverlayEntity` (Mapping Config).
 **FRs covered:** FR1.7, FR1.7.1, FR4.4, FR4.9, FR22.1, FR17.3.
 
 ### Epic 9: Compliance, Access & Public Gates
 
 **Goal:** Implement the "Visa Wizard" for external users and secure Public Links for client visibility.
 **Value:** Subcontractors are automatically vetted (Insurance Check) before they can see sensitive project data.
-**Key Database Entities:** `ComplianceRequirement`, `ComplianceRecord`, `ExternalAccessRequest`.
+**Key Database Entities:** `ComplianceRequirementEntity`, `ComplianceRecordEntity`, `ExternalAccessRequestEntity`.
 **FRs covered:** FR5.5, FR5.6, FR5.7, FR5.8, FR6.1, FR6.2, FR6.3, FR15.1, FR15.2, FR15.3.
 
 ### Epic 10: AI Automation & Intelligence Layer
 
 **Goal:** Deploy the Agentic Assistant, RAG Engine, and "Magic Forward" email ingestion to automate repetitive tasks.
 **Value:** Sarah can just forward an email to create a project, and ask the AI to "reschedule Mike" without clicking 10 buttons.
-**Key Database Entities:** `AiConversation`, `VectorEmbedding` (DynamoDB metadata + Pinecone vector ID).
+**Key Database Entities:** `AiConversationEntity`, `VectorEmbeddingEntity` (DynamoDB metadata + Pinecone vector ID).
 **FRs covered:** FR8.1, FR8.2, FR11.1, FR11.2, FR11.3, FR11.4, FR16.1, FR16.2, FR16.3, FR18.1, NFR11.
 
 ### Epic 11: Help Center & Support System
 
 **Goal:** Provide a self-service knowledge base for users and a feedback loop for bugs.
 **Value:** Users can solve their own problems offline; Admins can easily maintain documentation.
-**Key Database Entities:** `HelpArticle`, `HelpCategory`, `SupportTicket`.
+**Key Database Entities:** `HelpArticleEntity`, `HelpCategoryEntity`, `SupportTicketEntity`.
 **FRs covered:** FR19.1, FR19.2, FR19.3, FR19.4.
 
 ## FR Coverage Map
@@ -290,38 +465,64 @@ FR5.9: Epic 1 - Audit Log
 FR6.1: Epic 9 - Public Links
 FR6.2: Epic 9 - Password Protection
 FR6.3: Epic 9 - Marketing Landing Page
-FR7.1: Epic 6 - Assignment
-FR7.2: Epic 6 - Action Inbox
-FR7.3: Epic 6 - Notifications
+FR7.1: Epic 6 - Row Assignment (Story 6.3)
+FR7.2: Epic 6 - Assigned-to-Me filter (Story 6.3)
+FR7.3: Epic 6 - Notifications on assignment + Team Chat (Stories 6.3, 6.4)
+FR7.4: Epic 6 - Notification Subscription Preferences (Story 6.5)
+FR7.5: Epic 6 - Smart Links in notifications (Stories 6.4, 6.5)
 FR8.1: Epic 10 - Magic Forward
 FR8.2: Epic 10 - RAG Engine
 FR8.3: Epic 3 - Contextual Compass
 FR9.1: Epic 2 - Form History
-FR9.3: Epic 2 (Form restore) + Epic 6 (Sheet snapshot rollback)
-FR9.4: Epic 2 (Form blame) + Epic 6 (Sheet snapshot blame)
+FR9.2: Epic 2 - Versioning granularity (Publish / Cell Edit / Snapshot / Re-Optimization)
+FR9.3: Epic 2 (Form restore, Story 2.5) + Epic 6 (Sheet snapshot rollback, Story 6.13)
+FR9.4: Epic 2 (Form blame, Story 2.5) + Epic 6 (Sheet snapshot blame, Story 6.13)
 NFR13: Epic 1 (Story 1.10 - i18n Infrastructure)
 FR10.1: Epic 1 - Profile Display Name
+FR10.2: Epic 1 - Avatar Upload (Story 1.4)
+FR10.3: Epic 1 - Theme Preference (Story 1.4)
 FR11.1: Epic 10 - Persistent Chat
 FR11.2: Epic 10 - Autonomous Action
-FR12.1: Epic 6 - Live Collab
+FR11.3: Epic 10 - Context Awareness (current-page scope)
+FR11.4: Epic 10 - Permission Enforcement (RBAC-scoped AI)
+FR12.1: Epic 6 - Live Collaboration / Yjs sync (Story 6.2)
+FR12.2: Epic 6 - Row-Centric Data Model (Stories 6.3, 6.7)
+FR12.3: Epic 6 - Rich Column Types (Story 6.6)
+FR12.4: Epic 6 - Advanced Logic / Formula Engine (Story 6.8)
+FR12.5: Epic 6 - Smart Ingestion / CSV Import + Smart Upsert (**Story 6.15**)
+FR12.6: Epic 6 - Multiple Views + View Persistence in URL (Story 6.12)
+FR12.7: Epic 6 - Governance: Column Lock, Audit Log, Guest Access (Story 6.13)
+FR12.8: Epic 6 + Epic 10 - AI Sheet Operations (tool definitions in Story 10.3)
+FR12.9: Epic 6 - Connected Workflows: Form-to-Sheet (Story 6.10) + Sheet-to-Route (Story 6.11)
+FR13.1: Epic 6 - Sheet Calendar View (Story 6.12)
+FR13.3: Epic 6 - Calendar event opens Row Detail Panel (Story 6.12)
 FR15.1: Epic 9 - Compliance Gates
+FR15.2: Epic 9 - Redirect to Compliance Wizard
+FR15.3: Epic 9 - Identity Claiming via Magic Link or Verified Account
 FR16.1: Epic 10 - Webhooks
 FR16.2: Epic 10 - API Key Management (scoped keys + outgoing encrypted secrets)
 FR16.3: Epic 10 - OpenAPI/Swagger auto-documentation
-FR17.1: Epic 5 - Data Retention
-FR17.2: Epic 5 - Storage Quotas
-FR18.1: Epic 5 - Resource Limits
-FR18.2: Epic 5 - Budget Alerts
+FR17.1: Epic 5 - Data Retention (TTL policies)
+FR17.2: Epic 5 - Storage Quotas (hard caps)
+FR17.3: Epic 8 - Project Portability (JSON export/import)
+FR18.1: Epic 5 - Resource Budgeting (soft caps)
+FR18.2: Epic 5 - Budget Alerts (email notification)
 FR19.1: Epic 11 - Admin Studio
-FR19.2: Epic 11 - Article Workflow
-FR19.3: Epic 11 - Offline Reader
-FR19.4: Epic 11 - Feedback Shake
-FR20.1: Epic 7 - RFI Creation
-FR21.1: Epic 7 - Spec Ingestion
-FR22.1: Epic 7 - Schedule Import
-FR22.2: Epic 7 - Strategy Room
-FR22.3: Epic 7 - Mobile Task List
-FR22.4: Epic 7 - Blocker Logic
+FR19.2: Epic 11 - Article Workflow (DRAFT/PUBLISHED)
+FR19.3: Epic 11 - Offline Reader + pinch-to-zoom
+FR19.4: Epic 11 - Shake to Report
+FR20.1: Epic 7 - Task Creation (Photo + Voice)
+FR20.2: Epic 7 - Polymorphic Context (Link to Sheet/Spec/Task)
+FR20.3: Epic 5 - Ball-in-Court Indicators (Dashboard)
+FR20.4: Epic 5 - Task Sequence Generator (Numbering)
+FR21.1: Epic 7 - Spec Ingestion (Worker)
+FR21.2: Epic 7 - Spec Search (API)
+FR21.3: Epic 7 - AI Contextual Push (Research Only)
+FR21.4: Epic 7 - Offline Spec Access (PWA)
+FR22.1: Epic 8 - Schedule Import (.xml/.xer)
+FR22.2: Epic 8 - Strategy Room View
+FR22.3: Epic 3 - Mobile Schedule List
+FR22.4: Epic 7 - Blocker Logic (I am Blocked → Task)
 
 ## Global Acceptance Criteria (Definition of Done)
 
@@ -331,7 +532,7 @@ Applies to **ALL** Epics and User Stories generated from this document:
 2.  **Localization (NFR13)**: All user-facing text must be wrapped in translation keys (e.g., `t('key')`). Hardcoded strings are strictly prohibited.
 3.  **Mobile Responsiveness**: All views must be verified on mobile breakpoints. Complex tables must degrade to "Card Views" on small screens.
 4.  **Error Handling**: All Server Actions must return standardized error objects. UI must display toast notifications for errors.
-5.  **Offline Safety**: All mutations must check for connection status. If offline, mutations must be queued in the Sync Engine (RepliCache).
+5.  **Offline Safety**: All mutations must check for connection status. If offline, mutations must be queued in the local sync store (`IndexedDB`) for background upload via BullMQ when connectivity is restored.
 6.  **Visual Feedback**: All Action Buttons must show a visible Loading Spinner/State during `isPending` to prevent "Rage Clicks" (UX #1).
 
 ## Epic 1: Core Project Foundation & Identity
@@ -390,7 +591,7 @@ So that users cannot access data from other projects or exceed their privileges.
 **Given** a user is logged in
 **When** they attempt to query any project resource via the API
 **Then** all DynamoDB queries are scoped with `projectId` as the partition key prefix (`PROJECT#<id>#ENTITY_TYPE#<id>`)
-**And** the RBAC middleware validates the user's `ProjectMember` record before executing any DynamoDB query
+**And** the RBAC middleware validates the user's `ProjectMemberEntity` record before executing any DynamoDB query
 **And** unauthorized requests return `403 Forbidden` before any DynamoDB call is made
 **And** if they try to delete a project without `OWNER` role, the service layer throws a permission error (FR5.3, FR5.4)
 **And** a shared `requireProjectAccess(userId, projectId, requiredRole)` utility is used consistently across all route handlers
@@ -405,7 +606,7 @@ So that I can personalize my experience.
 **Acceptance Criteria:**
 **Given** I am on the Profile page
 **When** I upload a photo
-**Then** it is resized to 256x256 and saved to MinIO
+**Then** it is resized to 256x256 and saved to S3
 **And** if the image fails to load, it gracefully falls back to User Initials (QA #3)
 **And** when I toggle "Dark Mode", the preference persists to the DB and applies on my next login (FR10.3).
 
@@ -419,7 +620,9 @@ So that I can audit security and usage.
 **Given** I am a Project Owner
 **When** I view the Audit Log page
 **Then** I see a chronological list of actions (Invites, Role Changes, Deletions)
-**And** each entry shows User, IP, Timestamp, and Action details (FR5.9).
+**And** each entry shows User, IP, Timestamp, and Action details (FR5.9)
+**And** the underlying store is the `AuditLogEntity` DynamoDB entity (Domain: `Access`, per architecture entity table), with `PK: PROJECT#<projectId>`, `SK: AUDIT#<timestamp>#<eventId>` for time-ordered range queries — no GSI required, the base table key already provides chronological order within a project
+**And** the page loads the 100 most recent entries on initial render and supports cursor-based pagination for older records.
 
 ### Story 1.6: Global Shell & Providers
 
@@ -486,12 +689,12 @@ So that every story delivered going forward can satisfy the NFR13 localization r
 
 **Acceptance Criteria:**
 **Given** the Next.js frontend
-**Then** `next-i18next` (or equivalent) is installed and configured with `en-US` as the default locale and `es-ES` as a supported locale
+**Then** `next-intl` is installed and configured for App Router compatibility, with `en-US` as the default locale and `es-ES` as a supported locale (_Note: `next-i18next` is NOT used — it targets the Pages Router and has known SSR/hydration conflicts with App Router. Use `next-intl` which provides native `useTranslations()` hooks without extra HoC wrappers._)
 **And** translation JSON files exist at `public/locales/en/common.json` and `public/locales/es/common.json`
 **And** all existing hardcoded user-facing strings in currently-shipped components are extracted into `en/common.json`
 **And** `es/common.json` contains Spanish translations for all extracted keys (machine-translated baseline is acceptable; human review is a separate concern)
 **And** a CI lint step fails if a `.tsx` file contains a hardcoded user-facing string not wrapped in `t('key')` — enforced from this story forward
-**And** the resolved locale is determined first by the `language` field on the `User` DynamoDB entity, falling back to the `Accept-Language` request header
+**And** the resolved locale is determined first by the `language` field on the `UserEntity` DynamoDB entity, falling back to the `Accept-Language` request header
 **And** API error messages returned by Server Actions and Express routes respect the resolved locale (NFR13).
 
 ## Epic 2: Visual Form Builder & Schema Engine
@@ -564,7 +767,7 @@ So that I can recover from accidental changes and audit who changed what.
 **When** I open the "Version History" panel
 **Then** I see a chronological list of every published version with Publisher User ID and Timestamp (FR9.4)
 **And** each entry shows a human-readable diff summary of what fields were added, removed, or modified
-**And** every version is stored as a `FormVersion` entity in DynamoDB with the full schema snapshot
+**And** every version is stored as a `FormVersionEntity` entity in DynamoDB with the full schema snapshot
 **And** I can click "Restore" on any historical version to make it the active published schema (FR9.3)
 **And** restoring creates a new version entry attributed to the restoring user — it does not overwrite history
 **And** the form builder loads the restored schema immediately after restore completes
@@ -579,7 +782,7 @@ So that my folder structure stays consistent.
 **Acceptance Criteria:**
 **Given** I rename a field from "Photo" to "Site Evidence"
 **Then** the system triggers a background job (BullMQ)
-**And** renames all existing files in MinIO to match the new pattern (FR1.6)
+**And** renames all existing files in S3 to match the new pattern (FR1.6)
 **And** updates the database references without breaking links
 **And** sends me an email when the migration is complete.
 
@@ -621,7 +824,10 @@ So that I see the relevant tasks immediately without searching.
 **Acceptance Criteria:**
 **Given** I enter the geofence of a Project Site
 **Then** the app triggers a specific notification/banner
-**And** enables "One-Tap" access to the Site Dashboard (FR8.3).
+**And** enables "One-Tap" access to the Site Dashboard (FR8.3)
+**And** background geofence monitoring is implemented using **Capacitor Background Runner** (`@capacitor/background-runner`) — not browser Geolocation API polling (which drains battery). The Background Runner script registers the geofence and wakes the app on boundary crossing
+**And** the geofence trigger works when the device is offline or the app is backgrounded (it does not require an active connection) — the site entry event is queued locally and syncs to the server when connectivity is restored
+**And** battery impact is validated to remain within NFR3 (≤5% drain over 8 hours) using Xcode Instruments / Android Studio profiler as part of acceptance testing.
 
 ### Story 3.4: Deep Linking Navigation
 
@@ -663,7 +869,7 @@ So that I don't have to manually "Send" everything.
 **Acceptance Criteria:**
 **Given** I have saved 5 forms while offline
 **When** I regain internet connection
-**Then** the background sync engine (RepliCache) automatically uploads the data
+**Then** the background sync engine (IndexedDB + BullMQ) automatically uploads the data
 **And** I see a visible "Syncing..." spinner followed by "All Changes Saved" (UX #2)
 **And** Toast notifications are grouped/deduped (e.g. "Synced 50 items") to prevent spam (Arch #2)
 **And** Uploads continue in a "Global Context" even if I navigate away from the page (Lead Dev #4)
@@ -723,7 +929,7 @@ So that I can analyze specific data points.
 **Given** I am viewing the "Daily Logs" form data
 **When** I toggle "Show only Failed Items"
 **Then** the grid updates instantly (using `<DataTable />` wrapper around TanStack Table) (Arch #3)
-**And** I can save this view configuration for later (stored in `UserPreferences` DB table) (Lead Dev #7) (FR4.1, FR4.2)
+**And** I can save this view configuration for later (stored in `UserPreferencesEntity` DB table) (Lead Dev #7) (FR4.1, FR4.2)
 **And** I can toggle "Compact Mode" to see more rows (PM #5)
 **And** first columns are sticky and show a shadow cue when scrolling horizontally (QA #2).
 
@@ -769,8 +975,8 @@ So that I can assign work efficiently.
 
 **Goal:** Implement a custom, high-performance "Live Table" module that combines the usability of a spreadsheet with the structure of a database (Row-Centric).
 **Value:** The office team can manage complex project schedules and trackers with hierarchy, rich data types, and real-time concurrency.
-**Key Database Entities:** `Sheet`, `SheetColumn` (Definitions), `SheetRow` (Data + Metadata), `YjsDocument` (Binary State).
-**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR13.1, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5.
+**Key Database Entities:** `SheetEntity`, `SheetColumnEntity` (Definitions), `SheetRowEntity` (Data + Metadata), `YjsDocumentEntity` (Binary State).
+**FRs covered:** FR12.1, FR12.2, FR12.3, FR12.4, FR12.5, FR12.6, FR12.7, FR12.8, FR12.9, FR13.1, FR13.2, FR13.3, FR7.1, FR7.2, FR7.3, FR7.4, FR7.5, FR9.3, FR9.4 (Sheets), NFR9, NFR12.
 
 #### Story 6.1: High-Performance Data Viewing
 
@@ -798,81 +1004,206 @@ So that we don't work on stale data.
 **And** User B sees a colored border (Presence) showing where User A is working
 **And** the state is managed via `Y.Map` (Rows) and `Y.Array` (Order) to ensure eventual consistency.
 
-#### Story 6.3: Rich Column Types
+**And** binary data (images, files, raw bytes) is **never stored in any Yjs shared type** — the CRDT contains structured metadata only (field IDs, answer values, status flags, S3 `objectKey` string references)
+**And** file and image uploads always follow the S3 presigned URL pattern; only the `objectKey` string is written into the Yjs document after upload completes
+**And** the Hocuspocus server enforces a **500 KB serialized document size guard** — this check fires on **every document update** via the `onChange` hook.
+**And** an attempt to store a base64-encoded image directly in the Yjs document via the client API is rejected at the server guard layer and does not corrupt the shared document state.
 
-As a Planner,
-I want to set columns to specific types like "Status" or "Person",
-So that data entry is standardized.
+#### Story 6.3: Row Assignment
 
-**Acceptance Criteria:**
-**Given** I add a "Status" column
-**When** I edit a cell in that column
-**Then** I see a Dropdown with colored badges (e.g., "In Progress" = Blue)
-**And** selecting an option updates the cell value
-**And** "User" columns render Avatars and support searching Project Members.
+As a Manager,
+I want to assign a specific sheet row to a team member,
+So that ownership of tasks is clear and the assignee is notified.
 
-#### Story 6.4: Row Hierarchy & Grouping
-
-As a Project Manager,
-I want to indent rows to create sub-tasks,
-So that I can organize the schedule visually.
+> **Note:** This story introduces the minimal "User/Member" column type (an Assignee column) as a self-contained prerequisite. The full suite of Rich Column Types (Text, Number, Date, Dropdown, Duration, etc.) is defined in Story 6.6. Developers must not wait for Story 6.6 before implementing this story.
 
 **Acceptance Criteria:**
-**Given** I have a list of tasks
-**When** I select a row and click "Indent" (Tab)
-**Then** it becomes a child of the row above it
-**And** I can collapse/expand the parent row to hide/show children
-**And** `SUM(CHILDREN())` formulas respect this hierarchy.
+**Given** I am on a Sheet
+**When** I add an "Assignee" column for the first time
+**Then** the system creates a "User/Member" column type that renders project members as Avatar + Display Name options
+**And** the column definition is stored in the `SheetColumnEntity` DynamoDB entity with `type: "user"` and `scope: "project-members"`
 
-#### Story 6.5: Formula Engine Integration
+**Given** I click the Assignee cell on a row and select "Mike"
+**Then** Mike's user ID is written to the `SheetRowEntity` DynamoDB entity as the `assignee` field (FR7.1)
+**And** the assignment is synced to all connected clients via Yjs so the cell updates in real-time
+**And** Yjs is the sync transport only — DynamoDB is the source of truth for the assignee field
+**And** Mike receives an in-app and email notification with a deep link to the specific row (FR7.3, FR7.5)
+**And** the Assignee cell renders Mike's Avatar and Display Name
 
-As a Power User,
-I want to use formulas to calculate costs,
-So that I don't need a calculator.
+**Given** I reassign a row from Mike to Sarah
+**Then** Sarah receives an assignment notification with a deep link to the row
+**And** Mike receives a separate "Unassigned" notification informing him the row was reassigned (FR7.1)
+**And** previously delivered notifications to Mike are not retroactively modified or deleted
 
-**Acceptance Criteria:**
-**Given** I enter `=A1*B1`
-**Then** the system (Hyperformula) calculates the result
-**And** updates immediately if A1 or B1 changes
-**And** handles circular dependency errors gracefully (Red triangle in cell).
+**Given** I am viewing my own sheets
+**When** I apply "Assigned to Me" filter
+**Then** only rows where my user ID is the assignee are shown (FR7.2)
+**And** the filter is encoded in the URL as `?filter=assignee:me` for shareability.
 
-#### Story 6.6: Row Detail Panel
-
-As a User,
-I want to attach a file to a specific row,
-So that the invoice is linked to the line item.
-
-**Acceptance Criteria:**
-**Given** I click the "Open" icon on a row
-**Then** a Side Panel slides out
-**And** I can upload files, post a chat comment, or view the Audit History for _that specific row_.
-
-#### Story 6.7: Project Team Chat
+#### Story 6.4: Project Team Chat
 
 As a Team Member,
 I want to discuss project issues in a dedicated channel,
-So that communication is centralized.
+So that communication is centralized and searchable.
+
+> **Note:** This story covers project-level channel chat (UI Map 15.0). Row-level threaded comments are part of Story 6.7 (Row Detail Panel). These are distinct surfaces. Project-level chat supports FR7.3 (Notification Engine) and FR7.5 (Smart Linking) from the collaboration layer.
 
 **Acceptance Criteria:**
-**Given** I am on the Chat page
-**When** I send a message in the #general channel
-**Then** it appears instantly for all other project members
-**And** I can mention `@Mike` (stored as Immutable ID, rendered as Display Name) (Lead Dev #5)
-**And** notifications respect "Office Hours" settings (PM #7) (UI Map 15.0).
+**Given** I am in a project
+**Then** a #general channel exists by default and all project members are auto-joined
 
-#### Story 6.8: Notification & Subscription Preferences
+**Given** I send a message in #general
+**Then** it appears instantly for all other online project members via WebSocket (FR7.3)
+**And** the message persists in DynamoDB so members who were offline see it on next login
+**And** I can mention `@Mike` using their Display Name (stored and resolved via immutable User ID, never the display name string itself) (Lead Dev #5)
+
+**Given** I am mentioned with `@Mike`
+**Then** Mike receives an in-app notification and an email notification with a direct deep link to the message (FR7.5)
+**And** the notification respects Mike's "Office Hours" settings — email is held until the next office-hours window if configured (PM #7)
+
+**Given** I send a message referencing a sheet row or form submission
+**Then** I can paste the entity URL to create a smart link card preview inline
+
+**Given** the channel has 10,000+ messages
+**Then** messages are virtualized and the UI does not degrade — only the visible viewport renders DOM nodes (UI Map 15.0).
+
+#### Story 6.5: Notification & Subscription Preferences
 
 As a User,
 I want to configure which events trigger email or push notifications,
-So that I am not overwhelmed by spam.
+So that I am not overwhelmed by irrelevant alerts.
 
 **Acceptance Criteria:**
-**Given** I am in User Settings
-**When** I toggle "Email me when mentioned" to OFF
-**Then** I no longer receive emails for mentions (FR7.4)
-**And** standard "Smart Links" in notifications deep-link directly to the item (FR7.5).
+**Given** I am in User Settings > Notifications
+**Then** I see toggle controls for each notification event type: New Assignment, Mentioned in Chat, New Submission, Sheet Edit, Document Upload, Route Update
 
-#### Story 6.9: Form-to-Sheet Integration
+**Given** I toggle "Email me when mentioned" to OFF
+**Then** I no longer receive emails for `@mention` events — in-app notifications still fire (FR7.4)
+
+**Given** I toggle "Push Notifications" for New Submission to ON
+**Then** I receive a browser/PWA push notification when a new submission is created on any form I am subscribed to (FR7.3)
+
+**Given** a notification fires
+**Then** the notification body includes a direct deep link that opens the specific item (row, form, message) in context (FR7.5)
+**And** clicking the link from email or push opens the exact page and scrolls/highlights the relevant item.
+
+#### Story 6.6: Rich Column Types
+
+As a Planner,
+I want to set columns to specific data types,
+So that data entry is consistent and errors are caught at input time.
+
+**Acceptance Criteria:**
+
+**Standard Column Types (FR12.3):**
+**Given** I add a column
+**Then** I can select from: Text, Number, Date, Checkbox, Dropdown (Single-select), Dropdown (Multi-select)
+**And** each type enforces its input format — a Number column rejects free-text entry with a visible inline error
+**And** a Date column renders a date-picker, not a free text field
+
+**Advanced Column Types (FR12.3):**
+**Given** I add an advanced column
+**Then** I can select from: Contact List (searches Project Members, renders Avatar + name), Symbols (RAG: Red/Amber/Green badge), Duration (HH:MM), Auto-Number (sequential, read-only, assigned on row creation)
+**And** Auto-Number values are write-once — they cannot be edited by any user including Admin
+
+**System Column Types (FR12.3):**
+**Given** a sheet has any rows
+**Then** Created By, Created Date, Modified By, and Modified Date columns are available as system columns
+**And** system columns are always read-only — the API rejects any write attempt to a system column with a 403
+**And** values in system columns are set server-side only
+
+**Per-Column Validation (FR12.3):**
+**Given** I configure a column
+**Then** I can set a validation rule (e.g., "Must be email format", "Min value: 0", "Max length: 255")
+**And** a cell failing validation renders a red border and tooltip explaining the rule
+**And** a row cannot be submitted/saved while any required column has a validation error
+
+**Given** a "User" column (introduced in Story 6.3) is used alongside all other types
+**Then** it renders consistently with the Contact List column and uses the same project-member search.
+
+#### Story 6.7: Row Hierarchy & Grouping
+
+As a Project Manager,
+I want to indent rows to create parent/child task relationships,
+So that I can organize a WBS schedule without leaving the sheet.
+
+**Acceptance Criteria:**
+
+**Happy Path (FR12.2):**
+**Given** I have a list of tasks
+**When** I select a row and press Tab (or click "Indent")
+**Then** it becomes a child of the immediately preceding sibling row
+**And** the parent row shows a collapse/expand toggle
+**And** collapsing a parent hides all descendant rows from the viewport without deleting data
+**And** `SUM(CHILDREN())` formulas on the parent row correctly aggregate all direct children
+
+**Error / Edge Cases:**
+**Given** I attempt to indent a row that has no preceding sibling
+**Then** the indent action is blocked and a tooltip explains "A row must have a parent row above it to be indented"
+
+**Given** I attempt to drag a parent row below one of its own descendants
+**Then** the drop is rejected and the row snaps back to its original position to prevent circular hierarchy
+
+**Given** the maximum nesting depth (5 levels) is reached
+**Then** the Tab key no longer indents further and the UI shows a "Maximum depth reached" indicator
+
+**Given** a parent row is deleted
+**Then** all child rows are promoted one level (not silently deleted)
+**And** a confirmation modal warns: "Deleting this row will promote its N child rows to the parent level. Proceed?"
+
+#### Story 6.8: Formula Engine Integration
+
+As a Power User,
+I want to use Excel-compatible formulas to calculate values across rows,
+So that I don't need a separate spreadsheet for derived metrics.
+
+**Acceptance Criteria:**
+**Given** I enter `=A1*B1` in a cell
+**Then** the system (Hyperformula) calculates the result and displays it (FR12.4)
+**And** the calculation runs in a Web Worker to prevent UI thread blocking (FR12.4)
+**And** the result updates immediately when A1 or B1 changes — no manual refresh required
+
+**Given** I enter a formula referencing a non-existent column
+**Then** the cell shows `#REF!` with a red triangle and tooltip explaining the broken reference
+
+**Given** a circular dependency exists (e.g., A1 = B1, B1 = A1)
+**Then** both cells show `#CIRCULAR!` and the sheet does not enter an infinite loop
+
+**Given** I enter `=SUM(CHILDREN())`
+**Then** the formula correctly aggregates values from all direct child rows in the hierarchy (Story 6.7 dependency)
+**And** if the parent is collapsed, the formula value still reflects all children.
+
+#### Story 6.9: Row Detail Panel
+
+As a User,
+I want to open a side panel for any row to attach files, leave comments, and view change history,
+So that context for a row lives with the row and not in a separate folder or chat thread.
+
+**Acceptance Criteria:**
+
+**Panel Open (FR12.2):**
+**Given** I click the "Open" icon on any row
+**Then** a Side Panel slides in from the right without navigating away from the sheet
+**And** the panel header shows the row's stable UUID, not its visual index position
+
+**File Attachments (FR12.2):**
+**Given** I upload a file in the Row Detail Panel
+**Then** the file is stored in S3 under the key `{bucket}/{projectId}/rows/{rowUUID}/{filename}`
+**And** the attachment record in DynamoDB stores the Row's stable UUID as the foreign key — never the visual index or row position
+**And** if the row is reordered to position 5 from position 12, all previously uploaded attachments remain linked correctly
+
+**Row Comments:**
+**Given** I post a comment in the Row Detail Panel
+**Then** it is stored in DynamoDB as a `RowCommentEntity` entity keyed to the row's stable UUID
+**And** comments are distinct from the project-level Team Chat (Story 6.4) — they are scoped to this row only
+**And** mentioning `@Sarah` in a row comment sends her a notification with a deep link to this row
+
+**Audit History (FR12.7):**
+**Given** I view the Audit History tab in the Row Detail Panel
+**Then** I see a chronological log of every cell edit for this row: timestamp, user, field changed, old value, new value
+**And** the log is immutable — no user can delete audit entries.
+
+#### Story 6.10: Form-to-Sheet Integration
 
 As a Manager,
 I want form submissions to automatically populate a specific sheet,
@@ -885,7 +1216,7 @@ So that I have a live tracker of field data.
 **And** when a new submission arrives, a new Row is appended to the Sheet
 **And** Photos/Attachments are rendered as "Thumbnail" cells.
 
-#### Story 6.10: Sheet-to-Route Integration
+#### Story 6.11: Sheet-to-Route Integration
 
 As a Dispatcher,
 I want to build a route by selecting rows from a master sheet,
@@ -898,7 +1229,7 @@ So that I don't have to re-enter addresses.
 **And** changes to the Stop Order in the Route Builder update the `Rank` in the Sheet
 **And** modifying the address in the Sheet updates the Route Stop coordinates.
 
-#### Story 6.11: View Persistence & Privacy
+#### Story 6.12: View Persistence & Privacy
 
 As a User,
 I want to save my filters and share them via URL,
@@ -910,7 +1241,7 @@ So that I can show my team exactly what I'm looking at.
 **And** I can save this as a "Private View" that only I can see
 **And** I can share the URL with a colleague to replicate the view.
 
-#### Story 6.12: Governance & Permissions
+#### Story 6.13: Governance & Permissions
 
 As an Admin,
 I want to lock columns, save sheet snapshots, and roll back to previous states,
@@ -928,14 +1259,14 @@ So that I can protect approved data and recover from unintended bulk edits.
 **Sheet Snapshots & Rollback (FR9.3, FR9.4):**
 **Given** I am an Admin on a Smart Sheet
 **When** I click "Save Snapshot"
-**Then** the current full Yjs document state is serialised and stored as a `SheetSnapshot` DynamoDB entity with my User ID and a Timestamp (FR9.4)
+**Then** the current full Yjs document state is serialised and stored as a `SheetSnapshotEntity` DynamoDB entity with my User ID and a Timestamp (FR9.4)
 **And** I can view the snapshot list ordered by most recent
 **And** each snapshot entry shows the author, timestamp, and an optional label I can set
 **And** I can click "Restore" on any snapshot to replace the live Yjs document state with the snapshot binary (FR9.3)
 **And** restoring creates a new snapshot entry marking it as a restore event — it does not delete history
 **And** all connected users see the restored state propagated in real-time via Hocuspocus.
 
-#### Story 6.13: Offline Resilience
+#### Story 6.14: Offline Resilience
 
 As a Technician,
 I want to edit the sheet while offline,
@@ -948,21 +1279,100 @@ So that I can work in the basement.
 **And** when I reconnect, the change syncs to the server
 **And** if a conflict occurs (Row Deleted), the system notifies me or quarantines the edit.
 
-## Epic 7: Document Control & Field Tools
+#### Story 6.15: Smart Grid Import & Upsert (FR12.5)
 
-**Goal:** Implement the PDF Engine for hosting specs/plans, rendering blueprints on mobile, and the suite of Field Tools (RFIs, Schedule, Specs) for execution.
-
-### Story 7.1: RFI Management
-
-As a Technician,
-I want to create an RFI with a photo from the field,
-So that I can get clarification on an issue.
+As a Power User,
+I want to import a CSV or Excel file into a Smart Sheet and merge it against existing rows by a key column,
+So that I can bulk-update hundreds of records without creating duplicates.
 
 **Acceptance Criteria:**
-**Given** I am in the RFI module
-**When** I click "New RFI" and attach a photo
-**Then** the RFI is created in "Draft" state (Private to me)
-**And** I can explicitly "Publish" it to assign to the Project Manager (PM #8) (FR20.1).
+
+**Import Wizard:**
+**Given** I click "Import" on a Smart Sheet
+**Then** an import wizard dialog opens where I can upload a `.csv` or `.xlsx` file
+**And** the system parses the file headers and shows a column mapping step
+**And** I can map each file column to an existing sheet column or create a new column
+
+**Smart Upsert (Merge Mode, FR12.5):**
+**Given** I enable "Merge Mode" in the import wizard
+**Then** I can designate a "Key Column" (e.g., "SKU", "Job Number") for matching
+**And** for each imported row, the system checks if a row with a matching key value already exists in the sheet
+**And** if a match is found, the existing row is updated with the imported values — no duplicate row is created
+**And** if no match is found, a new row is appended to the sheet
+**And** after import completes, a summary modal shows: Rows Updated, Rows Created, Rows Skipped (parse errors)
+
+**Validation:**
+**And** the wizard blocks import if the selected Key Column contains duplicate values within the import file itself
+**And** for imports exceeding 500 rows, the upsert operation is offloaded to a **BullMQ worker job** (same pattern as Story 2.6 retroactive rename) with progress reported via a Server-Sent Event stream — a synchronous Server Action would time out on ECS/Fargate for large datasets
+**And** the import is processed as an atomic operation — either all rows succeed or none are committed (FR12.5).
+
+#### Story 6.16: Gantt View (FR12.6)
+
+As a Project Manager,
+I want to visualize sheet rows as a Gantt chart using Start Date and End Date columns,
+So that I can see task timelines and identify scheduling conflicts at a glance.
+
+**Acceptance Criteria:**
+**Given** a sheet has at least one "Date" type column mapped as a Start Date and one as an End Date (or Duration)
+**When** I switch to "Gantt View"
+**Then** each row renders as a horizontal bar spanning from Start Date to End Date on a timeline
+**And** the timeline header shows months and weeks, and I can zoom in/out between Day/Week/Month granularity
+**And** I can drag a bar's right edge to adjust the End Date — the underlying cell value updates immediately
+**And** I can drag the entire bar to shift both Start and End dates while preserving duration
+**And** parent rows (WBS hierarchy from Story 6.7) show a rollup bar spanning all children
+**And** the view degrades gracefully on mobile — shows a read-only timeline with no drag interaction (FR12.6).
+
+#### Story 6.17: Calendar View (FR12.6, FR13.1–13.3)
+
+As a User,
+I want to view sheet rows as calendar events on a monthly or weekly calendar,
+So that I can manage date-driven workflows without switching to an external calendar tool.
+
+**Acceptance Criteria:**
+**Given** a sheet has at least one "Date" type column
+**When** I switch to "Calendar View"
+**Then** the view renders a monthly calendar (default) with each row appearing as an event chip on its date
+**And** I can toggle to "Week View" for a more granular hourly grid
+**And** clicking an event chip opens the Row Detail Side Panel (Story 6.9) without navigating away
+**And** multi-day rows (Start Date ≠ End Date) span across calendar days visually
+**And** the URL updates to `?view=calendar` — sharing the URL preserves the calendar view state (FR13.1, FR13.3)
+**And** the Calendar component uses the Launch UI calendar-01 pattern for visual consistency (FR13.2).
+
+#### Story 6.18: Card / Kanban View (FR12.6)
+
+As a User,
+I want to view sheet rows as cards grouped by a status column,
+So that I can manage workflow stages visually and see work-in-progress at a glance.
+
+**Acceptance Criteria:**
+**Given** a sheet has at least one "Dropdown" or "Status" type column
+**When** I switch to "Card View"
+**Then** the sheet renders as a Kanban board with one column per distinct dropdown option
+**And** each row appears as a card in its corresponding status column
+**And** I can drag cards between columns to update the row's status value in real time (synced via Yjs)
+**And** I can click a card to open the Row Detail Side Panel (Story 6.9)
+**And** Card View is the **default view on mobile** — if no Status column exists, the system prompts the user to designate one
+**And** the URL updates to `?view=card` for shareable state persistence (FR12.6, NFR per mobile default).
+
+## Epic 7: Document Control & Field Tools
+
+**Goal:** Implement the PDF Engine for hosting specs/plans, rendering blueprints on mobile, and the suite of Field Tools (Tasks, Schedule, Specs) for execution.
+**Value:** James can markup a blueprint change and immediately link it to a Task, while Mike can check the Schedule dependencies offline.
+
+### Story 7.1: Quick Field Task Creation (Photo + Voice)
+
+As a Field Tech,
+I want to create a Task with a photo from the field,
+So that I can document a conflict without stopping work to type.
+
+**Acceptance Criteria:**
+**Given** I am in the Task module
+**When** I tap "New Task"
+**Then** the camera interface opens immediately
+**And** I can capture a photo and record a 30s voice note
+**And** the Task is saved as a "Draft" locally (offline-first)
+**And** the Task is automatically tagged with my current GPS coordinates
+**And** I can optionally link the Task to a "Space" on the active Blueprint.
 
 ### Story 7.2: Spec Library & Search
 
@@ -1101,7 +1511,7 @@ So that the AI can answer questions about them with semantic vector search.
 **And** applies a strict Token Usage Cap ($50/month hard limit) (PM #6)
 **And** upserts the embedding into **Pinecone** with `projectId` and `submissionId` as metadata fields for tenant-scoped retrieval
 **And** supports k-NN semantic search for the AI assistant queries (FR8.2)
-**And** the `VectorEmbedding` DynamoDB entity stores the Pinecone vector ID and metadata for deletion/audit.
+**And** the `VectorEmbeddingEntity` DynamoDB entity stores the Pinecone vector ID and metadata for deletion/audit.
 
 ### Story 10.2: Magic Forward (Email Ingestion)
 

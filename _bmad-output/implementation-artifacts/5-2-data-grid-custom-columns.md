@@ -13,7 +13,7 @@ So that I can analyze specific data points.
 1. **Given** I am viewing the "Daily Logs" form data
 2. **When** I toggle "Show only Failed Items"
 3. **Then** the grid updates instantly (using `<DataTable />` wrapper around TanStack Table + Shadcn UI) (Arch #3)
-4. **And** I can save this view configuration for later (stored in `UserPreferences` DB table) (Lead Dev #7) (FR4.1, FR4.2)
+4. **And** I can save this view configuration for later (stored in `UserPreferenceEntity` in DynamoDB) (Lead Dev #7) (FR4.1, FR4.2)
 5. **And** I can toggle "Compact Mode" to see more rows (PM #5)
 6. **And** first columns are sticky and show a shadow cue when scrolling horizontally (QA #2)
 
@@ -24,7 +24,7 @@ So that I can analyze specific data points.
   - [ ] Implement virtualization for large datasets (if needed, or pagination)
   - [ ] Implement column definitions factory for dynamic form fields
 - [ ] View Configuration & Persistence (AC 2, 4)
-  - [ ] Add `UserPreferences` model/fields to Prisma Schema (if not exists)
+  - [ ] Add `UserPreferenceEntity` to ElectroDB definitions
   - [ ] Create Server Actions for saving/loading grid state (columns, filters, sort)
   - [ ] Implement "Save View" UI dialog
 - [ ] Visual Customizations (AC 5, 6)
@@ -37,7 +37,7 @@ So that I can analyze specific data points.
 - **Architecture Constraints**:
   - Use `tanstack/react-table` headers and cell renderers.
   - Logic must live in `src/features/projects` (likely `components/submission-grid`).
-  - View config should be `JSONB` in Postgres.
+  - **Persistence**: View config should be an attribute in DynamoDB.
   - Must handle dynamic columns based on the Form Schema version.
 
 - **Testing Standards**:
@@ -49,7 +49,7 @@ So that I can analyze specific data points.
 
 - `src/components/ui/data-table` (Generic, if not exists)
 - `src/features/projects/components/SubmissionGrid.tsx` (Specific)
-- `src/server/api/routers/project.ts` (or `user-preferences.ts`)
+- `apps/backend/src/entities/user-preference.entity.ts`
 
 ### References
 

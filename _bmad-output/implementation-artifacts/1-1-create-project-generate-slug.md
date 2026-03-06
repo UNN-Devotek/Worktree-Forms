@@ -16,16 +16,16 @@ so that I can establish a secure workspace for my team.
 2.  **When** I click "Create Project" and enter "Headquarters Reno"
 3.  **Then** a new Project entity is created with slug `headquarters-reno`
 4.  **And** I am redirected to `/project/headquarters-reno`
-5.  **And** a dedicated MinIO bucket path `/project-uuid/` is reserved (using UUID not Slug to allow renaming) (Arch #9)
+5.  **And** a dedicated S3 bucket path `/project-uuid/` is reserved (using UUID not Slug to allow renaming) (Arch #9)
 6.  **And** I am assigned the "Owner" role for this project
 7.  **And** long project names are truncated with an ellipsis and show full text on hover (QA #4).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: S3/MinIO Client Setup (AC: 5)
+- [ ] Task 1: S3 Client Setup (AC: 5)
   - [ ] Install `@aws-sdk/client-s3`
   - [ ] Create `apps/frontend/lib/storage.ts` with `ensureProjectBucket`
-  - [ ] Configure `MINIO_` env vars in `apps/frontend/.env`
+  - [ ] Configure `S3_` env vars in `apps/frontend/.env.local` (LocalStack)
 
 - [ ] Task 2: Project Creation & Storage Integration (AC: 3, 5, 6)
   - [ ] Update `createProject` in `project-actions.ts` to call `ensureProjectBucket`
@@ -34,8 +34,8 @@ so that I can establish a secure workspace for my team.
 - [ ] Task 3: Verification (AC: 1, 2, 4, 7)
   - [ ] Verify slug generation (already done in 1.0, but double check)
   - [ ] Verify Owner role assignment (already done in 1.0)
-  - [ ] Verify MinIO folder creation (`.keep` file)
-  - [ ] Verify generic MinIO access
+  - [ ] Verify S3 folder creation (`.keep` file in LocalStack)
+  - [ ] Verify generic S3 access via SDK
 
 ## Dev Notes
 

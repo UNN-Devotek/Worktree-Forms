@@ -22,9 +22,9 @@ So that I can spot issues immediately.
   - [ ] Create `ProjectDashboardLayout`.
   - [ ] Add `@media print` styles to hide Sidebar/Nav.
 
-- [ ] **Task 2: Metrics Aggregation Service**
-  - [ ] Create `DashboardService.getMetrics(projectId)`.
-  - [ ] Aggregations: Count by Form Type, Completion Status.
+- [ ] **Task 2: Metrics Aggregation Logic**
+  - [ ] Implement `getDashboardMetrics(projectId)` using DynamoDB GSI.
+  - [ ] Aggregations: Count by Form Type, Completion Status via `ProjectEntity`.
 
 - [ ] **Task 3: Metrics Cards UI**
   - [ ] Create `MeticsGrid` component.

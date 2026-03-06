@@ -22,11 +22,11 @@ So that I know the correct mix to use.
   - [x] 1.1 Create story file
 
 - [x] 2. Implement Data Model
-  - [x] 2.1 Create `Specification` Prisma Model (`section`, `title`, `keywords`)
-  - [x] 2.2 Run Migration
+  - [x] 2.1 Create `SpecificationEntity` in ElectroDB (`section`, `title`, `keywords`)
+  - [x] 2.2 Index metadata in Pinecone for semantic search (FR21.2)
 
 - [x] 3. Backend Services
-  - [x] 3.1 Implement `SpecService` with search logic (Postgres ILIKE or Full Text)
+  - [x] 3.1 Implement search logic (DynamoDB FilterExpression or Pinecone Query)
   - [x] 3.2 Create `/api/projects/:projectId/specs` endpoints (Upload, List, Search)
 
 - [x] 4. Frontend UI
@@ -46,6 +46,5 @@ Antigravity (Retroactive Generation)
 
 ### File List
 
-- `apps/backend/src/services/spec.service.ts`
-- `apps/backend/prisma/schema.prisma`
+- `apps/backend/src/entities/specification.entity.ts`
 - `apps/frontend/features/specs/components/SpecList.tsx`

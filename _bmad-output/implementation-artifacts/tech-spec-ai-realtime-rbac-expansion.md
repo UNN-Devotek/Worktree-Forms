@@ -6,20 +6,20 @@ status: "ready-for-dev"
 stepsCompleted: [1, 2, 3, 4]
 tech_stack:
   - "Frontend: Next.js 14 (App Router)"
-  - "Backend: Express.js + Prisma + PostgreSQL"
-  - "AI: Vercel AI SDK (Gemini) wrapping Express API"
-  - "Real-Time: Yjs (separate container) + FortuneSheet"
-  - "PDF: pdf-lib (Backend) + react-pdf-highlighter (Frontend)"
-  - "Persistence: Redis (for Yjs, Rate Limits, Queues)"
+  - "Backend: AWS DynamoDB + ElectroDB"
+  - "AI: Pinecone + Vercel AI SDK (Gemini)"
+  - "Real-Time: Hocuspocus + Yjs + TanStack Table"
+  - "PDF: pdf-lib (Backend)"
+  - "Persistence: AWS ElastiCache for Redis 7 (BullMQ)"
 files_to_modify:
-  - "apps/backend/prisma/schema.prisma"
-  - "apps/backend/src/middleware/auth.ts"
+  - "apps/backend/src/entities/**"
+  - "apps/backend/src/middleware/rbac.ts"
   - "apps/frontend/features/ai-assistant/tools.ts"
   - "docker-compose.yml"
 code_patterns:
-  - "API Wrapper Proxy (AI Tools -> Express API)"
-  - "Middleware Interceptor (Compliance in Express)"
-  - "CRDT State Sync (Sheets via Yjs container)"
+  - "ElectroDB Entities (Single-table design)"
+  - "RBAC Middleware (requireProjectAccess)"
+  - "Hocuspocus Provier (Real-time sync)"
 test_patterns:
   - "Unit Tests for Logic Engine"
   - "E2E Tests for Real-Time Sync"
@@ -37,15 +37,15 @@ The current platform lacks real-time collaboration for data grids, forcing users
 
 ### Solution
 
-Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gemini) that wraps existing Express API endpoints; a Real-Time Spreadsheet engine (FortuneSheet + Yjs) for sub-second collaboration; a PDF Form Builder with "Burn-in" capability; and a Two-Tier RBAC system with External Compliance Gates.
+Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gemini) with Pinecone-backed RAG; a Real-Time Spreadsheet engine (TanStack Table + Hocuspocus) for sub-second collaboration; a PDF Form Builder with "Burn-in" capability; and a Two-Tier RBAC system with `requireProjectAccess` middleware.
 
 ### Scope
 
 **In Scope:**
 
-- **Global AI Assistant**: Vercel AI SDK integration with Google Gemini. Tools will wrap `lib/api.ts` calls to the Express Backend.
-- **Real-Time Sheets**: FortuneSheet components backed by Yjs and a dedicated WebSocket service.
-- **PDF Engine**: `pdf-lib` for backend generation (Auto-Layout for standard forms), `react-pdf-highlighter` for template mapping.
+- **Global AI Assistant**: Vercel AI SDK integration with Google Gemini + Pinecone.
+- **Real-Time Sheets**: TanStack Table components backed by Hocuspocus and Yjs.
+- **PDF Engine**: `pdf-lib` for backend generation.
 - **Two-Tier RBAC**: Database migration for System vs. Project roles. Admin UI for role management.
 - **Compliance Gates**: Express Middleware interception for external users and a verification wizard.
 - **Enterprise Features**: Webhooks, Data Retention, Project JSON Export, Storage Quotas.
@@ -59,28 +59,27 @@ Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gem
 
 ### Codebase Patterns
 
-- **Separated Architecture**: Frontend (Next.js) talks to Backend (Express) via REST API.
-- **Auth**: JWT based. AI must forward user's JWT.
-- **Missing Project Entity**: The schema currently lacks a `Project` table.
+- **Modular Monolith**: App Router features talk to DynamoDB via ElectroDB.
+- **Auth**: Auth.js v5.
+- **Project Scope**: All entities prefixed with `PROJECT#<projectId>` in DynamoDB.
 - **API Definition**: `apps/frontend/lib/api.ts` contains the client-side definition of endpoints.
 
 ### Files to Reference
 
-| File                                  | Purpose                                 |
-| ------------------------------------- | --------------------------------------- |
-| `apps/backend/prisma/schema.prisma`   | DB Schema (needs RBAC + Project update) |
-| `apps/frontend/lib/api.ts`            | Frontend API Client (AI Tool Source)    |
-| `apps/backend/src/index.ts`           | Backend Entry Point                     |
-| `apps/frontend/lib/conditional-logic` | Existing Form Logic (Client side)       |
+| File                                  | Purpose                     |
+| ------------------------------------- | --------------------------- |
+| `apps/backend/src/entities/`          | DynamoDB Schema (ElectroDB) |
+| `apps/backend/src/middleware/rbac.ts` | Access Control Middleware   |
+| `apps/backend/src/index.ts`           | Backend Entry Point         |
 
 ### Technical Decisions
 
 - **AI Tools**: `createAiTool` factory wraps `apiRequest`.
   - **Auth Constraint**: The AI must receive the user's JWT from the client session and explicitly forward it in the `Authorization` header.
   - **Safety**: "List" tools must enforce Hard Pagination (Limit: 50).
-- **Yjs Server**: Deploy as a separate Docker service (`worktree-websocket`).
-  - **Auth Constraint**: Must share `JWT_SECRET`. Implement **Sliding Sessions**.
-  - **Persistence**: Use **Redis** adapter.
+- **Hocuspocus Server**: Deploy as a separate ECS service.
+  - **Auth**: Auth.js session validation.
+  - **Persistence**: Use **Redis** (ElastiCache).
 - **RBAC**: Implement "Two-Tier" (`SystemRole`, `ProjectRole`). Middleware validates `ProjectMember`.
 - **Compliance**:
   - **Security**: Strict `multer` file filter (PDF/Images only).
@@ -95,22 +94,20 @@ Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gem
 
 #### 1. Database & Infrastructure
 
-- [ ] Task 1: Update Prisma Schema
-  - File: `apps/backend/prisma/schema.prisma`
-  - Action: Add `Project`, `SystemRole`, `ProjectRole`, `ProjectMember`, `ComplianceRequirement`, `ComplianceRecord`, `IntegrationSecret` (Encrypted), `ApiKey` (Hashed), `Webhook`. Add indexes `@@index([projectId])`, `@@index([keyHash])`.
-  - Notes: Include `seed.ts` for "Default Project" validation.
+- [ ] Task 1: Update ElectroDB Entities
+  - File: `apps/backend/src/entities/`
+  - Action: Add `Project`, `ProjectMember`, `ComplianceRequirement`, `ComplianceRecord`, `Webhook`.
+  - Notes: Ensure PK follows `PROJECT#<id>` pattern.
 
-- [ ] Task 2: Configure Redis & WebSocket Service
-  - File: `docker-compose.yml`, `apps/websocket-server/package.json`
-  - Action: Add `redis` service. specific `worktree-websocket` service with `y-websocket` and Redis adapter.
-  - Notes: Ensure `JWT_SECRET` is passed to the WS container.
+- [ ] Task 2: Configure Redis & Hocuspocus
+  - File: `docker-compose.yml`
+  - Action: Add `redis` service. Configure `hocuspocus` middleware for Auth.js.
 
 #### 2. Backend Core (Express)
 
-- [ ] Task 3: Implement RBAC Middleware
-  - File: `apps/backend/src/middleware/auth.ts`
-  - Action: Create `validateProjectAccess` middleware. Checks `ProjectMember` table. Implement `EncryptionService` (AES-256) for Secrets.
-  - Notes: Handle 403 Forbidden with clear error messages.
+- [ ] Task 3: Implement `requireProjectAccess` Middleware
+  - File: `apps/backend/src/middleware/rbac.ts`
+  - Action: Validate Project + Role via `ProjectMemberEntity`.
 
 - [ ] Task 4: Compliance & Upload Hygiene
   - File: `apps/backend/src/services/compliance.service.ts`
@@ -136,8 +133,7 @@ Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gem
 
 - [ ] Task 8: Real-Time Sheets
   - File: `apps/frontend/features/sheets/SheetEditor.tsx`
-  - Action: Implement `FortuneSheet` with `useYjs`. Add Mobile Detection for **Card View** fallback.
-  - Notes: Lazy load this component (`ssr: false`).
+  - Action: Implement `TanStack Table` with `Hocuspocus`.
 
 - [ ] Task 9: Form Builder Hardening
   - File: `apps/frontend/lib/form-validation.ts`
@@ -164,8 +160,11 @@ Implement a comprehensive set of "Enterprise" features: a Global Agentic AI (Gem
 
 ### Dependencies
 
-- `@fortune-sheet/react`
-- `y-websocket`, `y-redis`
+- `@tanstack/react-table`
+- **Real-time Sync**: Standardize on `Hocuspocus` (using the Redis and Database extensions).
+  - [ ] Task 1.1: Standardize `ws-server` to use Hocuspocus.
+  - [ ] Task 1.2: Remove all `y-websocket` client providers.
+        Ensure centralized state management and valid RBAC.
 - `bullmq`
 - `pdf-lib`, `fontkit`
 - `zod-to-openapi`

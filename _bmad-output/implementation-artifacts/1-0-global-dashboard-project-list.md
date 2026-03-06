@@ -25,7 +25,7 @@ so that I can organize my work and access specific project data.
 
 - [x] Task 1: Project Actions (Server)
   - [ ] Create `apps/frontend/features/projects/server/project-actions.ts`
-  - [ ] Implement `getProjects()`: Fetch using `prisma.project.findMany` (with `where: { members: { some: { userId } } }`)
+  - [ ] Implement `getProjects()`: Fetch using `ProjectEntity` and `ProjectMemberEntity` via GSI.
   - [ ] Implement `createProject(data)`: Create Project + `ProjectMember` (Owner role) + Default `ProjectRoleDefinitions`.
 
 - [x] Task 2: Project List Components
@@ -42,7 +42,7 @@ so that I can organize my work and access specific project data.
 ### Architecture Patterns & Constraints
 
 - **Data Access**: Use Server Actions for mutations (`createProject`). Use Server Components for fetching (`getProjects`).
-- **RLS**: Remember, creating a project must also create existing `ProjectMember` record for the creator so they can see it.
+- **Tenant Isolation**: Remember, creating a project must also create existing `ProjectMember` record for the creator so they can see it via PK isolation.
 - **Slug Generation**: Use `nanoid` or simple regex for slugify.
 
 ### Project Structure Notes

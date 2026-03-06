@@ -18,7 +18,7 @@ Replace heavy, complex spreadsheet frameworks (AG Grid, Canvas-based grids) with
 
 - **UI Layer**: `components/ui/table.tsx` (Shadcn).
 - **Data Layer**: `@tanstack/react-table` (Headless logic for sorting, filtering, columns).
-- **Sync Layer**: `yjs` + `y-websocket` (Real-time state).
+- **Sync Layer**: `yjs` + `@hocuspocus/provider` (client) + **Hocuspocus** WebSocket server (real-time CRDT sync). _Note: `y-websocket` is NOT used — the project uses Hocuspocus as the WebSocket/persistence server, per the architecture decision in architecture.md §Smart Grid System._
 - **Virtualization**: `@tanstack/react-virtual` (For performance with 10k+ rows).
 - **Logic**: `hyperformula` (Keep for cell calculations, running in Web Worker).
 

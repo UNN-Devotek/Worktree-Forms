@@ -13,11 +13,13 @@ tasks:
 # Story 6.3: Rich Column Types
 
 ## Story
+
 As a Planner,
 I want to set columns to specific types like "Status" or "Person",
 So that data entry is standardized.
 
 ## Acceptance Criteria
+
 - [x] **Given** I add a "Status" column
 - [x] **When** I edit a cell in that column
 - [x] **Then** I see a Dropdown with colored badges (e.g., "In Progress" = Blue)
@@ -25,6 +27,7 @@ So that data entry is standardized.
 - [x] **And** "User" columns render Avatars and support searching Project Members.
 
 ## Dev Notes
+
 - **UI:** Smartsheet-style dropdowns.
-- **Schema:** `SheetColumn` in Postgres needs to store `type` and `options` JSON.
+- **Schema:** `SheetColumnEntity` in DynamoDB stores the `type` and `options` configuration.
 - **Interaction:** Single click to edit for Dropdowns, Double click for Text.

@@ -15,10 +15,19 @@ stepsCompleted:
   ]
 inputDocuments:
   - c:\Users\White\Documents\Worktree\Worktree\project-scope.md
-  - c:\Users\White\Documents\Worktree\Worktree\docs\minio-guide.md
+  - c:\Users\White\Documents\Worktree\Worktree\docs\s3-usage-guide.md
   - c:\Users\White\Documents\Worktree\Worktree\CLAUDE.md
 workflowType: "prd"
-lastStep: 11
+workflow: "edit"
+classification:
+  domain: "field_operations"
+  projectType: "saas_b2b, web_app, mobile_app"
+  complexity: "high"
+lastEdited: "2026-03-05"
+stepsCompleted: ['step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit']
+editHistory:
+  - date: "2026-03-05"
+    changes: "Systematic validation improvements (Traceability, Measurability, Leakage removal)"
 ---
 
 # Product Requirements Document - Worktree
@@ -33,13 +42,13 @@ lastStep: 11
 
 ## Executive Summary
 
-WorkTree is a self-hosted, simplified enterprise operations platform designed to centralize project management, data collection, and field operations. It unifies form building, route planning, PDF plan review, collaboration, and AI assistance into a single, secure web application.
+WorkTree is a cloud-hosted, simplified enterprise operations platform designed to centralize project management, data collection, and field operations. It unifies form building, route planning, PDF plan review, collaboration, and AI assistance into a single, secure web application powered by AWS managed services.
 
 The system is "Project-Based," meaning a **Project** (e.g., a specific client job or site visit) is the central unit to which all forms, routes, files, chats, and plans are attached.
 
 ### What Makes This Special
 
-Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, WorkTree **contextualizes data into Projects**. It bridges the gap between the back-office (Admin/Planning) and the field (Technicians), allowing data to flow seamlessly from a Smart Spreadsheet to a Route Plan, and from a Form Submission back into the Project Record, all within a self-hosted, secure environment.
+Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, WorkTree **contextualizes data into Projects**. It bridges the gap between the back-office (Admin/Planning) and the field (Technicians), allowing data to flow seamlessly from a Smart Spreadsheet to a Route Plan, and from a Form Submission back into the Project Record, all within a secure, AWS-managed environment.
 
 ## Innovation & Novel Patterns
 
@@ -80,7 +89,7 @@ Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, 
   1. Upload Certificate of Insurance.
   2. Electronically Sign the Site Safety Plan.
   3. Enter Emergency Contact Info.
-- **State Machine**: Uses a strict `compliance_status` (PENDING | APPROVED | REJECTED) on the user-project relation to enforce access logic at the middleware level.
+- **State Machine**: Uses a strict `compliance_status` (PENDING | APPROVED | REJECTED) on the `ProjectMember` entity (ElectroDB) to enforce access logic at the middleware level.
 
 ### 7. Value-Add Data Architecture
 
@@ -111,9 +120,11 @@ Unlike standalone form builders (SurveyJS, Typeform) or isolated routing tools, 
 
 ## Success Criteria
 
-1.  **Real-Time Stability**: Zero data loss during "offline-to-online" re-sync events (verified via Yjs sync tests).
-2.  **PDF Fidelity**: Exported PDF visual layout matches the Editor overlay coordinates exactly (pixel-perfect).
-3.  **AI Authorization**: The AI Assistant successfully declines requests for which the user lacks permission (verified via test suite).
+1.  **Real-Time Stability**: Zero data loss during "offline-to-online" re-sync events (verified via sync protocol tests).
+2.  **PDF Fidelity**: Exported PDF visual layout matches the Editor overlay coordinates exactly (pixel-perfect alignment).
+3.  **AI Authorization**: The AI Assistant successfully declines requests for which the user lacks permission (verified via test suite enforcing a 0% failure rate).
+4.  **Route Planning Efficiency**: Route optimization calculation completes in under 5 seconds for up to 50 stops, reducing overall travel time by at least 15% across standard daily routes.
+5.  **Collaboration Responsiveness**: Live cursors and chat messages appear for all connected users in a workspace with under 250ms of latency at the 95th percentile.
 
 ### User Success
 
@@ -200,6 +211,24 @@ Sarah receives a massive "Material List" from a supplier in Excel format (500 ro
 
 She opens the **Smart Spreadsheet** in WorkTree, clicks the top-left cell, and hits `Ctrl+V`. The **Bulk-Paste Grid** instantly parses the clipboard data, creating 500 new rows in seconds. The system intelligently matches the "Part Number" column to update existing records and creates new ones for unknown parts, saving her 20 minutes of data entry work.
 
+### Journey 7: The Intelligent Assistant (Global AI & Authorization)
+
+During an active project, Sarah needs to restructure a massive "Parts Usage" sheet and find an old compliance form. She clicks the **Global AI Assistant** icon that persists across the application. She types: "Assign all open structural issues to Mike and add a 'Severity' column to the current view."
+
+The AI agent verifies her permissions transparently in the background, executing the multi-step request instantly. Later, when an invited Subcontractor attempts to ask the AI for project financials, the AI politely declines, strictly adhering to the RBAC and returning only responses authorized for their "Guest" role.
+
+### Journey 8: Connecting Systems (Enterprise Integrations)
+
+The IT Director, David, needs to integrate WorkTree with the company's existing ERP system. He logs into the Project Settings and navigates to the API Management tab. He generates a secure, hashed API Key with a scoped `read:forms` permission.
+
+He then configures an Outgoing Webhook to listen for the `submission.created` event. Next, he navigates to the auto-generated Swagger OpenAPI documentation page, quickly copying the exact JSON payload structures needed to map the incoming WorkTree form data into the ERP.
+
+### Journey 9: Deep Field Analysis (Tasks & Specs)
+
+Mike is on-site attempting to install a specialized concrete anchor. He encounters an unexpected rebar conflict. Offline and deep in the basement, he opens the **Specification Library** and searches for "Concrete Anchor Depth." He instantly pulls up the deeply indexed "03 30 00 - Concrete" document section.
+
+Finding no solution, he opens the **Schedule View** and marks his task as "Blocked". This instantly triggers the **Task Creation Workflow**. He snaps a photo, records an offline voice note describing the conflict, and attaches the Task to the specific spec section. Once back upstairs with a signal, the Task syncs and formally alerts Sarah for resolution, keeping the SLA timer strictly in check.
+
 ### Journey Requirements Summary
 
 - **Role-Based Interfaces**: Desktop (Admin), Mobile (Technician), Public (Client).
@@ -210,6 +239,9 @@ She opens the **Smart Spreadsheet** in WorkTree, clicks the top-left cell, and h
 - **Visual Data Grid**: Custom columns, thumbnail previews, lightbox.
 - **Integrated Document Control**: Versioning, Deep Linking, Annotation-to-Form.
 - **Public Project Links**: Secure, read-only external sharing.
+- **Advanced Assist**: Cross-app contextual AI interactions with strict permission enforcement.
+- **Developer Access**: Auto-documenting API structures and Webhooks with delivery persistence.
+- **Field Depth**: Offline specification searches, Schedule Blockers, and contextual Task creation.
 - **Human-Readable URLs**: Slug routing for all entities.
 
 ## Scope Refinements (From Party Mode)
@@ -226,33 +258,9 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 
 ### Technical Architecture Considerations
 
-- **Verified Tech Stack**:
-  - **Frontend/Backend**: Next.js 14 (App Router) using **Modular Monolith** architecture (Features as Aggregates).
-  - **Database**: PostgreSQL 16 with **Row-Level Security (RLS)** for multi-tenancy and **pgvector** for RAG.
-  - **Real-Time**: **Socket.io** + Redis Adapter for bi-directional Chat & Notifications.
-  - **Storage**: MinIO (S3 Compatible).
-  - **Feature Flags**: **Flagsmith** (Self-Hosted) for safe feature rollouts.
-
-- **Deployment Model**:
-  - **Platform**: **Coolify** (Self-Hosted PaaS) recommended for single-server "Push-to-Deploy" simplicity.
-  - **Containerization**: Application, DB, MinIO, and Redis in a single Docker network.
-  - **Redis Role**:
-    - **Job Queue**: **BullMQ** for high-throughput jobs (IMAP Ingestion, AI Rate Limiting).
-    - **Caching**: Storing aggregated Project Dashboard metrics.
-    - **Pub/Sub**: Driving Socket.io adapter.
-  - **Update Strategy**: "Pull & Restart" via Coolify/Watchtower.
-
-- **Permission Model (RBAC)**:
-  - **Standard Roles**: Owner, Admin, Member, Viewer.
-  - **Enforcement**: **Postgres RLS Policies** (e.g., `using (project_id = app.current_project_id)`) ensure lowest-level data isolation.
-
-- **API Strategy**:
-  - **Internal First**: REST API with specialized "Aggregate Endpoints" to minimize round-trips for the Mobile App.
-  - **Public Interfaces**: Webhooks only for MVP.
-
-- **Data Isolation**:
-  - **Logical Separation**: RLS enforcement allows multi-project hosting in a single DB while maintaining strict isolation.
-  - **Backups**: Automated pg_dump to S3.
+> [!NOTE]
+> Technical stack decisions are fully documented in [`architecture.md`](./architecture.md).
+> **Summary**: Next.js App Router + AWS DynamoDB (ElectroDB) + AWS S3 + AWS ElastiCache (Redis/BullMQ) + Pinecone (RAG) + ECS Fargate, with Hocuspocus for real-time collaboration and Auth.js for authentication. Local development mirrors production via Docker Compose with LocalStack (S3), DynamoDB Local, and Redis containers.
 
 ## Project Scoping & Phased Development
 
@@ -276,8 +284,8 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 - **Mobile App**: **Offline Sync**, Camera integration, Signature capture.
 - **Project Mgmt**: Dashboard (Metrics), Basic Route List.
 - **Security**: Standard Roles (Owner/Admin/Member), Private Links.
-- **Deployment**: Docker Compose (Self-Hosted).
-- **Field Tools**: **RFIs** (Draft Mode), **Specs** (Text Search), **Schedule** (List View).
+- **Deployment**: AWS ECS Fargate (Cloud-Native).
+- **Field Tools**: **Tasks** (Draft Mode), **Specs** (Text Search), **Schedule** (List View).
 
 ### Post-MVP Features
 
@@ -309,7 +317,7 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 
 ### Implementation Considerations
 
-- **Environment Config**: System must be configurable entirely via `.env` variables (e.g., `MINIO_ENDPOINT`, `POSTGRES_URL`).
+- **Environment Config**: System must be configurable entirely via `.env` variables (e.g., `DYNAMODB_ENDPOINT`, `REDIS_URL`, `S3_ENDPOINT`). Local dev variables point to Docker Compose service names; production omits endpoint overrides to use real AWS services.
 - **License Check**: (Future) Simple "Phone Home" or License Key check on startup to validate Enterprise status.
 
 ## Functional Requirements
@@ -320,27 +328,27 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 - **FR1.2**: Admin can configure field validation (Required, Regex, Min/Max).
 - **FR1.3**: Admin can enable "Conditional Visibility" logic.
 - **FR1.4**: Admin can configure "Smart Table" fields with pre-filled read-only headers.
-- **FR1.5**: System must automatically rename file uploads based on `[Field_Name]_[Date]` patterns.
-- **FR1.5.1**: **Object Hierarchy**: Files must be stored in MinIO with strict structure: `/{project_id}/{form_id}/{submission_id}/{filename}` to allow for organized bulk exports.
-- **FR1.6**: **Retroactive Renaming**: If a field is renamed, system must trigger a background job to rename all associated existing files.
+- **FR1.5**: Technician can upload files which the system automatically renames based on `[Field_Name]_[Date]` patterns.
+- **FR1.5.1**: **Object Hierarchy**: System structurally organizes all file uploads hierarchically (Project -> Form -> Submission) within S3-compatible Object Storage for bulk export indexing.
+- **FR1.6**: **Retroactive Renaming**: Admin can rename fields which automatically triggers the system to rename all associated existing files.
 - **FR1.7**: **PDF Form Mapping**: Admin can upload an existing PDF (e.g., Government Form) and drag-and-drop "Input Fields" overlaying the PDF.
-  - **Export**: When exported, the PDF should be "flattened" (burned) with the user's data in the correct positions, indistinguishable from a filled original PDF.
+  - **Export**: Admin can export the PDF, which the system "flattens" (burns) with the user's data in the correct positions, indistinguishable from a filled original PDF.
 
 ### FR2: Field Operations (Mobile App)
 
 - **FR2.1**: Technician can view their assigned route list sorted by distance.
 - **FR2.2**: Technician can "Deep Link" to native maps (Google/Apple).
 - **FR2.3**: **Offline Capability**: Technician can complete forms fully offline.
-- **FR2.4**: **Append-Only Ledger**: Mobile app maintains an immutable ledger of all operations. On re-connection, sync engine replays operations.
-- **FR2.4.1**: **Schema Migration**: If server schema has changed, system attempts to map old fields to new ones. If mapping fails, submission is Quarantined for Admin resolution.
-- **FR2.5**: **Image Optimization**: Mobile app must auto-compress images (e.g., to 1080p) before upload to optimize bandwidth.
+- **FR2.4**: **Append-Only Ledger**: Technician interacts with an immutable ledger of all operations on the mobile app. On re-connection, the sync engine replays operations.
+- **FR2.4.1**: **Schema Migration**: Technician submits offline data which the system attempts to map to new fields if the server schema has changed. If mapping fails, submission is Quarantined for Admin resolution.
+- **FR2.5**: **Image Optimization**: Technician can upload images which the mobile app auto-compresses (e.g., to 1080p) before upload to optimize bandwidth.
 - **FR2.6**: Technician can capture photos and sign forms via touchscreen.
 
 ### FR3: Project Organization
 
 - **FR3.1**: Admin can create "Projects" as containers for Forms, Routes, and Files.
 - **FR3.2**: Admin can view the "Project Dashboard" showing completion metrics and activity feed.
-- **FR3.3**: System must generate human-readable URL slugs for all Projects.
+- **FR3.3**: Admin can view human-readable URL slugs automatically generated for all Projects.
 
 ### FR4: Data Review & Reporting
 
@@ -349,28 +357,27 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 - **FR4.3**: Admin can view image thumbnails in grid and open in Lightbox.
 - **FR4.4**: **Export Suite**: Admin can export data to CSV, Excel, JSON, and PDF (including "Mapped PDF" exports).
 - **FR4.5**: **Bulk Media**: Admin can download all media files for a selection as a ZIP archive.
-- **FR4.9**: **Legacy Import**: System must retain the standard "Upload CSV > Map Columns" wizard for bulk data ingestion.
+- **FR4.9**: **Legacy Import**: Admin can use the standard "Upload CSV > Map Columns" wizard for bulk data ingestion.
 
 ### FR12: Real-Time Smart Grid (Smartsheet-Style)
 
-- **FR12.1**: **Live Collaboration**: Implement a custom "Live Table" using a DOM-based architecture (TanStack Table + Yjs).
-  - Must support sub-second real-time sync of cell data via **Hocuspocus** WebSocket server.
-  - Must support **User Presence** (Colored cursors/borders).
-  - **Latency Handling**: Use Optimistic Updates for local edits; reconcile via Yjs CRDTs.
+- **FR12.1**: **Live Collaboration**: User can edit cells concurrently with other users in a "Live Table" with sub-second real-time sync.
+  - User can view **User Presence** of others active in the sheet (Colored cursors/borders).
+  - **Latency Handling**: User edits are handled optimistically for immediate feedback and reconciled securely via distributed data structures (CRDT).
 - **FR12.2**: **Row-Centric Data Model**:
-  - Rows must be treated as entities with stable UUIDs (CUID).
-  - **Hierarchy**: Support parent/child row indentation (WBS) to create task groupings.
-  - **Drag & Drop**: Users can reorder Rows and Columns via drag-and-drop.
-  - **Row Detail**: Clicking a row ID opens a "Side Panel" containing Row-specific Chat, File Attachments, and Audit History. **Attachments must link to the Row ID, not the visual index.**
+  - System treats rows as entities with stable unique identifiers.
+  - **Hierarchy**: User can apply parent/child row indentation (WBS) to create task groupings.
+  - **Drag & Drop**: User can reorder Rows and Columns via drag-and-drop.
+  - **Row Detail**: User can click a row ID to open a "Side Panel" containing Row-specific Chat, File Attachments, and Audit History. **Attachments must link to the Row ID, not the visual index.**
 - **FR12.3**: **Rich Column Types**:
-  - **Standard**: Text, Number, Date, Checkbox, Dropdown (Single/Multi).
-  - **Advanced**: Contact List (Project Members), Symbols (RAG Status), Duration, Auto-Number.
-  - **System**: Created By, Created Date, Modified By, Modified Date (Auto-managed).
-  - **Validation**: Columns can have strict data validation rules (e.g., "Must be email").
+  - **Standard**: User can create Text, Number, Date, Checkbox, Dropdown (Single/Multi) columns.
+  - **Advanced**: User can create Contact List (Project Members), Symbols (RAG Status), Duration, and Auto-Number columns.
+  - **System**: Admin can view Created By, Created Date, Modified By, Modified Date (Auto-managed) columns.
+  - **Validation**: Admin can apply strict data validation rules to columns (e.g., "Must be email").
 - **FR12.4**: **Advanced Logic**:
-  - **Formulas**: Headless calculation engine (`=SUM(CHILDREN())`, `=VLOOKUP`) compatible with Excel syntax. **Running in a Web Worker** to prevent UI blocking.
-  - **Conditional Formatting**: Rules to change cell background/text color based on values.
-  - **Status Automation**: Rules to auto-update status (e.g., "If Progress=100%, set Status='Complete'").
+  - **Formulas**: User can write Excel-compatible formulas (`=SUM(CHILDREN())`, `=VLOOKUP`) that execute continuously in the background without blocking the UI.
+  - **Conditional Formatting**: User can apply rules to change cell background/text color based on values.
+  - **Status Automation**: User can configure rules to auto-update status (e.g., "If Progress=100%, set Status='Complete'").
 - **FR12.5**: **Smart Ingestion**:
   - **Import**: Wizard to ingest CSV/Excel files.
   - **Smart Upsert**: "Merge" mode allowing users to select a "Key Column" (e.g., SKU) to update existing rows instead of appending duplicates.
@@ -386,22 +393,22 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
   - **Column Permissions**: Admin can lock specific columns (e.g., "Cost") to be Read-Only for Editors.
   - **Guest Access**: Subcontractors can be restricted to view/edit only Rows they have "Claimed" or are Assigned to.
 - **FR12.8**: **AI Integration**:
-  - The Global AI Agent can perform sheet operations (`add_row`, `edit_cell`, `insert_column`) on behalf of the user, strictly scoped to their RBAC permissions.
+  - User can command the Global AI Agent to perform sheet operations (`add_row`, `edit_cell`, `insert_column`) on their behalf, strictly scoped to their RBAC permissions.
 
 ### FR12.9: Connected Workflows (Integration)
 
 - **Form-to-Sheet**:
-  - **Real-Time**: Submissions append rows to the Yjs document immediately via WebSocket (or Webhook acting as client).
-  - **Reliability**: Queue submissions if Sheet is offline; replay on reconnect.
+  - **Real-Time**: Technician submits forms which instantly append rows to the Smart Sheet.
+  - **Reliability**: Technician submissions are queued if the Sheet is offline and replay on reconnect.
 - **Sheet-to-Route**:
-  - **Bi-Directional**: Changing an address in the Sheet updates the Route Stop coordinates. Reordering Route Stops updates the 'Rank' column in the Sheet.
+  - **Bi-Directional**: Admin changes an address in the Sheet which instantly updates the Route Stop coordinates. Technician reorders Route Stops which instantly updates the 'Rank' column in the Sheet.
 
 ### FR5: Security & Administration (Self-Hosted)
 
 - **FR5.1**: Owner can invite users via email with Standard Roles.
-- **FR5.2**: **Invite Control**: Invites must expire after 48 hours and be revocable by Owner.
-- **FR5.3**: System must enforce role-based access control (RBAC) at the API level.
-- **FR5.4**: System must isolate data per instance (No Multi-Tenant/Cloud logic).
+- **FR5.2**: **Invite Control**: Owner can revoke invites, and the system must automatically expire invites after 48 hours.
+- **FR5.3**: User is authenticated and verified via role-based access control (RBAC) securely at the API level for every request.
+- **FR5.4**: Owner can deploy the platform in isolated per-instance environments (No Multi-Tenant/Cloud logic).
 - **FR5.5**: **Hybrid Roles**: Admin can create custom Roles (e.g., "Subcontractor") with specific CRUD permissions.
 - **FR5.6**: **Claim Logic**: Admin can toggle specific items/rows as "Claimable".
   - **Exclusive Claim**: Only one user can claim (locks row to Claimant + Admin).
@@ -413,164 +420,191 @@ WorkTree operates on a **Self-Hosted / Isolated Instance** model. This prioritiz
 ### FR6: Public Interfaces
 
 - **FR6.1**: Admin can generate a secure, read-only "Public Link" for a Project.
-- **FR6.2**: System must enforce password protection on Public Links if configured.
-- **FR6.3**: **Marketing Landing Page**: The root URL (`/`) must display a high-quality product showcase page detailing features (Offine Sync, Smart Tables, etc.) with a "Loom Video" embed and "Contact Sales" CTA. No pricing page required.
+- **FR6.2**: Guest encounters password protection on Public Links if configured.
+- **FR6.3**: **Marketing Landing Page & SEO Strategy (`seo_strategy`)**: Public User can view a high-quality product showcase page.
+  - **Meta Data**: The system must serve semantic, dynamic Title `<title>` and Meta `<meta name="description">` tags for the root domain and any public blog posts.
+  - **Sitemap**: An auto-generated `sitemap.xml` must dynamically include all public-facing marketing pages.
+  - **Open Graph**: Public Project Links must include rich Open Graph (`og:image`, `og:title`) tags summarizing the project state for rich previews.
 
 ### FR7: Collaboration & Action
 
-- **FR7.1**: **Universal Assignment**: Users can assign specific entities (Forms, Files, Sheet Rows) to other users.
-- **FR7.2**: **Action Inbox**: System provides a dedicated "Inbox" page listing all items assigned to the current user.
-- **FR7.3**: **Notification Engine**: System sends notifications (In-App, Email, PC/Mobile Push) when an item is assigned.
-- **FR7.4**: **Subscription Preferences**: Users can configure granular alerts (e.g., "Notify me on New Submission", "Notify me on Sheet Edit", "Notify me on Document Upload").
-- **FR7.5**: **Smart Linking**: Notifications must include a direct link to the specific item context (e.g., opening the specific Sheet Row in the side panel).
+- **FR7.1**: **Universal Assignment**: User can assign specific entities (Forms, Files, Sheet Rows) to other users.
+- **FR7.2**: **Action Inbox**: User can access a dedicated "Inbox" page listing all assigned items.
+- **FR7.3**: **Notification Engine**: User receives notifications (In-App, Email, Push) when an item is assigned.
+- **FR7.4**: **Subscription Preferences**: User can configure granular alerts (e.g., "Notify me on New Submission").
+- **FR7.5**: **Smart Linking**: User clicks notifications to open a direct link to the specific item context (e.g., opening the specific Sheet Row in the side panel).
 
 ### FR8: Advanced Automation
 
-- **FR8.1**: **Magic Forward**: System must accept email forwards to `new@worktree.com`, parse body/attachments via AI, and auto-create Project entities with correct Templates.
-- **FR8.2**: **RAG Engine**: System must index Project data (Forms, Chat, PDFs) for natural language querying.
-- **FR8.3**: **Contextual Compass**: Mobile app must monitor Geofence triggers to auto-launch specific Project Dashboards.
+- **FR8.1**: **Magic Forward**: Admin can forward emails to `new@worktree.com` which the system parses via AI to auto-create Project entities with correct Templates.
+- **FR8.2**: **RAG Engine**: User can submit natural language queries against indexed Project data (Forms, Chat, PDFs).
+- **FR8.3**: **Contextual Compass**: Technician receives auto-launched specific Project Dashboards triggered by mobile device geofencing.
 
 ### FR11: Global AI Assistant (Agentic)
 
-- **FR11.1**: **Persistent Chat Interface**: A "Global" AI button (bottom-right) accessible on every page.
-- **FR11.2**: **Autonomous Action**: The AI Agent must be capable of executing actions on behalf of the user via function calling.
+- **FR11.1**: **Persistent Chat Interface**: User can click a "Global" AI button accessible on every page.
+- **FR11.2**: **Autonomous Action**: User can command the Global AI Assistant to perform multi-step actions on their behalf.
   - **Supported Actions**:
     - Update Sheet Data (e.g., "Change status of row 5 to 'Done'").
     - Form Management (e.g., "Add a 'Reason' text field to the 'Inspection' form").
     - Assignment (e.g., "Assign all open issues to Mike").
     - Route Optimization (e.g., "Re-optimize my route starting from HQ").
-- **FR11.3**: **Context Awareness**: Agent must be aware of the "Current Page" context (e.g., if on a Sheet, "Update this row" refers to the selected row).
-- **FR11.4**: **Permission Enforcement**: The AI Agent operates strictly within the authenticated user's permission scope. It must verify (via Tool call or System Prompt) that the user is authorized to perform an action before execution. It cannot bypass RBAC or RLS policies.
-- **FR11.5**: **UI Implementation**: The Chat Interface should utilize the **Launch UI Proxx Chat Patterns** where applicable during UX design.
+- **FR11.3**: **Context Awareness**: User receives AI responses contextualized to the active page (e.g., if on a Sheet, "Update this row" refers to the selected row).
+- **FR11.4**: **Permission Enforcement**: User encounters strict permission enforcement when using the AI Agent; the Agent verifies authorization before execution and strictly adheres to RBAC policies.
+- **FR11.5**: **UI Implementation**: User interacts with a standardized, persistent chat interface overlay during AI interactions.
 
 ### FR13: Project Calendar
 
-- **FR13.1**: **Sheet Visualization**: Every "Smart Sheet" (if containing a Date column) must be viewable as a Calendar.
-- **FR13.2**: **UI Component**: Should leverage the **Launch UI Proxx Calendar Patterns** during UX design.
-- **FR13.3**: **Interactivity**: Clicking a calendar event opens the Sheet Row detail view (Side Panel).
+- **FR13.1**: **Sheet Visualization**: User can view every "Smart Sheet" (if containing a Date column) as a monthly or weekly Calendar.
+- **FR13.2**: **UI Component**: User navigates calendar data via a standardized interactive calendar view.
+- **FR13.3**: **Interactivity**: User can click a calendar event to open the Sheet Row detail view (Side Panel).
 
 ### 3.4 User Management & RBAC Strategy
 
 **Core Principle:** strict separation between "The Kingdom" (Site / SaaS Layer) and "The Castle" (Project Layer).
 
-1.  **Site-Wide Context (The Kingdom):**
-    - **Owner:** Full system control, billing, subscription.
-    - **Site Admin:** User management, integrations, system logs.
-    - **Project Creator:** Specific permission to spawn new Projects.
-    - **Member:** Can be invited into projects.
+#### Site-Wide & Project-Wide RBAC Matrix (`rbac_matrix`)
 
-2.  **Project-Wide Context (The Castle):**
-    - _Roles are Template-Defined (Snapshot Strategy). Updates to a Template do NOT affect existing projects._
-    - **Project Director:** Full Destructive Access (Delete Project). _Constraint: Cannot demote self if Last Director._
-    - **Project Manager:** Operational control (Invites, Forms, Sheets).
-    - **Foreman:** Field Leadership (Edit Sheets, Assign Routes).
-    - **Technician:** Execution Only (Append-Only Forms).
-    - **Guest:** Read-Only or Limited Scope (e.g., Subcontractor Visa).
+| Role                 | Scope  | Projects           | Forms/Sheets         | Users/Invites        | Billing/System |
+| :------------------- | :----- | :----------------- | :------------------- | :------------------- | :------------- |
+| **Owner**            | Global | Create/Delete All  | Full Access          | Manage Admins/All    | Full Access    |
+| **Site Admin**       | Global | Create/View All    | Full Access          | Manage Members       | View Only      |
+| **Project Director** | Local  | Delete Own Project | Full Access          | Manage Project Users | None           |
+| **Project Manager**  | Local  | View Only          | Create/Edit/Publish  | Invite to Project    | None           |
+| **Foreman**          | Local  | View Only          | Edit/Submit          | None                 | None           |
+| **Technician**       | Local  | View Only          | Submit (Append-Only) | None                 | None           |
+| **Guest**            | Local  | View Assigned      | View/Submit Claimed  | None                 | None           |
 
-3.  **Role Lifecycle Rules:**
-    - **Creation:** New Projects are seeded with default roles (Director, PM, Tech).
-    - **Deletion:** Deleting a Role triggers a "Migration Modal" requiring reassignment of all affected users.
-    - **Caching:** Permission changes take effect on **Next Login** (Session Refreshed).
-    - **Precedence:** Object Visibility (`Private`) > Role Permission (`Edit Sheet`).
+**Role Lifecycle Rules:**
+
+- **Creation:** New Projects are seeded with default roles (Director, PM, Tech).
+- **Deletion:** Deleting a Role triggers a "Migration Modal" requiring reassignment of all affected users.
+- **Revocation:** Permission changes take effect **immediately** — the server invalidates the affected session and dispatches an `auth:force_refresh` event via Redis pub-sub; the client re-validates without requiring logout.
+- **Precedence:** Object Visibility (`Private`) > Role Permission (`Edit Sheet`).
 
 ### 3.5 Intelligence & Automation
 
 > [!IMPORTANT]
 > Template-defined roles are strictly _Project Scoped_. Templates cannot define or modify Global System Roles to prevent privilege escalation.
 
+### 3.6 Platform & Device Targets (`platform_reqs`)
+
+WorkTree is a hybrid platform serving desk-bound administrators and field technicians.
+
+#### Browser Matrix (`browser_matrix`)
+
+- **Tier 1 (Fully Supported & Tested):** Chrome (latest 2 versions), Safari (latest 2 versions), Edge.
+- **Tier 2 (Functional, lightly tested):** Firefox.
+- **Mobile Browsers:** Safari (iOS), Chrome (Android) for public links and basic viewing.
+
+#### Mobile OS & Hardware Requirements
+
+- **iOS:** iOS 16+ (iPhone 11 or newer recommended for complex Smart Sheets).
+- **Android:** Android 11+ (4GB+ RAM recommended).
+- **Offline Storage:** Minimum 500MB free required for offline sync and local media caching.
+
+#### Native App Store Compliance (`store_compliance`)
+
+- **Apple App Store:** Must implement Sign-in with Apple if 3rd party auth (Google/Microsoft) is active. Must not link to external payment gateways for primary SaaS subscription.
+- **Google Play Store:** Must adhere to scoped storage access policies for Android 11+.
+
 ### FR15: External Compliance & Access Gates
 
-- **FR15.1**: **Compliance Requirements**: Projects can define "Gates" for external users (e.g., "Must upload Insurance Cert", "Must sign Safety Waiver").
-- **FR15.2**: **Access Control**: Attempting to view a shared Item (Form/Sheet Row) redirects the user to the Compliance Wizard if criteria are unmet.
-- **FR15.3**: **Identity Claiming**: External users can "claim" an item if they pass the compliance gate.
-  - **Verification**: Claiming requires **Email Magic Link** or **Verified Account** matching the invited email/contact. Simple URL possession is insufficient.
+- **FR15.1**: **Compliance Requirements**: Admin can define "Gates" for external users (e.g., "Must upload Insurance Cert", "Must sign Safety Waiver") on a per-project basis.
+- **FR15.2**: **Access Control**: Guest is automatically redirected to the Compliance Wizard when attempting to view a shared item if criteria are unmet.
+- **FR15.3**: **Identity Claiming**: Guest can "claim" an item if they pass the compliance gate.
+  - **Verification**: Guest claiming requires Email Magic Link or Verified Account matching the invited email/contact; simple URL possession is insufficient.
 
 ### FR10: User Personalization
 
-- **FR10.1**: **Profile Management**: Users can update their "Display Name" (separate from login email).
-- **FR10.2**: **Avatar Upload**: Users can upload a profile photo. System must auto-crop/resize to optimized dimensions (e.g., 256x256).
-- **FR10.3**: **Theme Preference**: Users can toggle between Light, Dark, or System Sync modes. This preference must persist across sessions and devices via the database.
+- **FR10.1**: **Profile Management**: User can update their "Display Name" (separate from login email).
+- **FR10.2**: **Avatar Upload**: User can upload a profile photo which the platform auto-crops/resizes to optimized dimensions.
+- **FR10.3**: **Theme Preference**: User can toggle between Light, Dark, or System Sync viewing modes, persisting across sessions.
 
 ### FR9: Universal Versioning (Time Travel)
 
-- **FR9.1**: **Entity History**: System must maintain a full edit history for **Forms**, **Sheets**, and **Routes**.
+- **FR9.1**: **Entity History**: User can access a full edit history for Forms, Sheets, and Routes.
 - **FR9.2**: **Granularity**:
-  - **Forms**: Versioned on "Publish" (Schema Versioning).
-  - **Sheets**: Versioned on "Cell Edit" (Audit Log) or "Snapshot" (Time Travel).
-  - **Routes**: Versioned on "Re-Optimization" or "Manual Reorder".
-- **FR9.3**: **Restore Capability**: Admin can view previous versions and "Rollback" to a specific state.
-- **FR9.4**: **Blame**: Every version/edit must be attributed to a specific User ID and Timestamp.
+  - **Forms**: User creates a version on "Publish" (Schema Versioning).
+  - **Sheets**: System version-controls operations on "Cell Edit" (Audit Log) or "Snapshot" (Time Travel).
+  - **Routes**: System version-controls states on "Re-Optimization" or "Manual Reorder".
+- **FR9.3**: **Restore Capability**: Admin can view previous versions and "Rollback" to a specific historical state.
+- **FR9.4**: **Blame**: User can view the attributing User ID and Timestamp for every versioned edit.
 
 ### FR16: Enterprise Integrations
 
-- **FR16.1**: **Outgoing Webhooks**: System must support "Event Subscriptions" (e.g., `submission.created`) sending JSON payloads to external URLs. Must include Retry Logic (Exponential Backoff).
+- **FR16.1**: **Outgoing Webhooks**: Admin can configure Outgoing Webhooks for Event Subscriptions (e.g., `submission.created`) sending JSON payloads to external URLs with retry logic.
 - **FR16.2**: **API Management**:
-  - **Incoming Keys**: Admin can generate "Hashed" API Keys with scopes (`read:forms`) for external scripts.
-  - **Outgoing Secrets**: Admin can securely save encrypted keys (OpenAI, Stripe) in the database.
-- **FR16.3**: **Auto-Documentation**: API must expose an **OpenAPI / Swagger** spec that is auto-generated from code to ensure accuracy.
+  - **Incoming Keys**: Admin can generate hashed API Keys with precise scopes for external scripts.
+  - **Outgoing Secrets**: Admin can securely save encrypted external API keys in the database.
+- **FR16.3**: **Auto-Documentation**: Developer can access an automatically generated standard API specification to ensure programmatic accuracy.
 
 ### FR17: Data Lifecycle & Hygiene
 
-- **FR17.1**: **Retention Policies**: Admin can configure TTL (Time To Live) for specific data types (e.g., "Delete Compliance Uploads after 90 days").
-- **FR17.2**: **Storage Quotas**: Projects must have hard storage caps (e.g., 5GB). System rejects uploads exceeding the quota.
-- **FR17.3**: **Project Portability**: Admin can **Export** a Project structure (Forms, Roles, Logic) to JSON and **Import** it into another instance (Migration).
+- **FR17.1**: **Retention Policies**: Admin can configure TTL (Time To Live) for specific data types.
+- **FR17.2**: **Storage Quotas**: User encounters hard storage caps (e.g., 5GB) where uploads exceeding the quota are rejected.
+- **FR17.3**: **Project Portability**: Admin can export a Project structure to a data payload and import it into another instance.
 
 ### FR18: FinOps & Monitoring
 
-- **FR18.1**: **Resource Budgeting**: System allows setting "Soft Caps" for AI Token usage and Storage.
-- **FR18.2**: **Alerts**: Admin receives an email notification if a Project exceeds its monthly budget (e.g., >$50 in Gemini tokens).
+- **FR18.1**: **Resource Budgeting**: Owner can set "Soft Caps" outlining budgets for AI Token usage and Storage.
+- **FR18.2**: **Alerts**: Owner receives an email notification if a Project exceeds its monthly defined budget limit.
 
 ### FR19: Help Center & Support
 
-- **FR19.1**: **Admin Studio**: Rich Text Editor (Plate.js) for creating support articles.
-- **FR19.2**: **Workflow**: Articles must support `DRAFT` (Admin Only) and `PUBLISHED` (Visible to All) states.
+- **FR19.1**: **Admin Studio**: Admin can write support articles using a collaborative Rich Text Editor.
+- **FR19.2**: **Workflow**: Admin can toggle articles between DRAFT and PUBLISHED states.
 - **FR19.3**: **Mobile Reader**:
-  - Articles must be cached for offline reading.
-  - Images must support **Pinch-to-Zoom**.
-- **FR19.4**: **Feedback Loop**: "Shake to Report" triggers a bug report form that auto-attaches device logs and screenshot.
+  - Technician accesses cached articles for offline reading.
+  - Technician can pinch-to-zoom on embedded article images.
+- **FR19.4**: **Device Integration & Native Permissions (`device_permissions`)**:
+  - **Feedback Loop**: User can trigger a real-time bug report form natively attached to device logs via a device "Shake" gesture.
+  - **Camera & Storage**: App explicitly prompts for "Camera" and "Photos/Media" permissions to capture and attach images to Submissions/Tasks.
+  - **Location (Always/In-Use)**: App explicitly prompts for "Always Allow" location permissions exclusively to trigger the "Contextual Compass" background geofencing feature (FR8.3). System degrades gracefully if denied.
+  - **Push Notifications**: App explicitly prompts for Push Notifications to deliver async alerts.
 
-### FR20: RFI Management (The Query Engine)
+### FR20: Task Management (The Query Engine)
 
-- **FR20.1**: **Creation Workflow**: Techs can create "Draft" RFIs offline (Photo + Voice Note).
-- **FR20.2**: **Polymorphic Context**: RFIs can be linked to a **Sheet Region**, **Schedule Task**, or **Spec Section**.
-- **FR20.3**: **Ball-in-Court Logic**: System tracks "Current Assignee" with visual SLA indicators (Green/Yellow/Red).
-- **FR20.4**: **Official Numbering**: RFIs get a sequential ID (RFI-001) only when "Opened" by the PM, distinguishing them from "Field Drafts".
+- **FR20.1**: **Creation Workflow**: Technician can create "Draft" Tasks universally offline consisting of a localized photo and voice note.
+- **FR20.2**: **Polymorphic Context**: Technician can link Tasks directly to a Sheet Region, Schedule Task, or Spec Section.
+- **FR20.3**: **Ball-in-Court Logic**: User can view the "Current Assignee" attached to visual SLA indicators (Green/Yellow/Red).
+- **FR20.4**: **Official Numbering**: Project Manager "Opens" a Task to generate a sequential official ID (TASK-001) distinct from field drafts.
 
 ### FR21: Specification Library (The Knowledge Base)
 
-- **FR21.1**: **Ingestion**: Admin uploads PDF Spec Book. System splits it into Sections (e.g., "03 30 00 - Concrete").
-- **FR21.2**: **Search**: Full-text search across all specs.
-- **FR21.3**: **Contextual Push**: System suggests relevant Spec Sections based on the Form being filled (e.g., "Concrete Pour" form -> show "03 30 00").
-- **FR21.4**: **Offline Availability**: Parsed text must be available offline. PDF images lazy-loaded.
+- **FR21.1**: **Ingestion**: Admin can upload a PDF Spec Book which the system splits into structural sections.
+- **FR21.2**: **Search**: User can execute full-text search across all spec divisions.
+- **FR21.3**: **Contextual Push**: User receives relevant Spec Section suggestions based on the active form context organically.
+- **FR21.4**: **Offline Availability**: Technician can access parsed specification text locally while offline; images load lazily when connected.
 
 ### FR22: Schedule Management (The Metronome)
 
-- **FR22.1**: **Import**: Support importing `.xml` (MS Project) or `.xer` (Primavera/P6) files.
-- **FR22.2**: **Desktop View**: "Strategy Room" split-view (Gantt Top / Resource Load Bottom).
-- **FR22.3**: **Mobile View**: "Task List" sorted by date. No complex Gantt rendering on phones.
-- **FR22.4**: **Blocker Logic**: "I am Blocked" button on any task triggers an RFI creation flow.
+- **FR22.1**: **Import**: Admin can import standard specialized schedule files (.xml or .xer).
+- **FR22.2**: **Desktop View**: Project Manager accesses a "Strategy Room" split-view containing the Gantt timeline and resource loads.
+- **FR22.3**: **Mobile View**: Technician views a simplified "Task List" sorted chronologically by date on mobile.
+- **FR22.4**: **Blocker Logic**: Technician interacting with an active task can initiate the "Blocker" flow which immediately generates a Task workflow.
 
 ## Non-Functional Requirements
 
 ### Mobile Performance & Reliability
 
-- **NFR1 (Sync Resilience)**: System must support **long-running background uploads** (up to 30+ minutes) on intermittent connections without timing out or corrupting data. Resumable uploads are required.
-- **NFR2 (Offline Startup)**: Mobile app must load to the "Route List" in < 2 seconds while completely offline.
-- **NFR3 (Battery Drain)**: Background sync must not consume more than 5% battery per hour of active field usage.
+- **NFR1 (Sync Resilience)**: System must support long-running background uploads (up to 30+ minutes) on intermittent connections without data corruption, measured by network disruption simulation scripts achieving 100% data recovery.
+- **NFR2 (Offline Startup)**: Mobile app must load to the "Route List" in under 2 seconds while completely offline, measured via automated mobile performance testing tool.
+- **NFR3 (Battery Drain)**: Background sync must not consume more than 5% battery per hour, measured by mobile OS battery profiling during a 1-hour active session test.
 
 ### Security (Self-Hosted)
 
-- **NFR4 (Data Encryption)**: All data at rest (DB + MinIO) must be encrypted using AES-256.
-- **NFR5 (Quarantine Safety)**: Quarantined submissions (sync conflicts) must be stored in a separate, encrypted local store on the device until resolved.
-- **NFR8 (Secrets Management)**: User-provided API Keys (OpenAI, etc.) must be encrypted at rest (Field-Level Encryption) in the database and never returned in plain text to the frontend.
+- **NFR4 (Data Encryption)**: All data at rest must be encrypted using AES-256 standard, measured via compliance audit and configuration review.
+- **NFR5 (Quarantine Safety)**: Quarantined submissions (sync conflicts) must be stored in a separate, encrypted local store on the device until resolved, measured via physical device inspection during sync conflict tests.
+- **NFR8 (Secrets Management)**: User-provided API Keys and integrations must be encrypted at rest in the database and restricted from plain-text frontend delivery, measured by database inspection and API payload audits.
 
 ### Scalability (Project-Centric)
 
-- **NFR6 (Large Projects)**: System must support projects with up to 10,000 form submissions without degradation of Dashboard load time (> 2s).
-- **NFR7 (Blueprint Rendering)**: PDF Blueprint viewer must render a 50MB vector PDF in < 3 seconds on a standard tablet (iPad Air equivalent).
-- **NFR9 (Real-Time Latency)**: "Smart Sheet" cursor updates must propagate to other users in < 200ms.
+- **NFR6 (Large Projects)**: System must support projects with up to 10,000 form submissions without degradation of Dashboard load time beyond 2 seconds, measured by a load testing suite with 10k mock submissions.
+- **NFR7 (Blueprint Rendering)**: PDF Blueprint viewer must render a 50MB vector PDF in under 3 seconds on a standard tablet interface, measured via tablet-based UI performance profiling.
+- **NFR9 (Real-Time Latency)**: "Smart Sheet" cursor updates and changes must propagate to other connected users in under 200ms, measured via distributed websocket performance testing framework.
 
 ### Inclusivity & Localization
 
-- **NFR1. **Accessibility (NFR12)\*\*: All UI components must use semantic HTML and include ARIA labels where necessary. The "Live Table" components must use standard HTML `<table>` elements with proper ARIA roles for screen reader compatibility.
-- **NFR13 (Localization)**: The platform must support **English (en-US)** and **Spanish (es-ES)** out of the box. Error messages and UI text must respect the user's `Accept-Language` header.
+- **NFR12 (Accessibility)**: All UI components must use semantic HTML and include ARIA labels natively, measured via automated accessibility scanners (e.g., axe-core) achieving a 100% initial pass rate.
+- **NFR13 (Localization)**: The platform must cleanly support dynamic language display (English, Spanish default out of box), measured via language switching UI automation tests covering all prominent interfaces.
