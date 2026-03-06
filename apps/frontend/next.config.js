@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  cacheMaxMemorySize: 0, // Disable in-memory ISR cache — use Redis for multi-instance ECS
+  cacheHandler: require.resolve("./lib/cache-handler.js"),
   turbopack: {
     resolveAlias: {
       // canvas is a native addon — redirect to empty stub so imports don't fail
