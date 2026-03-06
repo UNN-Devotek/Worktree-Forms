@@ -37,16 +37,16 @@ development_status:
   epic-0: in-progress
   0-1-dynamodb-schema-electrodb-entities: done
   0-2-s3-bucket-storage-service-swap: done
-  0-3-elasticache-redis-provisioning: backlog
-  0-4-pinecone-vector-search-setup: backlog
+  0-3-elasticache-redis-provisioning: done
+  0-4-pinecone-vector-search-setup: done
   0-5-nextauth-dynamodb-adapter: done
-  0-6-ecs-fargate-ecr-alb-pipeline: backlog
+  0-6-ecs-fargate-ecr-alb-pipeline: done
   0-7-environment-variable-migration: done
   0-8-local-dev-environment-seed-script: done
   0-9-integration-test-infrastructure-dynamodb: done
   0-10-redis-backed-nextjs-cache-stateless: done
   0-11-playwright-collaboration-test-infrastructure: backlog
-  0-12-codebase-sanitization-legacy-removal: done
+  0-12-codebase-sanitization-legacy-removal: ready-for-dev
   0-13-frontend-actions-tests-sanitization: ready-for-dev
   0-14-code-quality-sanitization: ready-for-dev
   0-15-system-hardening-sweep: ready-for-dev
@@ -81,7 +81,7 @@ development_status:
   2-3-smart-table-field: ready-for-dev
   2-4-form-schema-versioning: done
   2-5-restore-blame-form-history: done
-  2-6-retroactive-renaming: in-progress # BullMQ + MinIO → ElastiCache + S3
+  2-6-retroactive-renaming: done
   epic-2-retrospective: optional
 
   # Epic 3: Field Operations Mobile App (Offline First)
