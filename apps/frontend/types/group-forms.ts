@@ -222,8 +222,8 @@ export interface FormFieldBase {
   // Static Display Element Properties
   content?: string              // For text_element (HTML/rich text)
   headingLevel?: 1 | 2 | 3 | 4  // For heading element (H1-H4)
-  imageUrl?: string             // For image_element (MinIO URL)
-  imageObjectKey?: string       // For image_element (MinIO object key)
+  imageUrl?: string             // For image_element (S3 URL)
+  imageObjectKey?: string       // For image_element (S3 object key)
   imageAlt?: string             // For image_element accessibility
 
   // PDF Overlay Mapping (Epic 8)
@@ -296,7 +296,7 @@ export interface FormThemeConfig {
   background_color?: string       // Hex color
   text_color?: string            // Hex color
   border_radius?: number         // px
-  logo_url?: string              // MinIO object key
+  logo_url?: string              // S3 object key
   show_logo?: boolean
   font_family?: 'system' | 'sans' | 'serif' | 'mono'
   custom_css?: string            // Advanced: custom CSS overrides

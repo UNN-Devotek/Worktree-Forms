@@ -14,7 +14,7 @@ interface ImageElementProps {
 
 /**
  * Get the correct image URL from field data.
- * Prefers imageObjectKey (stored MinIO key) and constructs proper API URL.
+ * Prefers imageObjectKey (stored S3 key) and constructs proper API URL.
  * Falls back to imageUrl if no object key, fixing localhost URLs in production.
  */
 function getImageUrl(field: FormFieldBase): string | null {

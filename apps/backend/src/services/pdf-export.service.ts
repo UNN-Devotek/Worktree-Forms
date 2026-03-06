@@ -110,7 +110,7 @@ export class PdfExportService {
 
 /**
  * Generate a flattened PDF using a FormPDFOverlay configuration.
- * Downloads the background PDF from MinIO, overlays submission data, returns buffer.
+ * Downloads the background PDF from S3, overlays submission data, returns buffer.
  */
 export async function generateFlattenedPDF(
   overlayConfig: { pdfUrl: string; fields: Array<{ fieldId: string; x: number; y: number; page: number }> },
