@@ -24,3 +24,4 @@ export { ComplianceRecordEntity } from "../../../backend/src/lib/dynamo/entities
 export { PublicTokenEntity } from "../../../backend/src/lib/dynamo/entities/public-token.entity";
 export { ApiKeyEntity } from "../../../backend/src/lib/dynamo/entities/api-key.entity";
 export { WebhookEntity } from "../../../backend/src/lib/dynamo/entities/webhook.entity";
+export { InvitationEntity } from "../../../backend/src/lib/dynamo/entities/invitation.entity";
