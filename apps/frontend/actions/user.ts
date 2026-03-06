@@ -3,11 +3,10 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/database";
 import { revalidatePath } from "next/cache";
-import { s3Client } from "@/lib/storage";
+import { s3, S3_BUCKET } from "@/lib/storage";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getPresignedDownloadUrl } from "@/lib/storage";
 import sharp from "sharp";
-
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || "worktree";
 
 export async function updateTheme(theme: string) {
   const session = await auth();
@@ -72,22 +71,18 @@ export async function uploadAvatar(formData: FormData) {
 
     const key = `user-profiles/${session.user.id}/avatar.jpg`;
 
-    // Upload to MinIO
-    await s3Client.send(
+    // Upload to S3 / LocalStack
+    await s3.send(
       new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: S3_BUCKET,
         Key: key,
         Body: resizedBuffer,
         ContentType: "image/jpeg",
-        ACL: "public-read", // Ensure it's readable if policies allow
       })
     );
 
-    // Construct URL (Assuming Standard MinIO/S3 URL format)
-    // If using alias/proxy, adjust accordingly. 
-    // For local dev, generic s3 url might need fix, but MinIO usually `http://endpoint/bucket/key`
-    const endpoint = process.env.MINIO_PUBLIC_URL || "http://localhost:9000";
-    const imageUrl = `${endpoint}/${BUCKET_NAME}/${key}`;
+    // Generate a presigned download URL for the avatar
+    const imageUrl = await getPresignedDownloadUrl(key);
 
     // Update User Image in DB
     await db.user.update({

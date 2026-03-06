@@ -7,7 +7,7 @@ export function validateEnvironment(): void {
   const requiredVars = [
     'DATABASE_URL',
     'JWT_SECRET',
-    'MINIO_BUCKET_NAME',
+    'S3_BUCKET',
   ]
 
   const missingVars = requiredVars.filter(varName => !process.env[varName])
@@ -28,16 +28,15 @@ export function validateEnvironment(): void {
       )
     }
 
-    // Validate MinIO endpoint
-    const minioHost = process.env.MINIO_HOST || 'minio'
-    const minioEndpoint = process.env.MINIO_ENDPOINT || ''
+    // Validate S3 endpoint
+    const s3Endpoint = process.env.S3_ENDPOINT || ''
 
-    if (minioHost === 'localhost' && !minioEndpoint) {
+    if (s3Endpoint.includes('localhost')) {
       console.warn(
-        'WARNING: MINIO_HOST is set to localhost. This may fail in Docker. Use service name instead.'
+        'WARNING: S3_ENDPOINT contains localhost. This may fail in Docker. Use service name instead.'
       )
     }
   }
 
-  console.log('✓ Environment validation passed')
+  console.log('Environment validation passed')
 }

@@ -861,7 +861,7 @@ router.get('/submissions/:id/zip', async (req: Request, res: Response) => {
 
     for (const file of files) {
         try {
-            const bucketName = process.env.MINIO_BUCKET_NAME || 'worktree-files';
+            const bucketName = process.env.S3_BUCKET || 'worktree-local';
             const command = new GetObjectCommand({
                 Bucket: bucketName,
                 Key: file.objectKey

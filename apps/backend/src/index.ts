@@ -206,7 +206,7 @@ async function initializeStorage() {
   try {
     await StorageService.ensureBucket();
   } catch (error) {
-    console.warn('⚠️  MinIO bucket initialization failed. Bucket will be created on first upload.');
+    console.warn('S3 bucket initialization failed. Bucket will be created on first upload.');
   }
 }
 

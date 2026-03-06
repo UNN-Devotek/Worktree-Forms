@@ -15,7 +15,7 @@ export interface FileUploadRecord {
 
 export class UploadService {
   /**
-   * Upload file to MinIO and create database record
+   * Upload file to S3 and create database record
    * Returns file metadata including object key
    *
    * @param file - Express multer file object
@@ -41,10 +41,10 @@ export class UploadService {
       // Ensure bucket exists
       await StorageService.ensureBucket();
 
-      // Upload to MinIO
-      console.log(`⏳ Uploading to MinIO...`);
+      // Upload to S3
+      console.log(`⏳ Uploading to S3...`);
       await StorageService.uploadFile(objectKey, file.buffer, file.mimetype);
-      console.log(`✅ File uploaded to MinIO successfully`);
+      console.log(`✅ File uploaded to S3 successfully`);
 
       // Create database record
       console.log(`💾 Creating database record...`);
@@ -96,7 +96,7 @@ export class UploadService {
    * Get file URL from object key
    * Returns backend proxy URL (not presigned URL)
    *
-   * @param objectKey - MinIO object key (e.g., "form_uploads/abc123.pdf")
+   * @param objectKey - S3 object key (e.g., "form_uploads/abc123.pdf")
    * @returns Full URL for browser access
    */
   static getFileUrl(objectKey: string): string {
@@ -107,7 +107,7 @@ export class UploadService {
   /**
    * Get file record from database by object key
    *
-   * @param objectKey - MinIO object key
+   * @param objectKey - S3 object key
    * @returns File upload record or null
    */
   static async getFileByObjectKey(objectKey: string): Promise<FileUploadRecord | null> {
@@ -117,17 +117,17 @@ export class UploadService {
   }
 
   /**
-   * Delete file from MinIO and database
+   * Delete file from S3 and database
    *
-   * @param objectKey - MinIO object key to delete
+   * @param objectKey - S3 object key to delete
    */
   static async deleteFile(objectKey: string): Promise<void> {
     console.log(`🗑️  Deleting file: ${objectKey}`);
 
     try {
-      // Delete from MinIO
+      // Delete from S3
       await StorageService.deleteFile(objectKey);
-      console.log(`✅ File deleted from MinIO`);
+      console.log(`✅ File deleted from S3`);
 
       // Delete from database
       await prisma.fileUpload.delete({
@@ -144,7 +144,7 @@ export class UploadService {
   /**
    * Associate uploaded files with a form submission
    *
-   * @param objectKeys - Array of MinIO object keys
+   * @param objectKeys - Array of S3 object keys
    * @param submissionId - Form submission ID
    */
   static async linkFilesToSubmission(objectKeys: string[], submissionId: number): Promise<void> {

@@ -4,7 +4,7 @@ import { db } from "@/lib/database";
 import { auth } from "@/auth"; 
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-import { ensureProjectBucket } from "@/lib/storage";
+import { ensureProjectFolder } from "@/lib/storage";
 
 export type ProjectData = {
   name: string;
@@ -145,11 +145,12 @@ export async function createProject(data: ProjectData) {
     // If this fails, we effectively have a project without a folder. 
     // We could compensate by deleting the project, or just let it exist and retry later.
     // For this story, we will fail hard if storage fails to ensure compliance.
-    const storageResult = await ensureProjectBucket(project.id);
-    if (!storageResult.success) {
-        // Compensation: Delete the project we just created (Simplistic Saga)
-        await db.project.delete({ where: { id: project.id } });
-        throw new Error("Failed to reserve storage bucket. Project creation rolled back.");
+    try {
+      await ensureProjectFolder(project.id);
+    } catch (storageError) {
+      // Compensation: Delete the project we just created (Simplistic Saga)
+      await db.project.delete({ where: { id: project.id } });
+      throw new Error("Failed to reserve storage folder. Project creation rolled back.");
     }
 
     revalidatePath("/dashboard");
