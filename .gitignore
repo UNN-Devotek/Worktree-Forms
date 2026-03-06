@@ -52,7 +52,8 @@ postgres_data/
 # Temp
 .tmp/
 *.temp
-tests
+tests/legacy/
+tests/component/
 test_results
 playwright-report
 .env.dokploy

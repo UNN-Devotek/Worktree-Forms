@@ -10,8 +10,10 @@
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --reporter=verbose",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "remotion:studio": "remotion studio remotion/index.ts"
   },

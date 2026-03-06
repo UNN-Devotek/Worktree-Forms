@@ -16,5 +16,21 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: [],
+    include: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    exclude: ['node_modules', '.next', 'e2e'],
+    testTimeout: 15000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['features/**/*.ts', 'features/**/*.tsx', 'lib/**/*.ts'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/__tests__/**',
+      ],
+      thresholds: {
+        lines: 80,
+      },
+    },
   },
 })

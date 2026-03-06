@@ -13,8 +13,10 @@
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --reporter=verbose",
+    "test:coverage": "vitest run --coverage",
     "seed": "tsx --env-file=.env src/seed.ts"
   },
   "dependencies": {
