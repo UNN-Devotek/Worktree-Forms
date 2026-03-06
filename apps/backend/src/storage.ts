@@ -1,103 +1,70 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { NodeHttpHandler } from '@smithy/node-http-handler';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadBucketCommand,
+  CreateBucketCommand,
+  CopyObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// MinIO endpoint configuration
-const MINIO_HOST = process.env.MINIO_HOST;
-const MINIO_PORT = parseInt(process.env.MINIO_PORT || '9004');
-const MINIO_USE_SSL = process.env.MINIO_USE_SSL === 'true';
-
-// Public MinIO endpoint for presigned URLs and external access
-const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || process.env.NEXT_PUBLIC_MINIO_URL || '';
-
-// Determine endpoint: prioritize MINIO_HOST for internal networking
-let endpoint: string;
-let useExternalEndpoint = false;
-
-if (MINIO_HOST && MINIO_HOST !== 'undefined' && MINIO_HOST !== '') {
-  // Use internal Docker networking (MINIO_HOST is set)
-  // FORCE PORT 9000 for internal Docker networking, because MINIO_PORT usually reflects the external mapping (9004)
-  endpoint = `${MINIO_USE_SSL ? 'https' : 'http'}://${MINIO_HOST}:9000`;
-  console.log(`📦 Using Internal MinIO Endpoint: ${endpoint}`);
-} else if (MINIO_PUBLIC_URL) {
-  // Fallback to external endpoint
-  endpoint = MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`;
-  useExternalEndpoint = true;
-  console.log(`🌐 Using External MinIO Endpoint: ${endpoint}`);
-} else {
-  // Default fallback
-  endpoint = 'http://minio:9000';
-  console.log(`📦 Using Default MinIO Endpoint: ${endpoint}`);
-}
-
-if (!process.env.MINIO_ACCESS_KEY || !process.env.MINIO_SECRET_KEY) {
-  console.warn('⚠️  MINIO_ACCESS_KEY or MINIO_SECRET_KEY not set. Storage operations will fail.');
-}
-
-console.log(`🪣 MinIO Bucket: ${process.env.MINIO_BUCKET_NAME || 'worktree'}`);
-
-// S3Client configuration
-// Use longer timeout for external endpoints (30s), shorter for internal (10s)
-const requestTimeout = useExternalEndpoint ? 30000 : 10000;
-
-export const s3Client = new S3Client({
-  region: process.env.MINIO_REGION || 'us-east-1',
-  endpoint: endpoint,
-  credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || '',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || '',
-  },
-  forcePathStyle: true, // Needed for MinIO
-  requestHandler: new NodeHttpHandler({
-    requestTimeout: requestTimeout,
-    connectionTimeout: 10000,
+export const s3 = new S3Client({
+  region: process.env.AWS_REGION ?? "us-east-1",
+  ...(process.env.S3_ENDPOINT && {
+    endpoint: process.env.S3_ENDPOINT,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "local",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "local",
+    },
   }),
 });
 
-// Use same client for presigned URLs when using external endpoint
-// When using internal endpoint, create separate client with public URL for presigned URLs
-const publicS3Client = (!useExternalEndpoint && MINIO_PUBLIC_URL) ? new S3Client({
-  region: process.env.MINIO_REGION || 'us-east-1',
-  endpoint: MINIO_PUBLIC_URL.startsWith('http') ? MINIO_PUBLIC_URL : `https://${MINIO_PUBLIC_URL}`,
-  credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || '',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || '',
-  },
-  forcePathStyle: true,
-  requestHandler: new NodeHttpHandler({
-    requestTimeout: 30000,
-    connectionTimeout: 10000,
-  }),
-}) : s3Client; // Use same client for external endpoint or if no public URL
+/** @deprecated Use named import `s3` instead. Kept for backward compatibility. */
+export const s3Client = s3;
 
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'worktree';
+export const S3_BUCKET = process.env.S3_BUCKET ?? "worktree-local";
+
+/**
+ * Rewrites internal Docker hostname in presigned URLs to host-accessible address.
+ * Only applies in local dev (when S3_ENDPOINT contains "localstack").
+ * Production presigned URLs are returned unchanged.
+ */
+function rewriteForBrowser(url: string): string {
+  const endpoint = process.env.S3_ENDPOINT ?? "";
+  if (endpoint.includes("localstack")) {
+    return url.replace("http://localstack:4510", "http://localhost:4510");
+  }
+  return url;
+}
 
 export class StorageService {
-  
-  static async ensureBucket() {
-    console.log(`🔍 Checking if bucket '${BUCKET_NAME}' exists...`);
+  static async ensureBucket(): Promise<void> {
+    console.log(`Checking if bucket '${S3_BUCKET}' exists...`);
     try {
-      // Check if bucket exists
-      await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
-      console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
-    } catch (error: any) {
-      console.log(`📝 Bucket check failed: ${error.name || error.message}`);
-      // If bucket doesn't exist, create it
-      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      await s3.send(new HeadBucketCommand({ Bucket: S3_BUCKET }));
+      console.log(`S3 bucket '${S3_BUCKET}' already exists`);
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
         try {
-          console.log(`🏗️  Creating bucket '${BUCKET_NAME}'...`);
-          await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
-          console.log(`✅ MinIO bucket '${BUCKET_NAME}' created successfully`);
-        } catch (createError: any) {
-          // Ignore if bucket already exists (race condition)
-          if (createError.name !== 'BucketAlreadyOwnedByYou' && createError.name !== 'BucketAlreadyExists') {
-            console.error('❌ Failed to create MinIO bucket:', createError.message);
+          console.log(`Creating bucket '${S3_BUCKET}'...`);
+          await s3.send(new CreateBucketCommand({ Bucket: S3_BUCKET }));
+          console.log(`S3 bucket '${S3_BUCKET}' created successfully`);
+        } catch (createError: unknown) {
+          const ce = createError as { name?: string };
+          if (
+            ce.name !== "BucketAlreadyOwnedByYou" &&
+            ce.name !== "BucketAlreadyExists"
+          ) {
+            console.error("Failed to create S3 bucket:", createError);
             throw createError;
           }
-          console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
+          console.log(`S3 bucket '${S3_BUCKET}' already exists`);
         }
       } else {
-        console.error('❌ Error checking MinIO bucket:', error.name, error.message);
+        console.error("Error checking S3 bucket:", error);
         throw error;
       }
     }
@@ -105,67 +72,63 @@ export class StorageService {
 
   static async getUploadUrl(key: string, contentType: string): Promise<string> {
     const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: S3_BUCKET,
       Key: key,
       ContentType: contentType,
     });
-
-    // Use publicS3Client for presigned URLs so browsers can access them
-    return getSignedUrl(publicS3Client, command, { expiresIn: 3600 });
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return rewriteForBrowser(url);
   }
 
-  static async uploadFile(key: string, body: Buffer | Uint8Array, contentType: string): Promise<void> {
-      console.log(`📤 Uploading file to MinIO: ${key} (${contentType})`);
-      const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-      });
-      // Use internal s3Client for direct upload operations
-      await s3Client.send(command);
-      console.log(`✅ File uploaded successfully: ${key}`);
+  static async uploadFile(
+    key: string,
+    body: Buffer | Uint8Array,
+    contentType: string
+  ): Promise<void> {
+    console.log(`Uploading file to S3: ${key} (${contentType})`);
+    const command = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    });
+    await s3.send(command);
+    console.log(`File uploaded successfully: ${key}`);
   }
 
   static async getDownloadUrl(key: string): Promise<string> {
     const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
+      Bucket: S3_BUCKET,
       Key: key,
     });
-
-    // Use publicS3Client for presigned URLs so browsers can access them
-    return getSignedUrl(publicS3Client, command, { expiresIn: 3600 });
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return rewriteForBrowser(url);
   }
 
   static async deleteFile(key: string): Promise<void> {
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-    });
-
-    await s3Client.send(command);
+    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
   }
 
-  /** Download an object from MinIO and return its content as a Buffer */
+  /** Download an object from S3 and return its content as a Buffer. */
   static async getObject(key: string): Promise<Buffer> {
-    const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
-    const response = await s3Client.send(command);
+    const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
+    const response = await s3.send(command);
     const stream = response.Body as NodeJS.ReadableStream;
     return new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
-      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-      stream.on('end', () => resolve(Buffer.concat(chunks)));
-      stream.on('error', reject);
+      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      stream.on("end", () => resolve(Buffer.concat(chunks)));
+      stream.on("error", reject);
     });
   }
 
-  /** Copy an object within the same bucket (used for file renaming) */
+  /** Copy an object within the same bucket (used for file renaming). */
   static async copyObject(sourceKey: string, destKey: string): Promise<void> {
     const command = new CopyObjectCommand({
-      Bucket: BUCKET_NAME,
-      CopySource: `${BUCKET_NAME}/${sourceKey}`,
+      Bucket: S3_BUCKET,
+      CopySource: `${S3_BUCKET}/${sourceKey}`,
       Key: destKey,
     });
-    await s3Client.send(command);
+    await s3.send(command);
   }
 }

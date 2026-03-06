@@ -1,49 +1,90 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Initialize S3 Client
-export const s3Client = new S3Client({
-  region: process.env.MINIO_REGION || "us-east-1",
-  endpoint: process.env.MINIO_ENDPOINT || process.env.MINIO_PUBLIC_URL || "http://localhost:9000",
-  forcePathStyle: true, // Required for MinIO
-  credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || "minioadmin",
-    secretAccessKey: process.env.MINIO_SECRET_KEY || "minioadmin",
-  },
+export const s3 = new S3Client({
+  region: process.env.AWS_REGION ?? "us-east-1",
+  ...(process.env.S3_ENDPOINT && {
+    endpoint: process.env.S3_ENDPOINT,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "local",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "local",
+    },
+  }),
 });
 
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || "worktree";
+export const S3_BUCKET = process.env.S3_BUCKET ?? "worktree-local";
 
 /**
- * Ensures that the project has a dedicated folder in the storage bucket.
- * Since S3 is flat, we create a 0-byte .keep file at projects/{projectId}/.keep
+ * Returns a presigned URL for uploading a file directly from the browser.
+ * In local dev, rewrites the internal Docker hostname to localhost.
  */
-export async function ensureProjectBucket(projectId: string) {
-  const key = `projects/${projectId}/.keep`;
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+    ContentType: contentType,
+  });
+  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+  return rewriteForBrowser(url);
+}
 
-  if (process.env.MOCK_STORAGE === "true") {
-      console.log(`[Storage] MOCKING success for project: ${projectId}`);
-      return { success: true };
-  }
+/**
+ * Returns a presigned URL for downloading/viewing a file.
+ * In local dev, rewrites the internal Docker hostname to localhost.
+ */
+export async function getPresignedDownloadUrl(key: string): Promise<string> {
+  const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
+  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+  return rewriteForBrowser(url);
+}
 
+export async function deleteObject(key: string): Promise<void> {
+  await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+}
+
+export async function objectExists(key: string): Promise<boolean> {
   try {
-    // 1. Ensure bucket exists (optional, mostly for dev)
-    // In prod, bucket should be pre-created via Terraform/IaC
-    // await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
-
-    // 2. Put the placeholder object
-    const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: "", // Empty content
-      ContentType: "application/x-directory", // Suggest folder nature
-    });
-
-    await s3Client.send(command);
-    console.log(`[Storage] Secured folder for project: ${projectId}`);
-    return { success: true };
-  } catch (error) {
-    console.error(`[Storage] Failed to secure folder for project ${projectId}:`, error);
-    // We strictly return error to allow the caller to decide (rollback transaction)
-    return { success: false, error };
+    await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+    return true;
+  } catch {
+    return false;
   }
+}
+
+/**
+ * Creates a placeholder object to establish a project folder prefix in S3.
+ */
+export async function ensureProjectFolder(projectId: string): Promise<void> {
+  const key = `projects/${projectId}/.keep`;
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      Body: "",
+      ContentType: "application/x-directory",
+    })
+  );
+}
+
+/**
+ * Rewrites internal Docker hostname in presigned URLs to host-accessible address.
+ * Only applies in local dev (when S3_ENDPOINT contains "localstack").
+ * Production presigned URLs are returned unchanged.
+ */
+function rewriteForBrowser(url: string): string {
+  const endpoint = process.env.S3_ENDPOINT ?? "";
+  if (endpoint.includes("localstack")) {
+    return url.replace("http://localstack:4510", "http://localhost:4510");
+  }
+  return url;
 }
