@@ -28,9 +28,9 @@ type AuditLog = {
   id: string;
   action: string;
   resource: string;
-  details: any;
+  details: unknown;
   ipAddress: string | null;
-  timestamp: Date;
+  timestamp: string | Date;
   user: {
     name: string | null;
     email: string;
@@ -103,7 +103,7 @@ export function AuditLogTable({
     }
   };
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (date: string | Date) => {
     return new Date(date).toLocaleString("en-US", {
       month: "short",
       day: "numeric",

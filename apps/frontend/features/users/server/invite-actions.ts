@@ -1,8 +1,8 @@
 "use server";
 
 import { z } from "zod";
-import { db } from "@/lib/database";
-import { auth } from "@/auth"; // Or your auth provider path
+import { ProjectMemberEntity, UserEntity, PublicTokenEntity, ProjectEntity } from "@/lib/dynamo";
+import { auth } from "@/auth";
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 
@@ -16,7 +16,7 @@ const inviteUserSchema = z.object({
 
 // --- Actions ---
 
-export async function inviteUser(_prevState: any, formData: FormData) {
+export async function inviteUser(_prevState: unknown, formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Unauthorized" };
@@ -38,49 +38,36 @@ export async function inviteUser(_prevState: any, formData: FormData) {
 
   try {
     // 1. Check if user is already a member
-    const existingMember = await db.projectMember.findFirst({
-      where: {
-        projectId,
-        user: { email },
-      },
-    });
+    // First find user by email
+    const userResult = await UserEntity.query.byEmail({ email }).go();
+    const existingUser = userResult.data[0];
 
-    if (existingMember) {
-      return { error: "User is already a member of this project." };
+    if (existingUser) {
+      // Check if this user is already a member of the project
+      const memberResult = await ProjectMemberEntity.query.primary({ projectId }).go();
+      const isMember = memberResult.data.some((m) => m.userId === existingUser.userId);
+      if (isMember) {
+        return { error: "User is already a member of this project." };
+      }
     }
 
-    // 2. Create Invitation
-    // Use nanoid for a secure token
+    // 2. Create Invitation token
     const token = nanoid(32);
-    // Expires in 7 days
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Upsert: If an invitation exists, update it with new token/role
-    await db.invitation.upsert({
-      where: {
-        projectId_email: { projectId, email },
-      },
-      update: {
-        token,
-        roles: [role],
-        expiresAt,
-        inviterId: session.user.id,
-      },
-      create: {
-        email,
-        projectId,
-        token,
-        roles: [role],
-        expiresAt,
-        inviterId: session.user.id,
-      },
-    });
+    await PublicTokenEntity.create({
+      token,
+      projectId,
+      entityType: "INVITE",
+      createdBy: session.user.id,
+      expiresAt,
+    }).go();
 
     // 3. Send Email (Mocked)
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
     console.log(`[EMAIL MOCK] To: ${email}, Link: ${inviteLink}`);
 
-    revalidatePath(`/project/${projectId}/settings/users`); // Adjust path as needed
+    revalidatePath(`/project/${projectId}/settings/users`);
     return { success: true, message: "Invitation sent!" };
   } catch (error) {
     console.error("Invite Error:", error);
@@ -88,59 +75,59 @@ export async function inviteUser(_prevState: any, formData: FormData) {
   }
 }
 
-export async function revokeInvitation(invitationId: string, projectId: string) {
-    const session = await auth();
-    // TODO: Check permissions (Owner/Admin)
-    if (!session?.user?.id) return { error: "Unauthorized" };
+export async function revokeInvitation(invitationToken: string, projectId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
 
-    try {
-        await db.invitation.delete({
-            where: { id: invitationId } // Ensure project filtering/ownership check in real app
-        });
-        revalidatePath(`/project/${projectId}/settings/users`);
-        return { success: true };
-    } catch(e) {
-        return { error: "Failed to revoke" };
-    }
+  try {
+    await PublicTokenEntity.delete({ token: invitationToken }).go();
+    revalidatePath(`/project/${projectId}/settings/users`);
+    return { success: true };
+  } catch (e) {
+    return { error: "Failed to revoke" };
+  }
 }
 
-export async function acceptInvite(token: string) {
-    const session = await auth();
-    // User must be logged in to accept? Or we guide them to signup?
-    // Story says "Link to existing user OR prompt signup".
-    // For now, assume they must be logged in or we redirect to login with callback.
-    
-    if (!session?.user?.id) {
-        return { error: "Unauthenticated", redirectTo: `/login?callbackUrl=/invite/${token}` };
+export async function acceptInvite(token: string): Promise<{
+  success?: boolean;
+  projectSlug?: string;
+  error?: string;
+  redirectTo?: string;
+}> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Unauthenticated", redirectTo: `/login?callbackUrl=/invite/${token}` };
+  }
+
+  try {
+    const tokenResult = await PublicTokenEntity.query.primary({ token }).go();
+    const invitation = tokenResult.data[0];
+
+    if (!invitation) return { error: "Invalid invitation" };
+    if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+      return { error: "Invitation expired" };
     }
 
-    try {
-        const invitation = await db.invitation.findUnique({
-            where: { token },
-            include: { project: true }
-        });
+    const projectId = invitation.projectId;
+    if (!projectId) return { error: "Invalid invitation - no project" };
 
-        if (!invitation) return { error: "Invalid invitation" };
-        if (invitation.expiresAt < new Date()) return { error: "Invitation expired" };
+    // Add user as member
+    await ProjectMemberEntity.create({
+      projectId,
+      userId: session.user.id,
+      roles: ["MEMBER"],
+    }).go();
 
-        // Transaction: Join Project + Delete Invite
-        await db.$transaction([
-            db.projectMember.create({
-                data: {
-                    projectId: invitation.projectId,
-                    userId: session.user.id,
-                    roles: invitation.roles
-                }
-            }),
-            db.invitation.delete({
-                where: { id: invitation.id }
-            })
-        ]);
+    // Delete the invitation token
+    await PublicTokenEntity.delete({ token }).go();
 
-        return { success: true, projectSlug: invitation.project.slug };
+    // Get project slug for redirect
+    const projectResult = await ProjectEntity.query.primary({ projectId }).go();
+    const projectSlug = projectResult.data[0]?.slug;
 
-    } catch (error) {
-        console.error("Accept Invite Error", error);
-        return { error: "Failed to accept invitation. You might already be a member." };
-    }
+    return { success: true, projectSlug: projectSlug ?? projectId };
+  } catch (error) {
+    console.error("Accept Invite Error", error);
+    return { error: "Failed to accept invitation. You might already be a member." };
+  }
 }

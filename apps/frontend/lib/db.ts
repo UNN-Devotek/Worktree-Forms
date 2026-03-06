@@ -1,14 +1,13 @@
-import { PrismaClient } from "./prisma-client";
+/**
+ * DEPRECATED - Prisma client
+ *
+ * This file previously exported a PrismaClient instance.
+ * The project has migrated to DynamoDB with ElectroDB.
+ *
+ * Use `import { UserEntity, ProjectEntity, ... } from "@/lib/dynamo"` instead.
+ *
+ * This stub remains only to prevent import errors from stale caches.
+ * It will be removed in a future cleanup.
+ */
 
-const globalForPrisma = globalThis as unknown as {
-  prisma_v2: PrismaClient | undefined;
-};
-
-export const db =
-  globalForPrisma.prisma_v2 ??
-  new PrismaClient({
-    log:
-      process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma_v2 = db;
+export const db = null;

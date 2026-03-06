@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { PublicTokenEntity, ProjectEntity, UserEntity } from "@/lib/dynamo";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { acceptInvite } from "@/features/users/server/invite-actions";
@@ -11,14 +11,13 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const session = await auth();
 
   // 1. Validate Token & Fetch Invite
-  const invitation = await db.invitation.findUnique({
-    where: { token },
-    include: { project: true, inviter: true },
-  });
+  const tokenResult = await PublicTokenEntity.query.primary({ token }).go();
+  const invitation = tokenResult.data[0];
 
   if (!invitation) return notFound();
-  
-  if (invitation.expiresAt < new Date()) {
+
+  // Check expiry
+  if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
     return (
       <div className="flex h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md border-destructive/50 bg-destructive/5">
@@ -33,21 +32,32 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     );
   }
 
+  // Fetch project and inviter info
+  const [projectResult, inviterResult] = await Promise.all([
+    invitation.projectId ? ProjectEntity.query.primary({ projectId: invitation.projectId }).go() : Promise.resolve({ data: [] }),
+    invitation.createdBy ? UserEntity.query.primary({ userId: invitation.createdBy }).go() : Promise.resolve({ data: [] }),
+  ]);
+  const project = projectResult.data[0];
+  const inviter = inviterResult.data[0];
+  const inviterDisplay = inviter?.name || inviter?.email || "Someone";
+  const projectName = project?.name || "a project";
+  const inviteEmail = (invitation as Record<string, unknown>).email as string || "";
+  const inviteRoles = (invitation as Record<string, unknown>).roles as string[] || ["MEMBER"];
+
   // 2. Handle Acceptance Action
   async function handleAccept() {
     "use server";
     const result = await acceptInvite(token);
-    
+
     if (result.error) {
-        if (result.redirectTo) {
-            redirect(result.redirectTo);
-        }
-        // Ideally show error toast, but in simple server action form, we might redirect or throw
-        throw new Error(result.error);
+      if (result.redirectTo) {
+        redirect(result.redirectTo);
+      }
+      throw new Error(result.error);
     }
-    
+
     if (result.success && result.projectSlug) {
-        redirect(`/project/${result.projectSlug}`);
+      redirect(`/project/${result.projectSlug}`);
     }
   }
 
@@ -60,7 +70,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             </div>
             <CardTitle>You&apos;ve been invited!</CardTitle>
             <CardDescription>
-                <strong>{invitation.inviter.name || invitation.inviter.email}</strong> has invited you to join the project <strong>{invitation.project.name}</strong> as a {invitation.roles.join(", ")}.
+                <strong>{inviterDisplay}</strong> has invited you to join the project <strong>{projectName}</strong> as a {inviteRoles.join(", ")}.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -70,7 +80,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
                 </div>
             )}
             <div className="text-center text-sm text-muted-foreground">
-                Invited as: <span className="font-medium text-foreground">{invitation.email}</span>
+                Invited as: <span className="font-medium text-foreground">{inviteEmail}</span>
             </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">

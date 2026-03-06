@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "@/lib/database";
-import { auth } from "@/auth"; 
+import { ProjectEntity, ProjectMemberEntity, UserEntity } from "@/lib/dynamo";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { ensureProjectFolder } from "@/lib/storage";
@@ -18,31 +18,45 @@ export async function getProjects() {
   }
 
   try {
-    const projects = await db.project.findMany({
-      where: {
-        members: {
-          some: {
-            userId: session.user.id,
-          },
-        },
-      },
-      include: {
-        members: {
-            where: {
-                userId: session.user.id
-            },
-            select: {
-                roles: true
-            }
-        },
-        _count: {
-            select: { members: true } 
-        }
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+    // 1. Get all project memberships for the user
+    const memberships = await ProjectMemberEntity.query.byUser({ userId: session.user.id }).go();
+
+    if (memberships.data.length === 0) {
+      return [];
+    }
+
+    // 2. Fetch each project in parallel
+    const projectResults = await Promise.all(
+      memberships.data.map((m) =>
+        ProjectEntity.query.primary({ projectId: m.projectId }).go()
+      )
+    );
+
+    // 3. Also get member counts per project in parallel
+    const memberCountResults = await Promise.all(
+      memberships.data.map((m) =>
+        ProjectMemberEntity.query.primary({ projectId: m.projectId }).go()
+      )
+    );
+
+    // 4. Build a membership roles map and member counts map
+    const rolesMap = new Map(memberships.data.map((m) => [m.projectId, m.roles]));
+    const memberCountMap = new Map(
+      memberCountResults.map((r, i) => [memberships.data[i].projectId, r.data.length])
+    );
+
+    // 5. Combine into result
+    const projects = projectResults
+      .flatMap((r) => r.data)
+      .filter(Boolean)
+      .map((p) => ({
+        ...p,
+        id: p.projectId,
+        members: [{ roles: rolesMap.get(p.projectId) ?? [] }],
+        _count: { members: memberCountMap.get(p.projectId) ?? 0 },
+      }))
+      .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+
     console.log(`[getProjects] Found ${projects.length} projects for user ${session.user.id}`);
     return projects;
   } catch (error) {
@@ -56,36 +70,44 @@ export async function getProject(slug: string) {
   if (!session?.user?.id) return null;
 
   try {
-    const project = await db.project.findUnique({
-      where: { slug },
-      include: {
-        members: {
-          include: {
-            user: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true
-                }
-            }
-          }
-        }
-      }
-    });
-
+    // 1. Find project by slug
+    const projectResult = await ProjectEntity.query.bySlug({ slug }).go();
+    const project = projectResult.data[0];
     if (!project) return null;
 
-    // Check access
-    // @ts-ignore: NextAuth types are tricky in dev
+    // 2. Get all members of this project
+    const membersResult = await ProjectMemberEntity.query.primary({ projectId: project.projectId }).go();
+
+    // 3. Check access
     const userId = session.user.id;
-    // @ts-ignore
-    const userRole = session.user.systemRole as string | undefined;
+    const userRole = (session.user as Record<string, unknown>).systemRole as string | undefined;
+    const member = membersResult.data.find((m) => m.userId === userId);
+    if (!member && userRole !== "ADMIN") return null;
 
-    const member = project.members.find(m => m.userId === userId);
-    if (!member && userRole !== 'ADMIN') return null;
+    // 4. Fetch user details for each member in parallel
+    const userResults = await Promise.all(
+      membersResult.data.map((m) => UserEntity.query.primary({ userId: m.userId }).go())
+    );
+    const userMap = new Map(
+      userResults.map((r) => {
+        const u = r.data[0];
+        return u
+          ? [u.userId, { id: u.userId, name: u.name ?? null, email: u.email, image: u.avatarKey ?? null }]
+          : ["", null];
+      })
+    );
 
-    return project;
+    // 5. Build response matching old shape
+    return {
+      ...project,
+      id: project.projectId,
+      members: membersResult.data.map((m) => ({
+        userId: m.userId,
+        projectId: m.projectId,
+        roles: m.roles ?? [],
+        user: userMap.get(m.userId) ?? { id: m.userId, name: null, email: m.email ?? "", image: null },
+      })),
+    };
   } catch (error) {
     console.error("Failed to get project:", error);
     return null;
@@ -94,7 +116,7 @@ export async function getProject(slug: string) {
 
 export async function createProject(data: ProjectData) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     return { error: "Unauthorized" };
   }
@@ -105,57 +127,38 @@ export async function createProject(data: ProjectData) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const slug = `${baseSlug}-${nanoid(5)}`;
+  const projectId = nanoid();
 
   try {
-    const project = await db.$transaction(async (tx) => {
-      // 1. Create Project
-      const p = await tx.project.create({
-        data: {
-          name: data.name,
-          description: data.description,
-          slug: slug,
-          roles: {
-            OWNER: ["*"], // Default full access role
-            MEMBER: ["read", "write"],
-            VIEWER: ["read"]
-          },
-          createdById: session!.user!.id!, // Required by schema
-        },
-      });
+    // 1. Create Project
+    await ProjectEntity.create({
+      projectId,
+      name: data.name,
+      description: data.description,
+      slug,
+      ownerId: session.user.id,
+    }).go();
 
-      // 2. Add Creator as Member with OWNER role
-      await tx.projectMember.create({
-        data: {
-            projectId: p.id,
-            userId: session!.user!.id!, // Safe because of check above
-            roles: ["OWNER"]
-        }
-      });
+    // 2. Add Creator as Member with OWNER role
+    await ProjectMemberEntity.create({
+      projectId,
+      userId: session.user.id,
+      roles: ["OWNER"],
+    }).go();
 
-      // 3. Reserve Storage Bucket Folder
-      // We do this AFTER DB writes but within the transaction logic flow (though S3 isn't transactional)
-      // Ideally, we'd do this inside the transaction, but if S3 fails, we want the DB to rollback.
-      // However, Prisma transaction doesn't support async side effects easily that rollback.
-      // Best pattern: Do distinct action, throw if fail.
-      
-      return p;
-    });
-    
-    // Perform storage reservation outside the DB transaction to avoid holding locks
-    // If this fails, we effectively have a project without a folder. 
-    // We could compensate by deleting the project, or just let it exist and retry later.
-    // For this story, we will fail hard if storage fails to ensure compliance.
+    // 3. Reserve Storage Bucket Folder
     try {
-      await ensureProjectFolder(project.id);
+      await ensureProjectFolder(projectId);
     } catch (storageError) {
       // Compensation: Delete the project we just created (Simplistic Saga)
-      await db.project.delete({ where: { id: project.id } });
+      await ProjectEntity.delete({ projectId }).go();
+      await ProjectMemberEntity.delete({ projectId, userId: session.user.id }).go();
       throw new Error("Failed to reserve storage folder. Project creation rolled back.");
     }
 
     revalidatePath("/dashboard");
     revalidatePath("/projects");
-    return { data: project };
+    return { data: { id: projectId, projectId, name: data.name, slug } };
   } catch (error) {
     console.error("Failed to create project:", error);
     return { error: "Failed to create project" };

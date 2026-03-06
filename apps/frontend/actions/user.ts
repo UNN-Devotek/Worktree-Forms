@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { db } from "@/lib/database";
+import { UserEntity } from "@/lib/dynamo";
 import { revalidatePath } from "next/cache";
 import { s3, S3_BUCKET } from "@/lib/storage";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -19,20 +19,10 @@ export async function updateTheme(theme: string) {
     throw new Error("Invalid theme");
   }
 
-  const existing = await db.userPreference.findFirst({
-    where: { userId: session.user.id, key: "theme", projectId: null },
-  });
-
-  if (existing) {
-    await db.userPreference.update({
-      where: { id: existing.id },
-      data: { value: theme },
-    });
-  } else {
-    await db.userPreference.create({
-      data: { userId: session.user.id, key: "theme", value: theme },
-    });
-  }
+  // Update the user's theme preference directly on the user entity
+  await UserEntity.patch({ userId: session.user.id })
+    .set({ theme, updatedAt: new Date().toISOString() })
+    .go();
 
   revalidatePath("/");
   return { success: true };
@@ -84,15 +74,14 @@ export async function uploadAvatar(formData: FormData) {
     // Generate a presigned download URL for the avatar
     const imageUrl = await getPresignedDownloadUrl(key);
 
-    // Update User Image in DB
-    await db.user.update({
-      where: { id: session.user.id },
-      data: { image: imageUrl },
-    });
+    // Update User avatarKey in DynamoDB
+    await UserEntity.patch({ userId: session.user.id })
+      .set({ avatarKey: key, updatedAt: new Date().toISOString() })
+      .go();
 
-    revalidatePath("/settings"); // Assuming settings page
-    revalidatePath("/"); // Update nav avatar
-    
+    revalidatePath("/settings");
+    revalidatePath("/");
+
     return { success: true, imageUrl };
   } catch (error) {
     console.error("Avatar upload failed:", error);

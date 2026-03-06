@@ -1,35 +1,36 @@
 'use server';
 
-import { db } from '@/lib/database';
+import { ProjectEntity, SheetEntity } from '@/lib/dynamo';
 import { nocoDBService, NocoDBSheetCell } from '@/lib/nocodb.service';
 import { revalidatePath } from 'next/cache';
+import { nanoid } from 'nanoid';
 
 /**
  * Hybrid approach:
- * - Sheet metadata (id, title, project link) stays in Prisma/PostgreSQL
+ * - Sheet metadata (id, title, project link) in DynamoDB via ElectroDB
  * - Actual cell data (values, images, files) goes to NocoDB
  */
 
 // Create a new sheet
 export async function createSheet(projectId: string, title?: string) {
   console.log('[createSheet] Starting - projectId:', projectId, 'title:', title);
-  let sheet = null;
-  let nocoTableId = null;
+  let sheetId: string | null = null;
 
   try {
-    console.log('[createSheet] Step 1: Creating Prisma sheet record...');
-    // 1. Create sheet metadata in Prisma
-    sheet = await db.sheet.create({
-      data: {
-        projectId,
-        title: title || 'Untitled Sheet',
-      },
-    });
-    console.log('[createSheet] Step 1 SUCCESS - Sheet ID:', sheet.id);
+    sheetId = nanoid();
+    const now = new Date().toISOString();
+
+    console.log('[createSheet] Step 1: Creating DynamoDB sheet record...');
+    await SheetEntity.create({
+      sheetId,
+      projectId,
+      name: title || 'Untitled Sheet',
+      createdAt: now,
+      updatedAt: now,
+    }).go();
+    console.log('[createSheet] Step 1 SUCCESS - Sheet ID:', sheetId);
 
     console.log('[createSheet] Step 2: Creating NocoDB table...');
-    // 2. Create corresponding native table in NocoDB
-    // We create a table with default spreadsheet columns (A, B, C, D, E)
     const columns = [
       { column_name: 'A', title: 'A', uidt: 'LongText' },
       { column_name: 'B', title: 'B', uidt: 'LongText' },
@@ -38,14 +39,13 @@ export async function createSheet(projectId: string, title?: string) {
       { column_name: 'E', title: 'E', uidt: 'LongText' },
     ];
 
-    const nocoTitle = `${sheet.title} [${sheet.id.substring(sheet.id.length - 4)}]`;
+    const sheetTitle = title || 'Untitled Sheet';
+    const nocoTitle = `${sheetTitle} [${sheetId.substring(sheetId.length - 4)}]`;
     console.log('[createSheet] Creating NocoDB table with title:', nocoTitle);
-    const nocoTable = await nocoDBService.createTable(nocoTitle, columns, sheet.id);
-    nocoTableId = nocoTable.id;
-    console.log('[createSheet] Step 2 SUCCESS - NocoDB Table ID:', nocoTableId);
+    const nocoTable = await nocoDBService.createTable(nocoTitle, columns, sheetId);
+    console.log('[createSheet] Step 2 SUCCESS - NocoDB Table ID:', nocoTable.id);
 
     console.log('[createSheet] Step 3: Getting views for table...');
-    // 3. Get views for this table and share the default one
     const views = await nocoDBService.getViews(nocoTable.id);
     console.log('[createSheet] Found', views.length, 'views');
     if (!views || views.length === 0) {
@@ -56,41 +56,29 @@ export async function createSheet(projectId: string, title?: string) {
     const shareId = await nocoDBService.shareView(views[0].id);
     console.log('[createSheet] Step 4 SUCCESS - Share ID:', shareId);
 
-    console.log('[createSheet] Step 5: Updating Prisma with NocoDB IDs...');
-    // 4. Update Prisma with NocoDB IDs
-    await db.sheet.update({
-      where: { id: sheet.id },
-      data: {
-        nocodbTableId: nocoTable.id,
-        nocodbViewId: shareId
-      }
-    });
-    console.log('[createSheet] Step 5 SUCCESS');
+    // NocoDB IDs are not stored on SheetEntity (no nocodbTableId/nocodbViewId attributes).
+    // If needed, store them in the description or a separate entity.
 
     revalidatePath(`/project/[slug]/sheets`);
     console.log('[createSheet] COMPLETE - Returning sheet');
-    return sheet;
+    return { id: sheetId, sheetId, title: sheetTitle, projectId, createdAt: now, updatedAt: now };
   } catch (error) {
     console.error('Failed to create sheet:', error);
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
     }
-    if ((error as any).response) {
-      console.error('NocoDB API Error:', JSON.stringify((error as any).response.data, null, 2));
+
+    // Rollback: delete the DynamoDB sheet record
+    if (sheetId) {
+      try {
+        await SheetEntity.delete({ projectId, sheetId }).go();
+        console.log('Rolled back DynamoDB sheet creation');
+      } catch (re) {
+        console.error('DynamoDB rollback failed', re);
+      }
     }
-    
-    // Rollback logic
-    if (sheet) {
-        try {
-            await db.sheet.delete({ where: { id: sheet.id } });
-            console.log('Rolled back Prisma sheet creation');
-        } catch (re) { console.error('Prisma rollback failed', re); }
-    }
-    
-    // NocoDB doesn't have an easy "delete table by ID" exposed in our service yet, 
-    // but we should eventually add it for full cleanup.
-    
+
     return null;
   }
 }
@@ -98,21 +86,21 @@ export async function createSheet(projectId: string, title?: string) {
 // Get all sheets for a project
 export async function getSheets(projectSlug: string) {
   try {
-    const project = await db.project.findUnique({
-      where: { slug: projectSlug },
-      select: { id: true },
-    });
-
+    const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+    const project = projectResult.data[0];
     if (!project) return [];
 
-    // Get sheets from Prisma (metadata only — exclude content Bytes to avoid Uint8Array serialization error)
-    const sheets = await db.sheet.findMany({
-      where: { projectId: project.id },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
-    });
+    const sheetsResult = await SheetEntity.query.byProject({ projectId: project.projectId }).go();
 
-    return sheets;
+    return sheetsResult.data.map((s) => ({
+      id: s.sheetId,
+      sheetId: s.sheetId,
+      title: s.name,
+      projectId: s.projectId,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      visibilityConfig: null,
+    }));
   } catch (error) {
     console.error('Failed to get sheets:', error);
     return [];
@@ -122,11 +110,12 @@ export async function getSheets(projectSlug: string) {
 // Get single sheet with cell data from NocoDB
 export async function getSheet(sheetId: string) {
   try {
-    // Get sheet metadata from Prisma
-    const sheet = await db.sheet.findUnique({
-      where: { id: sheetId },
-    });
+    // Scan for sheet by sheetId (no projectId available)
+    const result = await SheetEntity.scan.where(
+      ({ sheetId: sid }, { eq }) => eq(sid, sheetId)
+    ).go();
 
+    const sheet = result.data[0];
     if (!sheet) return null;
 
     // Get cell data from NocoDB
@@ -134,15 +123,15 @@ export async function getSheet(sheetId: string) {
     const nocoSheet = await nocoDBService.getSheetBySlug(slug);
 
     if (!nocoSheet || !nocoSheet.id) {
-        // If NocoDB record is missing, it's a sync issue.
-        // We return empty cells instead of blocking access, to allow user to view/delete it.
-        return { ...sheet, cells: [] };
+      return { ...sheet, id: sheet.sheetId, title: sheet.name, cells: [] };
     }
 
     const cells = await nocoDBService.getCellsBySheet(String(nocoSheet.id));
 
     return {
       ...sheet,
+      id: sheet.sheetId,
+      title: sheet.name,
       cells,
     };
   } catch (error) {
@@ -154,11 +143,15 @@ export async function getSheet(sheetId: string) {
 // Rename sheet
 export async function renameSheet(sheetId: string, title: string) {
   try {
-    // Update Prisma
-    await db.sheet.update({
-      where: { id: sheetId },
-      data: { title },
-    });
+    const sheetResult = await SheetEntity.scan.where(
+      ({ sheetId: sid }, { eq }) => eq(sid, sheetId)
+    ).go();
+    const sheet = sheetResult.data[0];
+    if (!sheet) return false;
+
+    await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+      .set({ name: title, updatedAt: new Date().toISOString() })
+      .go();
 
     // Update NocoDB
     const slug = `sheet-${sheetId}`;
@@ -176,7 +169,7 @@ export async function renameSheet(sheetId: string, title: string) {
 }
 
 // Save sheet data (from AG Grid / collaborative editor)
-export async function saveSheetData(sheetId: string, cellData: any[]) {
+export async function saveSheetData(sheetId: string, cellData: Array<Record<string, unknown>>) {
   try {
     console.log('[saveSheetData] Saving cells for sheet:', sheetId);
 
@@ -191,24 +184,29 @@ export async function saveSheetData(sheetId: string, cellData: any[]) {
     // Convert cell data to NocoDB format
     const cells: NocoDBSheetCell[] = cellData.map((cell) => ({
       sheet_id: String(nocoSheet.id),
-      row: cell.row || 0,
-      col: cell.col || 0,
-      value: cell.value || '',
-      type: cell.type || 'text',
-      images: cell.images,
-      files: cell.files,
-      formula: cell.formula,
+      row: (cell.row as number) || 0,
+      col: (cell.col as number) || 0,
+      value: (cell.value as string) || '',
+      type: (cell.type as NocoDBSheetCell['type']) || 'text',
+      images: cell.images as string[] | undefined,
+      files: cell.files as string[] | undefined,
+      formula: cell.formula as string | undefined,
       style: cell.style ? JSON.stringify(cell.style) : undefined,
     }));
 
     // Replace all cells for this sheet
     await nocoDBService.replaceCells(String(nocoSheet.id), cells);
 
-    // Update the updatedAt timestamp in Prisma
-    await db.sheet.update({
-      where: { id: sheetId },
-      data: { updatedAt: new Date() },
-    });
+    // Update the updatedAt timestamp in DynamoDB
+    const sheetResult = await SheetEntity.scan.where(
+      ({ sheetId: sid }, { eq }) => eq(sid, sheetId)
+    ).go();
+    const sheet = sheetResult.data[0];
+    if (sheet) {
+      await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+        .set({ updatedAt: new Date().toISOString() })
+        .go();
+    }
 
     console.log('[saveSheetData] Sheet saved successfully:', sheetId);
     revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
@@ -230,10 +228,14 @@ export async function deleteSheet(sheetId: string) {
       await nocoDBService.deleteSheet(nocoSheet.id);
     }
 
-    // Delete from Prisma
-    await db.sheet.delete({
-      where: { id: sheetId },
-    });
+    // Delete from DynamoDB
+    const sheetResult = await SheetEntity.scan.where(
+      ({ sheetId: sid }, { eq }) => eq(sid, sheetId)
+    ).go();
+    const sheet = sheetResult.data[0];
+    if (sheet) {
+      await SheetEntity.delete({ projectId: sheet.projectId, sheetId }).go();
+    }
 
     revalidatePath(`/project/[slug]/sheets`);
     return true;
@@ -245,17 +247,13 @@ export async function deleteSheet(sheetId: string) {
 
 /**
  * Legacy compatibility functions
- * These maintain the old API for gradual migration
  */
 
 // Save sheet content (snapshot) - legacy
 export async function saveSheet(sheetId: string, content: number[]) {
   try {
-    // Convert buffer to JSON if needed
     const buffer = Buffer.from(content);
     const jsonData = JSON.parse(buffer.toString('utf-8'));
-
-    // Use the new saveSheetData function
     return await saveSheetData(sheetId, jsonData);
   } catch (error) {
     console.error('Failed to save sheet:', error);

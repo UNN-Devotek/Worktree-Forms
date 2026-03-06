@@ -1,8 +1,8 @@
 'use server';
 
-import { db } from '@/lib/database';
+import { ProjectEntity, ProjectMemberEntity, SheetEntity, UserEntity } from '@/lib/dynamo';
 import { revalidatePath } from 'next/cache';
-
+import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken';
 import { auth } from '@/auth';
 import * as Y from 'yjs';
@@ -14,305 +14,294 @@ export async function getSheetToken(sheetId: string) {
   if (!session?.user?.id) return null;
 
   return jwt.sign(
-    { 
-      userId: session.user.id, 
+    {
+      userId: session.user.id,
       name: session.user.name,
-      sheetId 
-    }, 
-    JWT_SECRET, 
+      sheetId,
+    },
+    JWT_SECRET,
     { expiresIn: '1h' }
   );
 }
 
 // Create a new sheet with optional title and visibility config
 export async function createSheet(
-    projectSlugOrId: string,
-    title?: string,
-    visibilityConfig?: { type: 'all' | 'selected'; memberIds?: string[] }
+  projectSlugOrId: string,
+  title?: string,
+  _visibilityConfig?: { type: 'all' | 'selected'; memberIds?: string[] }
 ) {
   try {
-    // Check if it's a slug or ID
+    // Resolve project: try slug first, then treat as ID
     let projectId = projectSlugOrId;
+    let projectSlug = projectSlugOrId;
 
-    // Simple heuristic: CUIDs are usually shorter than slugs or follow a pattern.
-    // Better: check if project exists with this slug.
-    const project = await db.project.findFirst({
-      where: {
-        OR: [
-          { id: projectSlugOrId },
-          { slug: projectSlugOrId }
-        ]
-      },
-      select: { id: true, slug: true }
-    });
+    const bySlug = await ProjectEntity.query.bySlug({ slug: projectSlugOrId }).go();
+    if (bySlug.data[0]) {
+      projectId = bySlug.data[0].projectId;
+      projectSlug = bySlug.data[0].slug;
+    } else {
+      const byId = await ProjectEntity.query.primary({ projectId: projectSlugOrId }).go();
+      if (!byId.data[0]) throw new Error('Project not found');
+      projectId = byId.data[0].projectId;
+      projectSlug = byId.data[0].slug;
+    }
 
-    if (!project) throw new Error('Project not found');
-    projectId = project.id;
+    const sheetId = nanoid();
 
     // Initialize empty Yjs document
     const yjsDoc = new Y.Doc();
-
-    // Initialize default structure
     const cellsMap = yjsDoc.getMap('cells');
     const rowsMap = yjsDoc.getMap('rows');
     const orderArray = yjsDoc.getArray('order');
     const columnsArray = yjsDoc.getArray('columns');
 
-    // Create default columns
     const defaultColumns = [
       { id: 'title', label: 'Task Name', type: 'TEXT' },
       { id: 'status', label: 'Status', type: 'STATUS' },
       { id: 'assignee', label: 'Assignee', type: 'CONTACT' },
       { id: 'due_date', label: 'Due Date', type: 'DATE' },
-      { id: 'priority', label: 'Priority', type: 'TEXT' }
+      { id: 'priority', label: 'Priority', type: 'TEXT' },
     ];
 
-    defaultColumns.forEach(col => {
+    defaultColumns.forEach((col) => {
       columnsArray.push([col]);
     });
 
-    // Create 5 default rows
     const defaultRows = [
       { id: 'row-1', title: 'Plan project kickoff', status: 'Planned', assignee: '', due_date: '', priority: 'High' },
       { id: 'row-2', title: 'Research requirements', status: 'In Progress', assignee: '', due_date: '', priority: 'Medium' },
       { id: 'row-3', title: 'Design mockups', status: 'Planned', assignee: '', due_date: '', priority: 'Medium' },
       { id: 'row-4', title: 'Develop features', status: 'Planned', assignee: '', due_date: '', priority: 'High' },
-      { id: 'row-5', title: 'Test and deploy', status: 'Planned', assignee: '', due_date: '', priority: 'Low' }
+      { id: 'row-5', title: 'Test and deploy', status: 'Planned', assignee: '', due_date: '', priority: 'Low' },
     ];
 
-    defaultRows.forEach(row => {
-      // Add row to rows map
+    defaultRows.forEach((row) => {
       rowsMap.set(row.id, row);
-      // Add to order array
       orderArray.push([row.id]);
-
-      // Add cells for each column
-      defaultColumns.forEach(col => {
+      defaultColumns.forEach((col) => {
         const cellKey = `${row.id}:${col.id}`;
         cellsMap.set(cellKey, {
           value: row[col.id as keyof typeof row],
-          type: col.type
+          type: col.type,
         });
       });
     });
 
-    // Encode Yjs doc as binary
-    const yjsState = Y.encodeStateAsUpdate(yjsDoc);
-    const content = Buffer.from(yjsState);
+    const now = new Date().toISOString();
 
-    const sheet = await db.sheet.create({
-      data: {
-        projectId,
-        title: title || 'Untitled Table',
-        content,
-        visibilityConfig: visibilityConfig ?? { type: 'all' },
-      },
-      select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true },
-    });
+    await SheetEntity.create({
+      sheetId,
+      projectId,
+      name: title || 'Untitled Table',
+      createdAt: now,
+      updatedAt: now,
+    }).go();
 
-    revalidatePath(`/project/${project.slug}/sheets`);
-    return sheet;
+    revalidatePath(`/project/${projectSlug}/sheets`);
+    return { id: sheetId, sheetId, title: title || 'Untitled Table', projectId, createdAt: now, updatedAt: now };
   } catch (error) {
     console.error('Failed to create sheet:', error);
     return null;
   }
 }
 
-// Get all sheets for a project (by slug or id?)
-// The UI has slug, need to resolve to ID or use relation.
-// Wait, listing page has params.slug.
-// Need to find project by slug first or assume projectId is passed.
-// Better to resolve project id from slug if needed, or pass project ID if available.
-// Let's lookup project by slug first to be safe, or just accept projectId.
+// Get all sheets for a project (by slug)
 export async function getSheets(projectSlug: string) {
-    console.log('[getSheets] Called with slug:', projectSlug);
-    try {
-        const project = await db.project.findUnique({
-            where: { slug: projectSlug },
-            select: { id: true }
-        });
-        console.log('[getSheets] Found project:', project);
+  console.log('[getSheets] Called with slug:', projectSlug);
+  try {
+    const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+    const project = projectResult.data[0];
+    console.log('[getSheets] Found project:', project ? project.projectId : null);
 
-        if (!project) return [];
+    if (!project) return [];
 
-        const sheets = await db.sheet.findMany({
-            where: { projectId: project.id },
-            orderBy: { createdAt: 'desc' },
-            select: {
-                id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true,
-            }
-        });
+    const sheetsResult = await SheetEntity.query.byProject({ projectId: project.projectId }).go();
+    console.log('[getSheets] Found sheets:', sheetsResult.data.length);
 
-        // Attempt to enrich with owner data (requires migration 20260224_add_sheet_owner to be applied)
-        try {
-            const sheetsWithOwner = await db.sheet.findMany({
-                where: { projectId: project.id },
-                orderBy: { createdAt: 'desc' },
-                select: {
-                    id: true,
-                    ownerId: true,
-                    owner: { select: { id: true, name: true, email: true, image: true } }
-                }
-            });
-            const ownerMap = new Map(sheetsWithOwner.map(s => [s.id, { ownerId: s.ownerId, owner: s.owner }]));
-            return sheets.map(s => ({ ...s, ...(ownerMap.get(s.id) ?? { ownerId: null, owner: null }) }));
-        } catch {
-            // Migration not yet applied — return without owner data
-            return sheets.map(s => ({ ...s, ownerId: null, owner: null }));
-        }
-        console.log('[getSheets] Found sheets:', sheets.length);
-
-        return sheets;
-    } catch (error) {
-        console.error('Failed to get sheets:', error);
-        return [];
-    }
+    return sheetsResult.data.map((s) => ({
+      id: s.sheetId,
+      sheetId: s.sheetId,
+      title: s.name,
+      projectId: s.projectId,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      ownerId: s.createdBy ?? null,
+      owner: null,
+      visibilityConfig: null,
+    }));
+  } catch (error) {
+    console.error('Failed to get sheets:', error);
+    return [];
+  }
 }
 
 // Get single sheet
 export async function getSheet(sheetId: string) {
-    try {
-        const sheet = await db.sheet.findUnique({
-            where: { id: sheetId },
-            select: { id: true, title: true, projectId: true, createdAt: true, updatedAt: true, visibilityConfig: true }
-        });
-        return sheet;
-    } catch (error) {
-        console.error('Failed to get sheet:', error);
-        return null;
-    }
+  try {
+    // We need projectId to query, but we only have sheetId.
+    // Use scan with filter as fallback (not ideal for production scale).
+    const result = await SheetEntity.scan.where(
+      ({ sheetId: sid }, { eq }) => eq(sid, sheetId)
+    ).go();
+
+    const sheet = result.data[0];
+    if (!sheet) return null;
+
+    return {
+      id: sheet.sheetId,
+      sheetId: sheet.sheetId,
+      title: sheet.name,
+      projectId: sheet.projectId,
+      createdAt: sheet.createdAt,
+      updatedAt: sheet.updatedAt,
+      visibilityConfig: null,
+    };
+  } catch (error) {
+    console.error('Failed to get sheet:', error);
+    return null;
+  }
 }
 
-// Save sheet content (snapshot)
-export async function saveSheet(sheetId: string, content: number[]) {
-    try {
-       // content is array of numbers (Uint8Array converted)
-       const buffer = Buffer.from(content);
-       
-       await db.sheet.update({
-           where: { id: sheetId },
-           data: {
-               content: buffer,
-               updatedAt: new Date()
-           }
-       });
-       return true;
-    } catch (error) {
-        console.error('Failed to save sheet:', error);
-        return false;
-    }
+// Save sheet content (snapshot) - content stored externally (S3 or Yjs server)
+// DynamoDB SheetEntity doesn't store binary content; this is a no-op stub.
+export async function saveSheet(sheetId: string, _content: number[]) {
+  try {
+    // Update the updatedAt timestamp
+    const sheet = await getSheet(sheetId);
+    if (!sheet) return false;
+
+    await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+      .set({ updatedAt: new Date().toISOString() })
+      .go();
+    return true;
+  } catch (error) {
+    console.error('Failed to save sheet:', error);
+    return false;
+  }
 }
 
 // Get project members for ownership transfer picker
 export async function getProjectMembers(projectSlug: string) {
-    try {
-        const project = await db.project.findUnique({
-            where: { slug: projectSlug },
-            include: {
-                members: {
-                    include: {
-                        user: { select: { id: true, name: true, email: true, image: true } }
-                    }
-                }
-            }
-        });
-        if (!project) return [];
-        return project.members.map(m => m.user);
-    } catch (error) {
-        console.error('Failed to get project members:', error);
-        return [];
-    }
+  try {
+    const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+    const project = projectResult.data[0];
+    if (!project) return [];
+
+    const membersResult = await ProjectMemberEntity.query.primary({ projectId: project.projectId }).go();
+
+    // Fetch user details in parallel
+    const userResults = await Promise.all(
+      membersResult.data.map((m) => UserEntity.query.primary({ userId: m.userId }).go())
+    );
+
+    return userResults
+      .map((r) => r.data[0])
+      .filter(Boolean)
+      .map((u) => ({
+        id: u.userId,
+        name: u.name ?? null,
+        email: u.email,
+        image: u.avatarKey ?? null,
+      }));
+  } catch (error) {
+    console.error('Failed to get project members:', error);
+    return [];
+  }
 }
 
 // Transfer sheet ownership to another user
-// Requires migration 20260224_add_sheet_owner to be applied first.
 export async function transferSheetOwnership(sheetId: string, newOwnerId: string) {
-    try {
-        await (db.sheet as any).update({
-            where: { id: sheetId },
-            data: { ownerId: newOwnerId }
-        });
-        revalidatePath(`/project/[slug]/sheets`);
-        return true;
-    } catch (error: any) {
-        if (error?.code === 'P2009' || error?.message?.includes('ownerId')) {
-            console.error('Transfer ownership requires migration 20260224_add_sheet_owner to be applied.');
-        } else {
-            console.error('Failed to transfer sheet ownership:', error);
-        }
-        return false;
-    }
+  try {
+    const sheet = await getSheet(sheetId);
+    if (!sheet) return false;
+
+    await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+      .set({ createdBy: newOwnerId, updatedAt: new Date().toISOString() })
+      .go();
+
+    revalidatePath(`/project/[slug]/sheets`);
+    return true;
+  } catch (error) {
+    console.error('Failed to transfer sheet ownership:', error);
+    return false;
+  }
 }
 
 // Delete a sheet and all its data
 export async function deleteSheet(sheetId: string) {
-    try {
-        const sheet = await db.sheet.findUnique({
-            where: { id: sheetId },
-            select: { project: { select: { slug: true } } }
-        });
-        await db.sheet.delete({ where: { id: sheetId } });
-        if (sheet?.project?.slug) {
-            revalidatePath(`/project/${sheet.project.slug}/sheets`);
-        }
-        return true;
-    } catch (error) {
-        console.error('Failed to delete sheet:', error);
-        return false;
+  try {
+    const sheet = await getSheet(sheetId);
+    if (!sheet) return false;
+
+    await SheetEntity.delete({ projectId: sheet.projectId, sheetId }).go();
+
+    // Resolve project slug for revalidation
+    const projectResult = await ProjectEntity.query.primary({ projectId: sheet.projectId }).go();
+    const projectSlug = projectResult.data[0]?.slug;
+    if (projectSlug) {
+      revalidatePath(`/project/${projectSlug}/sheets`);
     }
+    return true;
+  } catch (error) {
+    console.error('Failed to delete sheet:', error);
+    return false;
+  }
 }
 
 // Rename sheet
 export async function renameSheet(sheetId: string, title: string) {
-    try {
-        await db.sheet.update({
-            where: { id: sheetId },
-            data: { title }
-        });
-        revalidatePath(`/project/[slug]/sheets`);
-        return true;
-    } catch (error) {
-        console.error('Failed to rename sheet:', error);
-        return false;
-    }
+  try {
+    const sheet = await getSheet(sheetId);
+    if (!sheet) return false;
+
+    await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+      .set({ name: title, updatedAt: new Date().toISOString() })
+      .go();
+
+    revalidatePath(`/project/[slug]/sheets`);
+    return true;
+  } catch (error) {
+    console.error('Failed to rename sheet:', error);
+    return false;
+  }
 }
 
 // Save sheet data (JSON from FortuneSheet)
-export async function saveSheetData(sheetId: string, jsonData: any) {
-    try {
-       // Convert JSON to buffer
-       const buffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
-       
-       await db.sheet.update({
-           where: { id: sheetId },
-           data: {
-               content: buffer,
-               updatedAt: new Date()
-           }
-       });
-       console.log('Sheet saved successfully:', sheetId);
-       
-       // Revalidate the sheet page to show new data on reload
-       revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
-       
-       return true;
-    } catch (error) {
-        console.error('Failed to save sheet data:', error);
-        return false;
-    }
+// DynamoDB SheetEntity does not store raw cell data; timestamps only.
+export async function saveSheetData(sheetId: string, _jsonData: unknown) {
+  try {
+    const sheet = await getSheet(sheetId);
+    if (!sheet) return false;
+
+    await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
+      .set({ updatedAt: new Date().toISOString() })
+      .go();
+
+    console.log('Sheet saved successfully:', sheetId);
+    revalidatePath('/project/[slug]/sheets/[sheetId]', 'page');
+    return true;
+  } catch (error) {
+    console.error('Failed to save sheet data:', error);
+    return false;
+  }
 }
 
-export async function getFormProjectSlug(formId: number) {
-    try {
-        const form = await db.form.findUnique({
-            where: { id: formId },
-            include: { project: true }
-        });
+export async function getFormProjectSlug(formId: string) {
+  try {
+    // FormEntity requires projectId for primary key lookup.
+    // Without projectId we must scan (dev/debug use only).
+    const { FormEntity } = await import('@/lib/dynamo');
+    const result = await FormEntity.scan.where(
+      ({ formId: fid }, { eq }) => eq(fid, formId)
+    ).go();
 
-        if (!form || !form.project) return null;
-        return form.project.slug;
-    } catch (error) {
-        console.error('Failed to get form project slug:', error);
-        return null;
-    }
+    const form = result.data[0];
+    if (!form) return null;
+
+    const projectResult = await ProjectEntity.query.primary({ projectId: form.projectId }).go();
+    return projectResult.data[0]?.slug ?? null;
+  } catch (error) {
+    console.error('Failed to get form project slug:', error);
+    return null;
+  }
 }

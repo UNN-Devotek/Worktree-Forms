@@ -9,7 +9,7 @@ interface ProjectCardProps {
     name: string;
     slug: string;
     description?: string | null;
-    updatedAt: Date;
+    updatedAt?: string | Date;
     members: { roles: string[] }[];
     _count?: { members: number };
   };

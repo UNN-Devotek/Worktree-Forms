@@ -1,8 +1,5 @@
 
 import { RouteList } from '@/features/field-ops/route-list';
-// import { prisma } from '@/lib/db'; // Need to import prisma to resolve slug -> id server side?
-// Wait, if this is a server component, I can use Prisma directly to get ID from slug.
-// Assuming we have @/lib/db configured for frontend server components.
 
 // Actually, best practice is to have the component fetch, or fetch data here and pass down.
 // RouteList fetches client-side in my implementation.

@@ -2,8 +2,9 @@ import { getProject } from "@/features/projects/server/project-actions";
 import { getSheetToken } from "@/features/sheets/server/sheet-actions";
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/database";
+import { FormEntity } from "@/lib/dynamo";
 import { FormDetailView } from "@/features/forms/components/FormDetailView";
+import type { FormSchema } from "@/types/group-forms";
 
 export default async function ProjectFormDetailPage({
   params,
@@ -16,17 +17,15 @@ export default async function ProjectFormDetailPage({
   const project = await getProject(slug);
   if (!project) notFound();
 
-  // Fetch the form by slug
-  const form = await db.form.findFirst({
-    where: { slug: formSlug, projectId: project.id },
-  });
+  // Fetch all forms for the project and find by name/slug match
+  // Note: FormEntity uses formId as key, not slug. We scan by project and match.
+  const formsResult = await FormEntity.query.byProject({ projectId: project.projectId }).go();
+  const form = formsResult.data.find((f) => f.formId === formSlug || f.name === formSlug);
   if (!form) notFound();
 
   // Get sheet token if the form has a linked sheet
+  // Note: FormEntity schema doesn't have targetSheetId; adapt as needed
   let sheetToken: string | null = null;
-  if (form.targetSheetId) {
-    sheetToken = await getSheetToken(form.targetSheetId);
-  }
 
   const user = {
     name: session?.user?.name || "Anonymous",
@@ -36,16 +35,16 @@ export default async function ProjectFormDetailPage({
   return (
     <FormDetailView
       form={{
-        id: form.id,
-        slug: form.slug,
-        title: form.title,
-        is_published: form.is_published,
-        group_id: form.group_id,
-        form_schema: form.form_schema as any,
-        targetSheetId: form.targetSheetId ?? null,
+        id: form.formId,
+        slug: form.formId,
+        title: form.name,
+        is_published: form.status === "PUBLISHED",
+        group_id: null,
+        form_schema: form.schema as unknown as FormSchema,
+        targetSheetId: null,
       }}
       projectSlug={slug}
-      projectId={project.id}
+      projectId={project.projectId}
       sheetToken={sheetToken}
       user={user}
     />

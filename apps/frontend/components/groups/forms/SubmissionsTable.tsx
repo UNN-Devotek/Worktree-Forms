@@ -43,7 +43,7 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 
 interface SubmissionsTableProps {
-    formId: number
+    formId: string | number
     formSchema?: FormSchema // Passed to render details
     /** Override the API path used to fetch submissions. Defaults to /api/forms/:formId/submissions */
     submissionsApiPath?: string

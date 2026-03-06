@@ -2,13 +2,14 @@
 
 import { headers } from 'next/headers';
 import { auth } from '@/auth';
-import { db } from '@/lib/database';
+import { AuditLogEntity } from '@/lib/dynamo';
+import { nanoid } from 'nanoid';
 import type { AuditEventDetails } from './audit-types';
 
 /**
  * Extracts client IP address from request headers.
  * Handles proxy chains, IPv6, and edge cases.
- * 
+ *
  * Priority order:
  * 1. X-Forwarded-For (takes FIRST IP = client, not last = proxy)
  * 2. X-Real-IP (single proxy)
@@ -17,7 +18,7 @@ import type { AuditEventDetails } from './audit-types';
 async function extractIpAddress(): Promise<string | null> {
   try {
     const headersList = await headers();
-    
+
     // Check X-Forwarded-For (proxy chain)
     const forwardedFor = headersList.get('x-forwarded-for');
     if (forwardedFor) {
@@ -28,13 +29,13 @@ async function extractIpAddress(): Promise<string | null> {
         return clientIp;
       }
     }
-    
+
     // Check X-Real-IP (single proxy)
     const realIp = headersList.get('x-real-ip');
     if (realIp) {
       return realIp;
     }
-    
+
     // Fallback (localhost in dev)
     return null;
   } catch (error) {
@@ -46,10 +47,10 @@ async function extractIpAddress(): Promise<string | null> {
 
 /**
  * Creates an audit log entry.
- * 
+ *
  * IMPORTANT: This function fails silently if logging fails.
  * Audit logging should NEVER block user actions.
- * 
+ *
  * @param action - Action type (use AUDIT_ACTIONS constants)
  * @param resource - Resource type (e.g., "User", "Project")
  * @param details - Typed event details (optional)
@@ -75,16 +76,15 @@ export async function createAuditLog({
 
     const ipAddress = await extractIpAddress();
 
-    await db.auditLog.create({
-      data: {
-        userId: session.user.id,
-        projectId: projectId || null,
-        action,
-        resource,
-        details: details ? JSON.stringify(details) : null,
-        ipAddress,
-      },
-    });
+    await AuditLogEntity.create({
+      auditId: nanoid(),
+      projectId: projectId || "GLOBAL",
+      userId: session.user.id,
+      action,
+      entityType: resource,
+      details: details ? JSON.stringify(details) : undefined,
+      ipAddress: ipAddress ?? undefined,
+    }).go();
   } catch (error) {
     // Log error but don't throw - audit logging should never block user actions
     console.error('[Audit] Failed to create audit log:', error);

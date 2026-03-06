@@ -19,11 +19,11 @@ import { SheetEmbed } from '@/features/sheets/components/SheetEmbed'
 
 interface FormDetailViewProps {
   form: {
-    id: number
+    id: string | number
     slug: string
     title: string
     is_published: boolean
-    group_id: number
+    group_id: string | number | null
     form_schema: GroupForm['form_schema']
     targetSheetId: string | null
   }

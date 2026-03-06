@@ -1,14 +1,14 @@
 "use server";
 
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { ProjectEntity, ProjectMemberEntity, AuditLogEntity, UserEntity } from "@/lib/dynamo";
 
 /**
  * Fetches audit logs for a project.
- * 
+ *
  * SECURITY: Only project owners can access audit logs.
  * Non-owners will receive a 403 Forbidden error.
- * 
+ *
  * @param projectSlug - Project slug
  * @param page - Page number (1-indexed)
  * @param limit - Results per page
@@ -25,53 +25,63 @@ export async function getAuditLogs(
     return { error: "Unauthorized" };
   }
 
-  // Get project and verify ownership
-  const project = await db.project.findUnique({
-    where: { slug: projectSlug },
-    include: {
-      members: {
-        where: { userId: session.user.id },
-      },
-    },
-  });
+  // Get project by slug
+  const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+  const project = projectResult.data[0];
 
   if (!project) {
     return { error: "Project not found" };
   }
 
-  // RBAC Check: Only owners can view audit logs
-  const member = project.members[0];
-  if (!member || !member.roles.includes("OWNER")) {
+  // Check membership and RBAC
+  const memberResult = await ProjectMemberEntity.query.primary({ projectId: project.projectId }).go();
+  const member = memberResult.data.find((m) => m.userId === session.user!.id);
+
+  if (!member || !(member.roles ?? []).includes("OWNER")) {
     return { error: "Forbidden: Only project owners can view audit logs" };
   }
 
-  // Fetch logs with pagination and filtering
-  const where = {
-    projectId: project.id,
-    ...(actionFilter && { action: actionFilter }),
-  };
+  // Fetch logs for the project (sorted by SK which includes createdAt)
+  let logsResult = await AuditLogEntity.query.primary({ projectId: project.projectId }).go();
+  let logs = logsResult.data;
 
-  const [logs, total] = await Promise.all([
-    db.auditLog.findMany({
-      where,
-      include: { 
-        user: { 
-          select: { 
-            name: true, 
-            email: true,
-            image: true,
-          } 
-        } 
-      },
-      orderBy: { timestamp: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    db.auditLog.count({ where }),
-  ]);
+  // Apply action filter if provided
+  if (actionFilter) {
+    logs = logs.filter((log) => log.action === actionFilter);
+  }
+
+  const total = logs.length;
+
+  // Sort descending by createdAt
+  logs.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+
+  // Manual pagination
+  const paginatedLogs = logs.slice((page - 1) * limit, page * limit);
+
+  // Enrich with user info
+  const uniqueUserIds = [...new Set(paginatedLogs.map((l) => l.userId).filter(Boolean))];
+  const userResults = await Promise.all(
+    uniqueUserIds.map((uid) => UserEntity.query.primary({ userId: uid! }).go())
+  );
+  const userMap = new Map(
+    userResults.map((r) => {
+      const u = r.data[0];
+      return [u?.userId, { name: u?.name ?? "Unknown", email: u?.email ?? "", image: u?.avatarKey ?? null }];
+    })
+  );
+
+  const enrichedLogs = paginatedLogs.map((log) => ({
+    id: log.auditId,
+    timestamp: log.createdAt,
+    action: log.action,
+    resource: log.entityType ?? "",
+    details: log.details ? (typeof log.details === 'string' ? log.details : JSON.stringify(log.details)) : null,
+    ipAddress: log.ipAddress ?? null,
+    user: userMap.get(log.userId ?? "") ?? { name: "Unknown", email: "", image: null },
+  }));
 
   return {
-    logs,
+    logs: enrichedLogs,
     pagination: {
       page,
       limit,
@@ -83,9 +93,9 @@ export async function getAuditLogs(
 
 /**
  * Exports audit logs as CSV for compliance.
- * 
+ *
  * SECURITY: Only project owners can export.
- * 
+ *
  * @param projectSlug - Project slug
  */
 export async function exportAuditLogs(projectSlug: string) {
@@ -94,43 +104,42 @@ export async function exportAuditLogs(projectSlug: string) {
     return { error: "Unauthorized" };
   }
 
-  // Verify ownership (same as getAuditLogs)
-  const project = await db.project.findUnique({
-    where: { slug: projectSlug },
-    include: { 
-      members: { 
-        where: { userId: session.user.id } 
-      } 
-    },
-  });
+  const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+  const project = projectResult.data[0];
 
   if (!project) {
     return { error: "Project not found" };
   }
 
-  if (!project.members[0]?.roles.includes("OWNER")) {
+  const memberResult = await ProjectMemberEntity.query.primary({ projectId: project.projectId }).go();
+  const member = memberResult.data.find((m) => m.userId === session.user!.id);
+
+  if (!member || !(member.roles ?? []).includes("OWNER")) {
     return { error: "Forbidden: Only project owners can export audit logs" };
   }
 
-  const logs = await db.auditLog.findMany({
-    where: { projectId: project.id },
-    include: { 
-      user: { 
-        select: { 
-          name: true, 
-          email: true 
-        } 
-      } 
-    },
-    orderBy: { timestamp: 'desc' },
-  });
+  const logsResult = await AuditLogEntity.query.primary({ projectId: project.projectId }).go();
+  const logs = logsResult.data.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+
+  // Enrich with user info
+  const uniqueUserIds = [...new Set(logs.map((l) => l.userId).filter(Boolean))];
+  const userResults = await Promise.all(
+    uniqueUserIds.map((uid) => UserEntity.query.primary({ userId: uid! }).go())
+  );
+  const userMap = new Map(
+    userResults.map((r) => {
+      const u = r.data[0];
+      return [u?.userId, { name: u?.name ?? "Unknown", email: u?.email ?? "" }];
+    })
+  );
 
   // Convert to CSV
   const csvRows = [
     'Timestamp,User,Email,Action,Resource,Details,IP Address',
-    ...logs.map(log => {
+    ...logs.map((log) => {
+      const user = userMap.get(log.userId ?? "") ?? { name: "Unknown", email: "" };
       const details = log.details ? JSON.stringify(log.details).replace(/"/g, '""') : '';
-      return `"${log.timestamp.toISOString()}","${log.user.name || 'Unknown'}","${log.user.email}","${log.action}","${log.resource}","${details}","${log.ipAddress || 'N/A'}"`;
+      return `"${log.createdAt ?? ""}","${user.name}","${user.email}","${log.action}","${log.entityType ?? ""}","${details}","${log.ipAddress || 'N/A'}"`;
     }),
   ];
 
@@ -141,7 +150,7 @@ export async function exportAuditLogs(projectSlug: string) {
 
 /**
  * Gets unique action types for filter dropdown.
- * 
+ *
  * SECURITY: Only project owners can access.
  */
 export async function getAuditActionTypes(projectSlug: string) {
@@ -150,21 +159,22 @@ export async function getAuditActionTypes(projectSlug: string) {
     return { error: "Unauthorized" };
   }
 
-  const project = await db.project.findUnique({
-    where: { slug: projectSlug },
-    include: { members: { where: { userId: session.user.id } } },
-  });
+  const projectResult = await ProjectEntity.query.bySlug({ slug: projectSlug }).go();
+  const project = projectResult.data[0];
 
-  if (!project || !project.members[0]?.roles.includes("OWNER")) {
+  if (!project) {
     return { error: "Forbidden" };
   }
 
-  const actions = await db.auditLog.findMany({
-    where: { projectId: project.id },
-    select: { action: true },
-    distinct: ['action'],
-    orderBy: { action: 'asc' },
-  });
+  const memberResult = await ProjectMemberEntity.query.primary({ projectId: project.projectId }).go();
+  const member = memberResult.data.find((m) => m.userId === session.user!.id);
 
-  return { actions: actions.map(a => a.action) };
+  if (!member || !(member.roles ?? []).includes("OWNER")) {
+    return { error: "Forbidden" };
+  }
+
+  const logsResult = await AuditLogEntity.query.primary({ projectId: project.projectId }).go();
+  const actions = [...new Set(logsResult.data.map((l) => l.action))].sort();
+
+  return { actions };
 }

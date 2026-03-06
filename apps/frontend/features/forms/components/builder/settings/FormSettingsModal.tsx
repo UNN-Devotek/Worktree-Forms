@@ -18,7 +18,7 @@ interface FormSettingsModalProps {
   onClose: () => void
   groupId: number
   groupSlug?: string
-  formId?: number
+  formId?: string | number
   targetSheetId?: string | null
 }
 
@@ -58,7 +58,7 @@ export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, t
       
       // If no groupSlug (global builder), try to get it from formId
       if (!slug && formId) {
-        slug = await getFormProjectSlug(formId) || undefined;
+        slug = await getFormProjectSlug(String(formId)) || undefined;
       }
 
       if (slug) {

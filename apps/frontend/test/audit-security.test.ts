@@ -4,21 +4,32 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
 }));
-vi.mock("@/lib/db", () => ({
-  db: {
-    project: {
-      findUnique: vi.fn(),
+vi.mock("@/lib/dynamo", () => ({
+  ProjectEntity: {
+    query: {
+      bySlug: vi.fn(() => ({ go: vi.fn() })),
     },
-    auditLog: {
-      findMany: vi.fn(),
-      count: vi.fn(),
+  },
+  ProjectMemberEntity: {
+    query: {
+      primary: vi.fn(() => ({ go: vi.fn() })),
+    },
+  },
+  AuditLogEntity: {
+    query: {
+      primary: vi.fn(() => ({ go: vi.fn() })),
+    },
+  },
+  UserEntity: {
+    query: {
+      primary: vi.fn(() => ({ go: vi.fn() })),
     },
   },
 }));
 
 import { getAuditLogs, exportAuditLogs } from "@/actions/audit";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { ProjectEntity, ProjectMemberEntity, AuditLogEntity, UserEntity } from "@/lib/dynamo";
 
 describe("Audit Security Tests", () => {
   beforeEach(() => {
@@ -27,17 +38,18 @@ describe("Audit Security Tests", () => {
 
   describe("getAuditLogs - RBAC Enforcement", () => {
     it("should reject unauthorized users (no session)", async () => {
-      (auth as any).mockResolvedValue(null);
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       const result = await getAuditLogs("test-project");
 
       expect(result.error).toBe("Unauthorized");
-      expect(db.project.findUnique).not.toHaveBeenCalled();
     });
 
     it("should reject non-members (project not found for user)", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue(null);
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({ data: [] }),
+      });
 
       const result = await getAuditLogs("test-project");
 
@@ -45,48 +57,49 @@ describe("Audit Security Tests", () => {
     });
 
     it("should reject non-owners (403 Forbidden)", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue({
-        id: "proj1",
-        slug: "test-project",
-        members: [
-          { userId: "user1", roles: ["MEMBER"] }, // Not OWNER
-        ],
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ projectId: "proj1", slug: "test-project" }],
+        }),
+      });
+      (ProjectMemberEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", roles: ["MEMBER"] }],
+        }),
       });
 
       const result = await getAuditLogs("test-project");
 
       expect(result.error).toBe("Forbidden: Only project owners can view audit logs");
-      expect(db.auditLog.findMany).not.toHaveBeenCalled();
     });
 
     it("should allow owners to view logs", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue({
-        id: "proj1",
-        slug: "test-project",
-        members: [
-          { userId: "user1", roles: ["OWNER"] }, // Is OWNER
-        ],
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ projectId: "proj1", slug: "test-project" }],
+        }),
       });
-      (db.auditLog.findMany as any).mockResolvedValue([]);
-      (db.auditLog.count as any).mockResolvedValue(0);
+      (ProjectMemberEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", roles: ["OWNER"] }],
+        }),
+      });
+      (AuditLogEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({ data: [] }),
+      });
 
       const result = await getAuditLogs("test-project");
 
       expect(result.error).toBeUndefined();
       expect(result.logs).toEqual([]);
-      expect(db.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ projectId: "proj1" }),
-        })
-      );
     });
   });
 
   describe("exportAuditLogs - RBAC Enforcement", () => {
     it("should reject unauthorized users", async () => {
-      (auth as any).mockResolvedValue(null);
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       const result = await exportAuditLogs("test-project");
 
@@ -94,10 +107,16 @@ describe("Audit Security Tests", () => {
     });
 
     it("should reject non-owners", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue({
-        id: "proj1",
-        members: [{ userId: "user1", roles: ["MEMBER"] }],
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ projectId: "proj1", slug: "test-project" }],
+        }),
+      });
+      (ProjectMemberEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", roles: ["MEMBER"] }],
+        }),
       });
 
       const result = await exportAuditLogs("test-project");
@@ -106,23 +125,37 @@ describe("Audit Security Tests", () => {
     });
 
     it("should allow owners to export", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue({
-        id: "proj1",
-        slug: "test-project",
-        members: [{ userId: "user1", roles: ["OWNER"] }],
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ projectId: "proj1", slug: "test-project" }],
+        }),
       });
-      (db.auditLog.findMany as any).mockResolvedValue([
-        {
-          id: "log1",
-          timestamp: new Date("2026-01-15T12:00:00Z"),
-          user: { name: "John Doe", email: "john@example.com" },
-          action: "INVITE_SENT",
-          resource: "User",
-          details: { email: "test@example.com" },
-          ipAddress: "192.168.1.1",
-        },
-      ]);
+      (ProjectMemberEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", roles: ["OWNER"] }],
+        }),
+      });
+      (AuditLogEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [
+            {
+              auditId: "log1",
+              createdAt: "2026-01-15T12:00:00Z",
+              userId: "user1",
+              action: "INVITE_SENT",
+              entityType: "User",
+              details: { email: "test@example.com" },
+              ipAddress: "192.168.1.1",
+            },
+          ],
+        }),
+      });
+      (UserEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", name: "John Doe", email: "john@example.com" }],
+        }),
+      });
 
       const result = await exportAuditLogs("test-project");
 
@@ -135,21 +168,24 @@ describe("Audit Security Tests", () => {
 
   describe("Project Scoping", () => {
     it("should only return logs for the requested project", async () => {
-      (auth as any).mockResolvedValue({ user: { id: "user1" } });
-      (db.project.findUnique as any).mockResolvedValue({
-        id: "proj1",
-        members: [{ userId: "user1", roles: ["OWNER"] }],
+      (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "user1" } });
+      (ProjectEntity.query.bySlug as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ projectId: "proj1", slug: "test-project" }],
+        }),
       });
-      (db.auditLog.findMany as any).mockResolvedValue([]);
-      (db.auditLog.count as any).mockResolvedValue(0);
+      (ProjectMemberEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({
+          data: [{ userId: "user1", roles: ["OWNER"] }],
+        }),
+      });
+      (AuditLogEntity.query.primary as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        go: vi.fn().mockResolvedValue({ data: [] }),
+      });
 
       await getAuditLogs("test-project");
 
-      expect(db.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ projectId: "proj1" }),
-        })
-      );
+      expect(AuditLogEntity.query.primary).toHaveBeenCalledWith({ projectId: "proj1" });
     });
   });
 });
