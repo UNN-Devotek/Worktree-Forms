@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { RouteService } from '../services/route-service.js';
 import { authenticate } from '../middleware/authenticate.js';
-import type { AuthenticatedRequest } from '../types/express.js';
+import type { AuthenticatedRequest } from '../middleware/authenticate.js';
 import { requireProjectAccess, hasRole } from '../middleware/rbac.js';
 import { ProjectMemberEntity } from '../lib/dynamo/index.js';
 

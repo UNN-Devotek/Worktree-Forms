@@ -109,7 +109,7 @@ router.get('/projects/:projectId/activity', requireProjectAccess('VIEWER'), asyn
     });
 
     // Sort by createdAt desc and take 20
-    allSubmissions.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+    allSubmissions.sort((a, b) => new Date(b.createdAt as string ?? 0).getTime() - new Date(a.createdAt as string ?? 0).getTime());
     const recent = allSubmissions.slice(0, 20);
 
     const activities = recent.map((sub) => ({

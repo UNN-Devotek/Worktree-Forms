@@ -26,13 +26,13 @@ router.get('/access/:token', publicRateLimiter, async (req: Request, res: Respon
 
     if (publicToken.entityType === 'FORM') {
       // Direct primary-key lookup — avoids fetching all project forms
-      const formResult = await FormEntity.get({ projectId: publicToken.projectId, formId: publicToken.entityId }).go();
+      const formResult = await FormEntity.get({ projectId: publicToken.projectId!, formId: publicToken.entityId! }).go();
       const form = formResult.data;
       if (form) {
         resourceData = { id: form.formId, title: form.name, schema: form.schema, type: 'FORM' };
       }
     } else if (publicToken.entityType === 'SHEET') {
-      const sheetResult = await SheetEntity.get({ projectId: publicToken.projectId, sheetId: publicToken.entityId }).go();
+      const sheetResult = await SheetEntity.get({ projectId: publicToken.projectId!, sheetId: publicToken.entityId! }).go();
       const sheet = sheetResult.data;
       if (sheet) {
         resourceData = { id: sheet.sheetId, title: sheet.name, type: 'SHEET' };
@@ -51,9 +51,9 @@ router.get('/access/:token', publicRateLimiter, async (req: Request, res: Respon
 });
 
 // Generate Token (Auth Required)
-router.post('/generate', authenticate, requireProjectAccess('EDITOR'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/generate', authenticate, requireProjectAccess('EDITOR'), async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { resourceType, resourceId, expiresInDays, projectId } = req.body;
 
     if (!resourceType || !resourceId || !projectId) {

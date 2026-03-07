@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest } from '../middleware/authenticate.js';
 import { requireProjectAccess } from '../middleware/rbac.js';
@@ -8,10 +8,10 @@ import { nanoid } from 'nanoid';
 const router = Router();
 
 // GET /api/projects/:projectId/compliance/status
-router.get('/projects/:projectId/compliance/status', requireProjectAccess('VIEWER'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/projects/:projectId/compliance/status', requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     // Get compliance records scoped to this project and user via ElectroDB filter
     const result = await ComplianceRecordEntity.query
@@ -49,10 +49,10 @@ const submitSchema = z.object({
 });
 
 // POST /api/projects/:projectId/compliance/submit
-router.post('/projects/:projectId/compliance/submit', requireProjectAccess('EDITOR'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/projects/:projectId/compliance/submit', requireProjectAccess('EDITOR'), async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const parsed = submitSchema.safeParse(req.body);
 
     if (!parsed.success) {

@@ -12,9 +12,9 @@ const router = Router();
 // ============================================
 
 // Generate New API Key (Auth Required)
-router.post('/', requireProjectAccess('ADMIN'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { name, scopes, projectId } = req.body;
 
     if (!projectId) {

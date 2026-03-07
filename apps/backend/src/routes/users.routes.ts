@@ -9,9 +9,9 @@ const router = Router();
 // USER ENDPOINTS
 // ==========================================
 
-router.get('/', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const userResult = await UserEntity.get({ userId }).go();
     if (!userResult.data || userResult.data.role !== 'ADMIN') {
       return res.status(403).json({ success: false, error: 'Admin access required' });

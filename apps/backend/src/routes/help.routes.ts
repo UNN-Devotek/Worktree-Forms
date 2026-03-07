@@ -24,13 +24,13 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 // Help Article Management
 // ============================================================================
 
-router.post('/articles', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/articles', requireAdmin, async (req: Request, res: Response) => {
   try {
     const parsed = articleSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
     }
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const article = await HelpArticleService.createArticle(userId, parsed.data);
     res.json({ success: true, article });
   } catch (error) {
@@ -65,13 +65,13 @@ router.get('/articles/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/articles/:id', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/articles/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const parsed = articleSchema.partial().safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
     }
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { id } = req.params;
     const article = await HelpArticleService.updateArticle(id, userId, parsed.data);
     res.json({ success: true, article });
