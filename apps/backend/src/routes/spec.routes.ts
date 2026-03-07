@@ -1,7 +1,17 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { AuthenticatedRequest } from '../middleware/authenticate.js';
 import { requireProjectAccess } from '../middleware/rbac.js';
 import { SpecService } from '../services/spec.service.js';
+
+const createSpecSchema = z.object({
+  title: z.string().min(1),
+  section: z.string().optional(),
+  keywords: z.string().optional(),
+  type: z.string().optional(),
+  fileUrl: z.string().url(),
+  objectKey: z.string().min(1),
+});
 
 const router = Router();
 
@@ -25,7 +35,12 @@ router.get('/projects/:projectId/specs', requireProjectAccess('VIEWER'), async (
 // Create Spec
 router.post('/projects/:projectId/specs', requireProjectAccess('EDITOR'), async (req: Request, res: Response) => {
     const { projectId } = req.params;
-    const { section, title, keywords, type, fileUrl, objectKey } = req.body;
+    const parsed = createSpecSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
+        return;
+    }
+    const { section, title, keywords, type, fileUrl, objectKey } = parsed.data;
     const userId = (req as AuthenticatedRequest).user.id;
 
     try {

@@ -69,15 +69,20 @@ router.patch('/me', authenticate, async (req: Request, res: Response) => {
   const { theme, locale } = parsed.data;
 
   try {
-    const updates: Record<string, unknown> = {
+    await UserEntity.patch({ userId }).set({
       updatedAt: new Date().toISOString(),
-    };
-    if (theme) updates.theme = theme;
-    if (locale) updates.locale = locale;
-
-    await UserEntity.patch({ userId }).set(updates).go();
+      ...(theme ? { theme } : {}),
+      ...(locale ? { locale } : {}),
+    }).go();
     res.json({ success: true });
   } catch (error) {
+    const isNotFound =
+      error instanceof Error &&
+      (error.message.includes('ConditionalCheckFailedException') ||
+        error.message.includes('conditional request failed'));
+    if (isNotFound) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
     console.error('Error updating preferences:', error);
     res.status(500).json({ success: false, error: 'Failed to update preferences' });
   }
