@@ -22,8 +22,9 @@ const ToggleGroup = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
     VariantProps<typeof toggleVariants>
 >(({ className, variant, size, children, ...props }, ref) => {
-  // Access value/defaultValue via any to support both single and multiple types
-  const p = props as any
+  // Access value/defaultValue across single and multiple union types
+  type AnyProps = typeof props & { value?: string | string[]; defaultValue?: string | string[]; onValueChange?: (v: string | string[]) => void };
+  const p = props as AnyProps;
   const [localActiveValue, setLocalActiveValue] = React.useState<string | string[] | undefined>(
     p.value ?? p.defaultValue
   )
@@ -39,7 +40,7 @@ const ToggleGroup = React.forwardRef<
       ref={ref}
       className={cn("flex items-center justify-center gap-1", className)}
       {...props}
-      onValueChange={handleValueChange as any}
+      onValueChange={handleValueChange as React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>['onValueChange']}
     >
       <ToggleGroupContext.Provider value={{ variant, size, activeValue }}>
         {children}

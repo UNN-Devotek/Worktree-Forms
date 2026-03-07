@@ -1,11 +1,11 @@
 ---
-stepsCompleted: [step-01-validate-prerequisites]
+stepsCompleted:
+  - step-01-validate-prerequisites
 inputDocuments:
   - c:\Users\White\Documents\Worktree\Worktree\_bmad-output\planning-artifacts\prd.md
   - c:\Users\White\Documents\Worktree\Worktree\_bmad-output\planning-artifacts\architecture.md
   - c:\Users\White\Documents\Worktree\Worktree\_bmad-output\planning-artifacts\ux-design-specification.md
 ---
-
 # Worktree - Epic Breakdown
 
 ## Overview
@@ -633,7 +633,7 @@ So that the app handles themes, sessions, and offline state correctly.
 **Acceptance Criteria:**
 **Given** I load the application
 **Then** the `RootLayout` wraps children with `SessionProvider`, `ThemeProvider`, `QueryClientProvider`, `Toaster`, and `OfflineSyncProvider`
-**And** `OfflineSyncProvider` initializes _after_ `QueryClient` to prevent premature retries (Lead Dev #2)
+**And** `OfflineSyncProvider` initializes *after* `QueryClient` to prevent premature retries (Lead Dev #2)
 **And** the `OfflineIndicator` banner appears when network is disconnected (UI Map 1.1)
 **And** `ThemeProvider` suppresses hydration mismatch to prevent FOUC (Lead Dev #5)
 **And** navigation between main views uses subtle Fade/Slide transitions (UX #5).
@@ -689,7 +689,7 @@ So that every story delivered going forward can satisfy the NFR13 localization r
 
 **Acceptance Criteria:**
 **Given** the Next.js frontend
-**Then** `next-intl` is installed and configured for App Router compatibility, with `en-US` as the default locale and `es-ES` as a supported locale (_Note: `next-i18next` is NOT used — it targets the Pages Router and has known SSR/hydration conflicts with App Router. Use `next-intl` which provides native `useTranslations()` hooks without extra HoC wrappers._)
+**Then** `next-intl` is installed and configured for App Router compatibility, with `en-US` as the default locale and `es-ES` as a supported locale (*Note: ****`next-i18next`**** is NOT used — it targets the Pages Router and has known SSR/hydration conflicts with App Router. Use ****`next-intl`**** which provides native ****`useTranslations()`**** hooks without extra HoC wrappers.*)
 **And** translation JSON files exist at `public/locales/en/common.json` and `public/locales/es/common.json`
 **And** all existing hardcoded user-facing strings in currently-shipped components are extracted into `en/common.json`
 **And** `es/common.json` contains Spanish translations for all extracted keys (machine-translated baseline is acceptable; human review is a separate concern)
@@ -885,7 +885,7 @@ So that the admin can find them easily.
 **Acceptance Criteria:**
 **Given** I attach a photo `IMG_999.jpg` to the "Kitchen Sink" field
 **When** the form is saved
-**Then** the client validates file size < 50MB and type is image/\* before upload attempt (QA #2)
+**Then** the client validates file size < 50MB and type is image/* before upload attempt (QA #2)
 **And** the image is resized to max 1920x1080 (FR2.5)
 **And** renamed to `Kitchen_Sink_ProjectName_Date.jpg` before upload (FR1.5).
 

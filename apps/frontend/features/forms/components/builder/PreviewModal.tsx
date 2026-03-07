@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Monitor, Tablet, Smartphone, RotateCcw, CheckCircle2, Eye, ArrowLeft } from 'lucide-react'
 import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
+import type { FormSettings } from '@/types/group-forms'
 import { FormViewer } from '@/components/groups/forms/form-viewer'
 import { cn } from '@/lib/utils'
 import { FormRunner } from './FormRunner'
@@ -52,7 +53,7 @@ export function PreviewModal({ open, onClose }: PreviewModalProps) {
 
   const { formSchema } = useFormBuilderStore()
   const config = deviceConfig[deviceType]
-  const settings = formSchema?.settings || {} as any
+  const settings: FormSettings = formSchema?.settings ?? ({} as FormSettings)
 
   // Handle form submission
   const onSubmit = (data: Record<string, any>) => {

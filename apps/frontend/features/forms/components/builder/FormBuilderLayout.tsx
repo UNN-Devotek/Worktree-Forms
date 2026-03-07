@@ -18,8 +18,8 @@ import { FormSchema, FormType } from '@/types/group-forms'
 import { cn } from '@/lib/utils'
 
 interface FormBuilderLayoutProps {
-  formId?: number
-  groupId: number
+  formId?: string | number
+  groupId: string | number | null
   groupSlug?: string        // URL-friendly group identifier
   formSlug?: string         // URL-friendly form identifier
   groupName?: string
@@ -128,6 +128,7 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
         groupSlug={groupSlug ?? projectSlug}
         formId={formId}
         targetSheetId={targetSheetId}
+        projectId={projectId}
       />
 
       {/* Preview Modal */}
@@ -189,7 +190,7 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
               data-testid="properties-panel"
               aria-label="Field properties"
             >
-              <PropertiesPanel groupId={groupId} formId={formId} isSIGRequestForm={isSIGRequestForm} />
+              <PropertiesPanel groupId={groupId} formId={formId} projectId={projectId} isSIGRequestForm={isSIGRequestForm} />
             </aside>
           )}
         </div>

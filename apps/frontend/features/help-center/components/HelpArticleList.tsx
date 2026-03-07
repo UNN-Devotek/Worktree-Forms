@@ -33,7 +33,7 @@ export function HelpArticleList() {
       if (filter.category) params.append('category', filter.category);
       if (filter.status) params.append('status', filter.status);
 
-      const response = await fetch(`/api/help/articles?${params}`);
+      const response = await fetch(`/api/help/articles?${params}`, { credentials: 'include' });
       const data = await response.json();
 
       if (data.success) {
@@ -50,6 +50,7 @@ export function HelpArticleList() {
     try {
       const response = await fetch(`/api/help/articles/${id}/publish`, {
         method: 'POST',
+        credentials: 'include',
       });
 
       if (response.ok) {

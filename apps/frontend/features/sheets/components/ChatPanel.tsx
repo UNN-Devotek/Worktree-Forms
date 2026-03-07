@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as Y from 'yjs';
 import { t } from '@/lib/i18n';
+import { useUIPreferencesStore } from '@/lib/stores/ui-preferences-store';
 
 interface Message {
   id: string;
@@ -40,20 +41,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ doc, currentUser, users, i
       // Check for mentions in the LATEST message only
       if (lastMsg && lastMsg.timestamp > Date.now() - 1000) {
           if (lastMsg.text.includes(`@${currentUser.name}`) && lastMsg.senderId !== currentUser.id) {
-             // Finding #4 (R4): wrap JSON.parse in try/catch so a corrupted localStorage
-             // value doesn't crash the entire Yjs observer (killing all future message updates)
-             try {
-               const prefs = localStorage.getItem('user_notification_prefs');
-               if (prefs) {
-                   const parsed = JSON.parse(prefs);
-                   if (parsed && typeof parsed.emailMentions === 'boolean' && parsed.emailMentions) {
-                       // Email notification would be sent here via server action
-                   } else {
-                       // Email suppressed by user preference
-                   }
-               }
-             } catch (e) {
-               console.error('[Notification System] Failed to parse notification prefs:', e);
+             const notifPrefs = useUIPreferencesStore.getState().notificationPrefs;
+             if (notifPrefs.emailMentions) {
+                 // Email notification would be sent here via server action
              }
           }
       }

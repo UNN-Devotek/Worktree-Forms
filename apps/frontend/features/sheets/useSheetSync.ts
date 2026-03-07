@@ -27,7 +27,7 @@ export const useSheetSync = (sheetId: string, initialContent?: number[] | null) 
      const fetchToken = async () => {
          try {
              // We use a dedicated API route to get a signed JWT only if authorized
-             const res = await fetch('/api/auth/ws-token');
+             const res = await fetch('/api/auth/ws-token', { credentials: 'include' });
              if (res.ok) {
                  const data = await res.json();
                  if (mounted && data.token) setToken(data.token);

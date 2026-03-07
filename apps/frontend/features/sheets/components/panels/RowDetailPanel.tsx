@@ -465,7 +465,7 @@ function RowFiles({ rowId, user }: { rowId: string; user: { name: string; color:
       const formData = new FormData();
       selectedFiles.forEach(f => formData.append('files', f));
 
-      const res = await fetch('/api/files/upload', { method: 'POST', body: formData });
+      const res = await fetch('/api/files/upload', { method: 'POST', body: formData, credentials: 'include' });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

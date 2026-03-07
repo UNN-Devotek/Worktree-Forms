@@ -43,7 +43,7 @@ export function TaskCard({ task, onRefresh, onClick, className }: TaskCardProps)
     const mentions    = parseJsonArray(task.mentions);
 
     const handleStatusChange = async (newStatus: string) => {
-        await apiClient(`/api/tasks/${task.id}`, {
+        await apiClient(`/api/projects/${task.projectId}/tasks/${task.id}`, {
             method: 'PATCH',
             body: JSON.stringify({ status: newStatus }),
         });
@@ -61,11 +61,11 @@ export function TaskCard({ task, onRefresh, onClick, className }: TaskCardProps)
         >
             {/* Badges row */}
             <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant={(PRIORITY_BADGE_MAP[task.priority] ?? 'info') as any}>
+                <Badge variant={PRIORITY_BADGE_MAP[task.priority] ?? 'info'}>
                     {priority.label}
                 </Badge>
                 <Badge variant="default">{typeName}</Badge>
-                <Badge variant={(STATUS_BADGE_MAP[task.status] ?? 'pending') as any}>
+                <Badge variant={STATUS_BADGE_MAP[task.status] ?? 'pending'}>
                     {STATUS_MAP[task.status]?.label ?? task.status}
                 </Badge>
             </div>

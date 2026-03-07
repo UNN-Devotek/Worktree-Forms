@@ -48,8 +48,8 @@ export function TaskTable({ tasks, onRefresh, onTaskClick }: TaskTableProps) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    const changeStatus = async (taskId: string, status: string) => {
-        await apiClient(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    const changeStatus = async (task: Task, status: string) => {
+        await apiClient(`/api/projects/${task.projectId}/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
         onRefresh();
     };
 
@@ -95,7 +95,7 @@ export function TaskTable({ tasks, onRefresh, onTaskClick }: TaskTableProps) {
                             <TableCell className="font-medium max-w-[200px] truncate">{task.title}</TableCell>
                             <TableCell onClick={e => e.stopPropagation()}>
                                 <Button
-                                    variant={(TASK_TYPE_BUTTON_MAP[task.taskType] ?? 'default') as any}
+                                    variant={TASK_TYPE_BUTTON_MAP[task.taskType] ?? 'default'}
                                     size="sm"
                                     className="h-6 px-2 text-xs pointer-events-none"
                                 >
@@ -103,12 +103,12 @@ export function TaskTable({ tasks, onRefresh, onTaskClick }: TaskTableProps) {
                                 </Button>
                             </TableCell>
                             <TableCell>
-                                <Badge variant={(PRIORITY_BADGE_MAP[task.priority] ?? 'info') as any}>
+                                <Badge variant={PRIORITY_BADGE_MAP[task.priority] ?? 'info'}>
                                     {priority.label}
                                 </Badge>
                             </TableCell>
                             <TableCell onClick={e => e.stopPropagation()}>
-                                <Select value={task.status} onValueChange={v => changeStatus(task.id, v)}>
+                                <Select value={task.status} onValueChange={v => changeStatus(task, v)}>
                                     <SelectTrigger className="h-7 w-auto text-xs gap-1 px-2">
                                         <SelectValue />
                                     </SelectTrigger>

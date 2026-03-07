@@ -1,71 +1,35 @@
 
-export interface OfflineArticle {
-  id: string;
-  title: string;
-  slug: string;
-  category: string;
-  content: any;
-  updatedAt: string;
-  publishedAt: string;
-}
+import { useHelpStorageStore, OfflineArticle, SyncStatus } from './stores/help-storage-store';
 
-export interface SyncStatus {
-  lastSync: number | null; // Timestamp
-  articleCount: number;
-}
+export type { OfflineArticle, SyncStatus };
 
-const STORAGE_KEYS = {
-  ARTICLES: 'worktree_offline_articles',
-  STATUS: 'worktree_offline_status'
-};
-
+/**
+ * Facade over the Zustand help storage store.
+ * Maintains the same API surface for backward compatibility.
+ */
 export const HelpStorage = {
-  saveArticles: (articles: OfflineArticle[]) => {
+  saveArticles: (articles: OfflineArticle[]): boolean => {
     try {
-      localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(articles));
-      const status: SyncStatus = {
-        lastSync: Date.now(),
-        articleCount: articles.length
-      };
-      localStorage.setItem(STORAGE_KEYS.STATUS, JSON.stringify(status));
+      useHelpStorageStore.getState().saveArticles(articles);
       return true;
-    } catch (error) {
-      console.error('Failed to save articles to offline storage:', error);
+    } catch {
       return false;
     }
   },
 
   getArticles: (): OfflineArticle[] => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.ARTICLES);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      return [];
-    }
+    return useHelpStorageStore.getState().getArticles();
   },
 
   getStatus: (): SyncStatus => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.STATUS);
-      return data ? JSON.parse(data) : { lastSync: null, articleCount: 0 };
-    } catch {
-      return { lastSync: null, articleCount: 0 };
-    }
+    return useHelpStorageStore.getState().getStatus();
   },
 
   searchArticles: (query: string): OfflineArticle[] => {
-    const articles = HelpStorage.getArticles();
-    if (!query) return articles;
-    
-    const lowerQuery = query.toLowerCase();
-    return articles.filter(article => 
-      article.title.toLowerCase().includes(lowerQuery) || 
-      article.category.toLowerCase().includes(lowerQuery)
-    );
+    return useHelpStorageStore.getState().searchArticles(query);
   },
-  
+
   clear: () => {
-    localStorage.removeItem(STORAGE_KEYS.ARTICLES);
-    localStorage.removeItem(STORAGE_KEYS.STATUS);
-  }
+    useHelpStorageStore.getState().clear();
+  },
 };

@@ -1,22 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthenticatedRequest } from './authenticate.js';
 import { AuditLogEntity } from '../lib/dynamo/index.js';
 import { nanoid } from 'nanoid';
 
 /**
  * Audit log middleware -- records successful mutations to the AuditLog table.
- * Apply after auth middleware on routes you want to audit.
+ * Uses res.on('finish') to avoid monkey-patching res.json, which can conflict
+ * with other middleware that also wraps the response.
  * Usage: router.post('/resource', auditMiddleware('resource.create'), handler)
  */
 export function auditMiddleware(action: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const originalJson = res.json.bind(res);
-
-    (res as any).json = function (body: unknown) {
-      const result = originalJson(body);
-
+    res.on('finish', () => {
       // Only log successful mutations (2xx)
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        const userId = (req as any).user?.id as string | undefined;
+        const userId = (req as AuthenticatedRequest).user?.id;
         const projectId = req.params.projectId || req.body?.projectId || 'global';
         if (userId) {
           AuditLogEntity.create({
@@ -32,9 +30,7 @@ export function auditMiddleware(action: string) {
             .catch((err: Error) => console.error('Audit log write failed (non-blocking):', err.message));
         }
       }
-
-      return result;
-    };
+    });
 
     next();
   };
@@ -42,18 +38,14 @@ export function auditMiddleware(action: string) {
 
 /**
  * Security event middleware -- records 401/403 responses to the AuditLog table.
- * Apply on routes where authentication or authorization failures should be tracked.
+ * Uses res.on('finish') to avoid monkey-patching res.json.
  * Usage: router.post('/resource', auditSecurityEvent('resource.access'), handler)
  */
 export function auditSecurityEvent(action: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const originalJson = res.json.bind(res);
-
-    (res as any).json = function (body: unknown) {
-      const result = originalJson(body);
-
+    res.on('finish', () => {
       if (res.statusCode === 401 || res.statusCode === 403) {
-        const userId = ((req as any).user?.id as string) ?? 'anonymous';
+        const userId = (req as AuthenticatedRequest).user?.id ?? 'anonymous';
         const projectId = req.params.projectId || 'global';
         AuditLogEntity.create({
           auditId: nanoid(),
@@ -67,9 +59,7 @@ export function auditSecurityEvent(action: string) {
           .go()
           .catch((err: Error) => console.error('Security audit log failed:', err.message));
       }
-
-      return result;
-    };
+    });
 
     next();
   };

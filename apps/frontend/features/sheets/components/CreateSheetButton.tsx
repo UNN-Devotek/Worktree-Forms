@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createSheet } from '@/features/sheets/server/sheet-actions-nocodb';
+import { createSheet } from '@/features/sheets/server/sheet-actions';
 import { toast } from 'sonner';
 
 interface CreateSheetButtonProps {

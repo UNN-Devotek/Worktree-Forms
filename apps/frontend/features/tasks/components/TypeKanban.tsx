@@ -113,7 +113,7 @@ export function TypeKanban({ tasks, taskType, onBack, onRefresh, onTaskClick }: 
         if (task.status === newStatus) return;
 
         try {
-            await apiClient(`/api/tasks/${task.id}`, {
+            await apiClient(`/api/projects/${task.projectId}/tasks/${task.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status: newStatus }),
             });
@@ -197,7 +197,7 @@ export function TypeKanban({ tasks, taskType, onBack, onRefresh, onTaskClick }: 
                                 <div key={status} className="flex-shrink-0 w-72 flex flex-col gap-2">
                                     {/* Column header */}
                                     <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/60">
-                                        <Badge variant={(STATUS_BADGE_MAP[status] ?? 'pending') as any}>
+                                        <Badge variant={STATUS_BADGE_MAP[status] ?? 'pending'}>
                                             {col.label}
                                         </Badge>
                                         <span className="flex items-center gap-1.5">

@@ -43,10 +43,10 @@ export function AiAssistant() {
     try {
         const response = await fetch('/api/ai/chat', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 messages: [...messages, userMsg],
-                projectId: 'rag-test-project' // MVP hardcoded or from context
             })
         });
 

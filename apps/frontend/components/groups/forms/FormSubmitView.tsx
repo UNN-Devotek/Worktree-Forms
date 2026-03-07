@@ -33,7 +33,7 @@ export function FormSubmitView({ form }: FormSubmitViewProps) {
     )
   }
 
-  if (!form.group_id) {
+  if (!form.id && !form.formId) {
     return (
       <div className="p-4">
         <p className="text-sm text-destructive">Form configuration error: no group specified.</p>
@@ -44,9 +44,9 @@ export function FormSubmitView({ form }: FormSubmitViewProps) {
   return (
       <div className="max-w-4xl mx-auto py-6">
          <FormRenderer
-           formSchema={form.form_schema}
+           formSchema={(form.form_schema ?? (form as any).schema)}
            formId={form.id}
-           groupId={form.group_id}
+           groupId={form.group_id ?? form.projectId ?? null}
            onSuccess={handleSuccess}
          />
       </div>

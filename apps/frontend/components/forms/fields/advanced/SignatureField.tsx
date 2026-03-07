@@ -9,7 +9,6 @@ import { FormFieldBase } from '@/types/group-forms'
 import { Eraser, Save, Lock, PenTool, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFormUpload } from '@/contexts/form-upload-context'
-import { useParams } from 'next/navigation'
 import Image from 'next/image'
 
 interface UploadedFileData {
@@ -36,8 +35,6 @@ const SignatureFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase
     const form = useFormContext()
     const error = form?.formState?.errors[field.name]?.message as string
     const { uploadFile, isConfigured } = useFormUpload()
-    const params = useParams()
-    const projectSlug = params.slug as string || 'global'
 
     const sigCanvasRef = useRef<SignatureCanvas>(null)
     const containerRef = useRef<HTMLDivElement>(null)

@@ -4,6 +4,7 @@ node_modules/
 .pnp.js
 venv/
 env/
+.env
 
 # Logs
 *.log
@@ -54,6 +55,13 @@ postgres_data/
 *.temp
 tests/legacy/
 tests/component/
-test_results
-playwright-report
 .env.dokploy
+
+# Playwright output
+test-results/
+playwright-report/
+playwright/.auth/
+.playwright-mcp/*.png
+.playwright-mcp/*.log
+.playwright-mcp/*.txt
+.playwright-mcp/*.md

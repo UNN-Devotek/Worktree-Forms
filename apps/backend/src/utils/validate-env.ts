@@ -1,41 +1,27 @@
 /**
- * Environment variable validation for Docker deployment
- * Ensures production environment is correctly configured
+ * Environment variable validation for Docker deployment.
+ * Validates DynamoDB/S3/Redis stack (no Prisma/PostgreSQL).
  */
 
 export function validateEnvironment(): void {
-  const requiredVars = [
-    'DATABASE_URL',
+  const required = [
     'JWT_SECRET',
     'S3_BUCKET',
-  ]
+    'DYNAMODB_TABLE_NAME',
+  ];
 
-  const missingVars = requiredVars.filter(varName => !process.env[varName])
-
-  if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(', ')}`
-    )
+  const missing = required.filter((v) => !process.env[v]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  // Validate DATABASE_URL is not using localhost in production
   if (process.env.NODE_ENV === 'production') {
-    const dbUrl = process.env.DATABASE_URL || ''
-
-    if (dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1')) {
-      throw new Error(
-        'DATABASE_URL cannot use localhost in production. Use Docker service name instead.'
-      )
+    // In production there must be no local endpoint overrides
+    if (process.env.DYNAMODB_ENDPOINT) {
+      throw new Error('DYNAMODB_ENDPOINT must not be set in production (use real AWS DynamoDB).');
     }
-
-    // Validate S3 endpoint
-    const s3Endpoint = process.env.S3_ENDPOINT || ''
-
-    if (s3Endpoint.includes('localhost')) {
-      console.warn(
-        'WARNING: S3_ENDPOINT contains localhost. This may fail in Docker. Use service name instead.'
-      )
+    if (process.env.S3_ENDPOINT) {
+      throw new Error('S3_ENDPOINT must not be set in production (use real AWS S3).');
     }
   }
-
 }

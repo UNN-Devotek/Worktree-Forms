@@ -1,13 +1,34 @@
 import { create } from 'zustand'
-import { FileSystemItem } from '@/types/file-system'
+import { FileSystemItem, FormItem } from '@/types/file-system'
 import { apiClient } from '@/lib/api'
 
+interface FolderApiItem {
+  id: string
+  name: string
+  parentId?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface FormApiItem {
+  formId?: string
+  id?: string
+  name?: string
+  title?: string
+  slug?: string
+  folderId?: string | null
+  targetSheetId?: string
+  createdAt: string
+  updatedAt: string
+}
+
 interface ProjectFileSystemStore {
-  items: FileSystemItem[]
+  items: (FileSystemItem | FormItem)[]
   currentFolderId: string | null
   expandedFolders: string[]
   isLoading: boolean
   hasFolders: boolean
+  projectId: string | null
 
   // Actions
   initialize: (projectId: string) => Promise<void>
@@ -25,44 +46,47 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
   expandedFolders: [],
   isLoading: false,
   hasFolders: false,
+  projectId: null,
 
   initialize: async (projectId: string) => {
-    set({ isLoading: true })
+    set({ isLoading: true, items: [], projectId })
     try {
       const [foldersRes, formsRes] = await Promise.all([
-        apiClient<any>(`/api/folders?projectId=${projectId}`),
-        apiClient<any>(`/api/projects/${projectId}/forms`),
+        apiClient<{ success: boolean; data?: { folders: FolderApiItem[] } }>(`/api/folders?projectId=${projectId}`),
+        apiClient<{ success: boolean; data?: { forms: FormApiItem[] } }>(`/api/projects/${projectId}/forms`),
       ])
 
-      const items: FileSystemItem[] = []
+      const items: (FileSystemItem | FormItem)[] = []
 
       if (foldersRes.success && foldersRes.data?.folders) {
-        foldersRes.data.folders.forEach((f: any) => {
+        foldersRes.data.folders.forEach((f: FolderApiItem) => {
           items.push({
             id: `folder-${f.id}`,
             dbId: f.id,
             name: f.name,
-            type: 'folder',
+            type: 'folder' as const,
             parentId: f.parentId ? `folder-${f.parentId}` : null,
             createdAt: f.createdAt,
             updatedAt: f.updatedAt,
-          } as any)
+          })
         })
       }
 
       if (formsRes.success && formsRes.data?.forms) {
-        formsRes.data.forms.forEach((f: any) => {
+        formsRes.data.forms.forEach((f: FormApiItem) => {
+          // FormEntity uses formId (nanoid string) and name — not id/title/slug
+          const id = f.formId ?? f.id
           items.push({
-            id: `form-${f.id}`,
-            dbId: f.id,
-            name: f.title,
-            type: 'form',
+            id: `form-${id}`,
+            dbId: id,
+            name: f.name ?? f.title ?? 'Untitled Form',
+            type: 'form' as const,
             parentId: f.folderId ? `folder-${f.folderId}` : null,
             createdAt: f.createdAt,
             updatedAt: f.updatedAt,
-            formSlug: f.slug,
+            formSlug: f.formId ?? f.slug ?? id,
             targetSheetId: f.targetSheetId,
-          } as any)
+          })
         })
       }
 
@@ -92,15 +116,15 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
     const dbParentId = parentId ? parentId.replace('folder-', '') : null
 
     try {
-      const res = await apiClient<any>('/api/folders', {
+      const res = await apiClient<{ success: boolean; data?: { folder: FolderApiItem } }>('/api/folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, parentId: dbParentId, projectId }),
       })
 
       if (res.success && res.data?.folder) {
-        const f = res.data.folder
-        const newFolder: any = {
+        const f = res.data.folder as FolderApiItem
+        const newFolder: FileSystemItem = {
           id: `folder-${f.id}`,
           dbId: f.id,
           name: f.name,
@@ -120,6 +144,7 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
   },
 
   moveItem: async (itemId, targetFolderId) => {
+    const { projectId } = get()
     const item = get().items.find((i) => i.id === itemId)
     if (!item) return
 
@@ -129,13 +154,13 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
 
     try {
       if (isForm) {
-        await apiClient(`/api/groups/1/forms/${dbId}`, {
+        await apiClient<{ success: boolean }>(`/api/projects/${projectId}/forms/${dbId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folderId: dbTargetId }),
         })
       } else {
-        await apiClient(`/api/folders/${dbId}`, {
+        await apiClient<{ success: boolean }>(`/api/folders/${dbId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ parentId: dbTargetId }),
@@ -151,18 +176,19 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
       }))
     } catch (error) {
       console.error('Failed to move item:', error)
-      const { currentFolderId } = get()
-      // Refresh on failure — re-initialize requires projectId which we don't store here
     }
   },
 
   deleteItem: async (itemId) => {
+    const { projectId } = get()
     const isForm = itemId.startsWith('form-')
     const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '')
 
     try {
-      if (!isForm) {
-        await apiClient(`/api/folders/${dbId}`, { method: 'DELETE' })
+      if (isForm) {
+        await apiClient<{ success: boolean }>(`/api/projects/${projectId}/forms/${dbId}`, { method: 'DELETE' })
+      } else {
+        await apiClient<{ success: boolean }>(`/api/folders/${dbId}`, { method: 'DELETE' })
       }
 
       set((state) => {
@@ -178,15 +204,16 @@ export const useProjectFileSystemStore = create<ProjectFileSystemStore>((set, ge
   },
 
   renameItem: async (itemId, newName) => {
+    const { projectId } = get()
     const isForm = itemId.startsWith('form-')
     const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '')
 
     try {
       if (isForm) {
-        await apiClient(`/api/groups/1/forms/${dbId}`, {
+        await apiClient(`/api/projects/${projectId}/forms/${dbId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: newName }),
+          body: JSON.stringify({ name: newName }),
         })
       } else {
         await apiClient(`/api/folders/${dbId}`, {

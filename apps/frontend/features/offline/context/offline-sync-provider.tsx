@@ -89,6 +89,7 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
                            await fetch(`/api/routes/stops/${stopId}/status`, {
                                method: 'PATCH',
                                headers: { 'Content-Type': 'application/json' },
+                               credentials: 'include',
                                body: JSON.stringify({ status: 'completed' })
                            });
                            queryClient.invalidateQueries({ queryKey: ['stop', String(stopId)] });

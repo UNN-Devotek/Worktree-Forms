@@ -98,7 +98,7 @@ export async function inviteUser(_prevState: unknown, formData: FormData) {
       status: "PENDING",
     }).go();
 
-    // TODO: Send invitation email via SES/SMTP
+    // Story 1-2: Send invitation email via SES/SMTP (deferred — invite link returned to caller)
     // const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
     // await sendInvitationEmail({ email, token, projectId });
 
@@ -228,6 +228,15 @@ export async function revokeInvitation(
   const session = await auth();
   if (!session?.user?.id) return { error: "Unauthorized" };
 
+  // Require ADMIN+ role to revoke invitations
+  const callerMembership = await ProjectMemberEntity.query.primary({
+    projectId,
+    userId: session.user.id,
+  }).go();
+  const callerRoles = callerMembership.data[0]?.roles ?? [];
+  const hasAdmin = callerRoles.some((r) => ["ADMIN", "OWNER"].includes(r));
+  if (!hasAdmin) return { error: "Requires ADMIN role." };
+
   try {
     await InvitationEntity.patch({ projectId, invitationId })
       .set({ status: "REVOKED" })
@@ -240,10 +249,17 @@ export async function revokeInvitation(
   }
 }
 
-export async function getProjectInvitations(projectId: string) {
+export async function getProjectInvitations(projectId: string, limit = 100) {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const result = await InvitationEntity.query.primary({ projectId }).go();
+  // Verify caller is a member of the project
+  const membership = await ProjectMemberEntity.query.primary({
+    projectId,
+    userId: session.user.id,
+  }).go();
+  if (membership.data.length === 0) return [];
+
+  const result = await InvitationEntity.query.primary({ projectId }).go({ limit });
   return result.data.filter((inv) => inv.status === "PENDING");
 }

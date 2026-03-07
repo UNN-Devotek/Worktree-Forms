@@ -16,7 +16,7 @@ interface YjsState {
 }
 
 const getWebSocketUrl = () => {
-  if (typeof window === 'undefined') return 'ws://localhost:1234';
+  if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:1234';
   if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.hostname;

@@ -26,6 +26,12 @@ interface FormDetailViewProps {
     group_id: string | number | null
     form_schema: GroupForm['form_schema']
     targetSheetId: string | null
+    // DynamoDB field aliases
+    formId?: string
+    projectId?: string
+    schema?: any
+    status?: string
+    name?: string
   }
   projectSlug: string
   projectId: string
@@ -85,7 +91,7 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
 
   const handleTabChange = (value: string) => {
     if (value === 'edit') {
-      router.push(`/project/${projectSlug}/forms/builder/${form.id}`)
+      router.push(`/project/${projectSlug}/forms/builder/${form.id}?projectId=${projectId}`)
       return
     }
     setActiveTab(value)
@@ -110,14 +116,14 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-3xl font-bold tracking-tight">{form.title}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{(form.title ?? form.name)}</h1>
               <span className={cn(
                 'px-2.5 py-0.5 rounded-full text-xs font-medium border',
-                form.is_published
+                (form.is_published ?? form.status === 'PUBLISHED')
                   ? 'bg-green-500/10 text-green-500 border-green-500/20'
                   : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
               )}>
-                {form.is_published ? 'Published' : 'Draft'}
+                {(form.is_published ?? form.status === 'PUBLISHED') ? 'Published' : 'Draft'}
               </span>
               {form.targetSheetId && (
                 <Button
@@ -227,12 +233,12 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
                 <CardContent>
                   <div className={cn(
                     'text-2xl font-bold',
-                    form.is_published ? 'text-green-500' : 'text-amber-500'
+                    (form.is_published ?? form.status === 'PUBLISHED') ? 'text-green-500' : 'text-amber-500'
                   )}>
-                    {form.is_published ? 'Live' : 'Draft'}
+                    {(form.is_published ?? form.status === 'PUBLISHED') ? 'Live' : 'Draft'}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {form.is_published ? 'Accepting responses' : 'Not published yet'}
+                    {(form.is_published ?? form.status === 'PUBLISHED') ? 'Accepting responses' : 'Not published yet'}
                   </p>
                 </CardContent>
               </Card>
@@ -256,11 +262,11 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
           <TabsContent value="submit" className="max-w-3xl mx-auto mt-0 w-full">
             <Card className="flex flex-col">
               <CardHeader>
-                <CardTitle>Submit Form: {form.title}</CardTitle>
+                <CardTitle>Submit Form: {(form.title ?? form.name)}</CardTitle>
                 <CardDescription>Fill out the form below to submit a response.</CardDescription>
               </CardHeader>
               <CardContent className="overflow-y-auto">
-                <FormSubmitView form={form as any} />
+                <FormSubmitView form={{ ...form, group_id: projectId, projectId } as unknown as GroupForm} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -300,7 +306,7 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
                 ) : (
                   <SubmissionsTable
                     formId={form.id}
-                    formSchema={form.form_schema as any}
+                    formSchema={(form.form_schema ?? form.schema)}
                     submissionsApiPath={`/api/projects/${projectId}/forms/${form.id}/submissions`}
                   />
                 )}

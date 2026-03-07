@@ -58,7 +58,7 @@ export function KanbanBoard({ tasks, onDrillDown, onRefresh, onTaskClick }: Kanb
                         {/* Column header — clickable to drill down */}
                         <div className="flex items-center justify-between px-1 py-1 group">
                             <Button
-                                variant={(TASK_TYPE_BUTTON_MAP[type] ?? 'default') as any}
+                                variant={TASK_TYPE_BUTTON_MAP[type] ?? 'default'}
                                 size="sm"
                                 onClick={() => onDrillDown(type)}
                             >

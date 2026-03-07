@@ -22,8 +22,9 @@ interface UploadResponse {
 }
 
 interface ImageUploadFieldProps {
-  groupId: number
-  formId?: number
+  groupId: string | number | null
+  formId?: string | number
+  projectId?: string
   currentUrl?: string
   currentObjectKey?: string
   onUpload: (objectKey: string, url: string) => void
@@ -47,7 +48,7 @@ function getDisplayUrl(currentObjectKey?: string, currentUrl?: string): string |
   return null
 }
 
-export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey, onUpload }: ImageUploadFieldProps) {
+export function ImageUploadField({ groupId, formId, projectId, currentUrl, currentObjectKey, onUpload }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -73,8 +74,8 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
       return
     }
 
-    // Check if we have the required params - formId is required for uploads
-    if (!groupId || !formId) {
+    // Need either projectId+formId or groupId+formId to upload
+    if (!formId) {
       toast.error("Error", { description: "Please save the form first before uploading images" })
       return
     }
@@ -85,8 +86,12 @@ export function ImageUploadField({ groupId, formId, currentUrl, currentObjectKey
       const formData = new FormData()
       formData.append('file', file)
 
+      const uploadEndpoint = projectId
+        ? `/api/projects/${projectId}/forms/${formId}/upload`
+        : `/api/groups/${groupId}/forms/${formId}/upload`
+
       const response = await apiClient<UploadResponse>(
-        `/api/groups/${groupId}/forms/${formId}/upload`,
+        uploadEndpoint,
         {
           method: 'POST',
           body: formData,

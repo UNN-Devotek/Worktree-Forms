@@ -19,23 +19,23 @@
 
 3. **Pre-Deployment Checks**
 
-   ```bash
+```bash
    npm run test
    npm run build
    npm run lint
-   ```
+```
 
 4. **Deploy** — Push to GitHub; GitHub Actions → ECR → ECS rolling deploy.
 
-   ```bash
+```bash
    git push origin main
-   ```
+```
 
 ### Access & Testing
 
 - **Live Site**: [https://worktree.pro](https://worktree.pro)
 - **API Documentation**: [https://worktree.pro/api/docs](https://worktree.pro/api/docs)
-- **Architecture**: [`_bmad-output/planning-artifacts/architecture.md`](./_bmad-output/planning-artifacts/architecture.md)
+- **Architecture**: [architecture.md](./_bmad-output/planning-artifacts/architecture.md)
 
 ---
 
@@ -74,16 +74,16 @@ bash scripts/seed-dev.sh
 
 ### Local Service Map
 
-| Service                       | Docker Image                 | Port   | Notes                             |
-| ----------------------------- | ---------------------------- | ------ | --------------------------------- |
-| `app`                         | Project Dockerfile           | `3005` | Next.js + Express API             |
-| `ws-server`                   | Project Dockerfile           | `1234` | Hocuspocus WebSocket              |
-| `worker`                      | Project Dockerfile           | —      | BullMQ background jobs            |
-| `dynamodb-local`              | `amazon/dynamodb-local`      | `8100` | Full DynamoDB API emulation       |
-| `dynamodb-admin`              | `aaronshaf/dynamodb-admin`   | `8101` | Browser table inspector (DX only) |
-| `redis`                       | `redis:7`                    | `6380` | ElastiCache equivalent            |
-| `localstack`                  | `localstack/localstack`      | `4510` | AWS S3 local emulation            |
-| `pinecone-local` _(optional)_ | `pinecone-io/pinecone-local` | `5080` | In-memory Pinecone emulator       |
+| Service | Docker Image | Port | Notes |
+| --- | --- | --- | --- |
+| `app` | Project Dockerfile | `3005` | Next.js + Express API |
+| `ws-server` | Project Dockerfile | `1234` | Hocuspocus WebSocket |
+| `worker` | Project Dockerfile | — | BullMQ background jobs |
+| `dynamodb-local` | `amazon/dynamodb-local` | `8100` | Full DynamoDB API emulation |
+| `dynamodb-admin` | `aaronshaf/dynamodb-admin` | `8101` | Browser table inspector (DX only) |
+| `redis` | `redis:7` | `6380` | ElastiCache equivalent |
+| `localstack` | `localstack/localstack` | `4510` | AWS S3 local emulation |
+| `pinecone-local` *(optional)* | `pinecone-io/pinecone-local` | `5080` | In-memory Pinecone emulator |
 
 ### Required Environment Variables (`.env.local`)
 
@@ -182,7 +182,7 @@ bash scripts/seed-dev.sh
 - Re-create the bucket: `bash scripts/seed-dev.sh` (step 1 recreates it)
 - Confirm `S3_ENDPOINT=http://localstack:4510` and `forcePathStyle: true` in `lib/s3.ts`
 
-**Module not found after `docker compose down -v`:**
+**Module not found after ****`docker compose down -v`****:**
 
 ```bash
 # Stale node_modules volume — rebuild
@@ -251,7 +251,7 @@ worktree/
 ### TypeScript
 
 - **Strict Mode**: Always enabled (`"strict": true`, `noImplicitAny: true`)
-- **No `any`**: Use `unknown` then narrow, or model the type properly
+- **No ****`any`**: Use `unknown` then narrow, or model the type properly
 - **Zod schemas**: Required for ALL API inputs (REST endpoints and Server Actions)
 
 ### File Naming
@@ -273,8 +273,8 @@ All logic lives in `apps/frontend/features/{domain}`. No loose files in `compone
 ### DynamoDB / ElectroDB Rules
 
 - **Never mock the DynamoDB SDK** — use vitest-dynalite for integration tests.
-- **Never write raw DynamoDB `PutItem`** in routes — always go through an ElectroDB entity.
-- **All queries scoped by `projectId`** — enforced in `requireProjectAccess()` before any DB call.
+- **Never write raw DynamoDB ****`PutItem`** in routes — always go through an ElectroDB entity.
+- **All queries scoped by ****`projectId`** — enforced in `requireProjectAccess()` before any DB call.
 - **No migrations** — ElectroDB entity definitions are the schema contract.
 
 ### Next.js Runtime Rules
@@ -285,7 +285,7 @@ All logic lives in `apps/frontend/features/{domain}`. No loose files in `compone
 
 ### Defensive Coding (Anti-Patterns to Avoid)
 
-- **No `as any`, `@ts-expect-error`, or `eslint-disable-next-line`**: Enforce strict types and fix root compiler issues.
+- **No ****`as any`****, ****`@ts-expect-error`****, or ****`eslint-disable-next-line`**: Enforce strict types and fix root compiler issues.
 - **No Hardcoded Hex/Z-Index**: Rely strictly on `globals.css` scales and Tailwind `hsl` vars. NEVER interpolate classes via raw strings (`className={\`...\`}`); securely use `cn(...)`.
 - **No Unmanaged Browser Operations**: NEVER utilize `window.localStorage` directly or raw `fetch(...)` arbitrarily. State relies on Context/Zustand wrappers, and data fetches use server actions or centralized bounded clients. NEVER use raw `<a>` tags for internal links; use `<Link>`.
 - **No Silent UI Failures**: NEVER `return null;` as a fail-safe against broken props. Map failures to Skeletons or application `<ErrorBoundary>` wrappers.
@@ -424,15 +424,15 @@ No manual steps required after `git push origin main`.
 
 - **Live Site**: https://worktree.pro
 - **API**: https://worktree.pro/api
-- **Health Check**: `curl https://worktree.pro/api/health`
+- **Health Check**: `curl ``https://worktree.pro/api/health`
 
 ### ECS Services
 
-| Service     | Description                                 |
-| ----------- | ------------------------------------------- |
-| `app`       | Next.js frontend + Express REST API         |
+| Service | Description |
+| --- | --- |
+| `app` | Next.js frontend + Express REST API |
 | `ws-server` | Hocuspocus WebSocket (real-time Smart Grid) |
-| `worker`    | BullMQ background job processor             |
+| `worker` | BullMQ background job processor |
 
 ### Production Environment Variables (set in ECS Task Definition / GitHub Secrets)
 

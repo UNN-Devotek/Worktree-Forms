@@ -24,12 +24,16 @@ export default async function ProjectFormDetailPage({
   if (!form) notFound();
 
   // Get sheet token if the form has a linked sheet
-  // Note: FormEntity schema doesn't have targetSheetId; adapt as needed
   const sheetToken: string | null = null;
 
+  const userId = session?.user?.id ?? "anon";
+  let colorHash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    colorHash = userId.charCodeAt(i) + ((colorHash << 5) - colorHash);
+  }
   const user = {
     name: session?.user?.name || "Anonymous",
-    color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+    color: "#" + (colorHash & 0xffffff).toString(16).padStart(6, "0"),
   };
 
   return (
@@ -39,9 +43,10 @@ export default async function ProjectFormDetailPage({
         slug: form.formId,
         title: form.name,
         is_published: form.status === "PUBLISHED",
-        group_id: null,
+        group_id: project.projectId,
+        projectId: project.projectId,
         form_schema: form.schema as unknown as FormSchema,
-        targetSheetId: null,
+        targetSheetId: form.targetSheetId ?? null,
       }}
       projectSlug={slug}
       projectId={project.projectId}

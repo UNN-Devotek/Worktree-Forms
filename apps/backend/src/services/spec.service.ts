@@ -1,5 +1,7 @@
 import { FileUploadEntity } from '../lib/dynamo/index.js';
 import { nanoid } from 'nanoid';
+import { createEmbedding } from './embedding.service.js';
+import { upsertVector, queryVectors, deleteVectors } from './vector-search.js';
 
 /**
  * Specifications are stored as FileUpload entities with metadata in the
@@ -9,7 +11,8 @@ import { nanoid } from 'nanoid';
  */
 export class SpecService {
   /**
-   * Create a new Specification entry (backed by FileUploadEntity)
+   * Create a new Specification entry (backed by FileUploadEntity).
+   * Embeds the title + keywords into Pinecone for semantic search.
    */
   static async createSpec(data: {
     projectId: string;
@@ -31,14 +34,32 @@ export class SpecService {
       uploadedBy: data.uploadedById,
     }).go();
 
+    // Embed title + keywords into Pinecone for semantic search
+    const embeddingText = data.keywords
+      ? `${data.title} ${data.keywords}`
+      : data.title;
+
+    try {
+      const vector = await createEmbedding(embeddingText);
+      await upsertVector(fileId, vector, {
+        projectId: data.projectId,
+        submissionId: '',
+        formId: '',
+        entityType: 'spec',
+        text: embeddingText.slice(0, 1000),
+      });
+    } catch (embedError) {
+      // Non-fatal: log but don't fail the create operation
+      console.error('SpecService: Failed to embed spec into Pinecone:', embedError);
+    }
+
     return result.data;
   }
 
   /**
-   * Search Specifications in a project (client-side filter for DynamoDB)
+   * Keyword search for Specifications in a project (DynamoDB client-side filter).
    */
   static async searchSpecs(projectId: string, query: string, type: string = 'SPEC') {
-    // Scan project files and filter for spec types
     const result = await FileUploadEntity.query.primary({ projectId }).go();
     const specMime = `application/x-spec-${type.toLowerCase()}`;
     let specs = result.data.filter((f) => f.mimeType === specMime);
@@ -56,9 +77,42 @@ export class SpecService {
   }
 
   /**
+   * Semantic search for Specifications using Pinecone vector similarity.
+   * Embeds the query, queries Pinecone filtered by entityType:'spec', then
+   * fetches full FileUpload records for each matched fileId.
+   */
+  static async semanticSearchSpecs(projectId: string, query: string, topK = 5, minScore = 0.65) {
+    const vector = await createEmbedding(query);
+    const matches = await queryVectors(vector, projectId, topK);
+
+    // Filter by entityType and apply minimum similarity score threshold to avoid
+    // returning irrelevant results when no good semantic match exists.
+    const specMatches = matches.filter(
+      (m) => m.metadata.entityType === 'spec' && m.score >= minScore
+    );
+    if (specMatches.length === 0) return [];
+
+    const records = await Promise.all(
+      specMatches.map((m) =>
+        FileUploadEntity.get({ projectId, fileId: m.id }).go(),
+      ),
+    );
+
+    return records
+      .map((r) => r.data)
+      .filter((d): d is NonNullable<typeof d> => d !== null && d !== undefined);
+  }
+
+  /**
    * Delete a Specification
    */
   static async deleteSpec(projectId: string, fileId: string) {
     await FileUploadEntity.delete({ projectId, fileId }).go();
+    // Also remove the Pinecone vector so deleted specs don't surface in semantic search
+    try {
+      await deleteVectors([fileId]);
+    } catch (vectorError) {
+      console.error('SpecService: Failed to delete Pinecone vector for spec:', vectorError);
+    }
   }
 }

@@ -102,9 +102,8 @@ router.post('/chat', authenticate, async (req: Request, res: Response) => {
   try {
     const { messages, projectId } = req.body;
     const lastMessage = messages[messages.length - 1];
-    const targetProject = projectId || 'rag-test-project';
-
-    const stream = await AiService.query(lastMessage.content, targetProject);
+    // projectId is optional — if provided, RAG context from that project is used.
+    const stream = await AiService.query(lastMessage.content, projectId ?? null);
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 

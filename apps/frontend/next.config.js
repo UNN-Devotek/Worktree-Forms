@@ -1,17 +1,38 @@
 const path = require('path');
 
+// Turbopack resolveAlias — mirrors the webpack resolve.alias entries below.
+// Must be built before nextConfig since resolveAlias is a static object.
+const turbopackResolveAlias = {
+  // canvas is a native addon — redirect to empty stub so imports don't fail
+  canvas: './empty-module.js',
+  // Redirect backend DynamoDB client imports to the frontend's own client so
+  // that cross-package entity imports (user.entity.ts → ../client.js) resolve.
+};
+turbopackResolveAlias[path.resolve(__dirname, '../backend/src/lib/dynamo/client.js')] =
+  path.resolve(__dirname, 'lib/dynamo/client.ts');
+turbopackResolveAlias[path.resolve(__dirname, '../backend/src/lib/dynamo/client')] =
+  path.resolve(__dirname, 'lib/dynamo/client.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   cacheMaxMemorySize: 0, // Disable in-memory ISR cache — use Redis for multi-instance ECS
   cacheHandler: require.resolve("./lib/cache-handler.js"),
+  // Prevent Node.js-only packages from being bundled for the browser
+  serverExternalPackages: [
+    'electrodb',
+    '@aws-sdk/client-dynamodb',
+    '@aws-sdk/lib-dynamodb',
+    '@aws-sdk/client-s3',
+    '@aws-sdk/s3-request-presigner',
+    '@pinecone-database/pinecone',
+    'ioredis',
+    'bcryptjs',
+    'jsonwebtoken',
+    'openai',
+  ],
   turbopack: {
-    resolveAlias: {
-      // canvas is a native addon — redirect to empty stub so imports don't fail
-      canvas: './empty-module.js',
-      // bahttext, bessel, jstat, chevrotain are real npm packages;
-      // Turbopack resolves them natively — no alias needed (unlike webpack)
-    },
+    resolveAlias: turbopackResolveAlias,
   },
   experimental: {
     optimizePackageImports: [
@@ -49,22 +70,32 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      // Production: S3 presigned URLs (bucket-specific hostname)
       {
         protocol: 'https',
-        hostname: 'minio.worktree.pro',
+        hostname: '*.s3.amazonaws.com',
         port: '',
         pathname: '/**',
       },
+      // Production: worktree.pro CDN / API-proxied images
       {
         protocol: 'https',
         hostname: 'worktree.pro',
         port: '',
         pathname: '/**',
       },
+      // Local dev: LocalStack S3 (port 4510, rewritten from Docker 'localstack' hostname)
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '',
+        port: '4510',
+        pathname: '/**',
+      },
+      // Local dev: backend presigned URL proxy (port 5005)
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5005',
         pathname: '/**',
       },
     ],

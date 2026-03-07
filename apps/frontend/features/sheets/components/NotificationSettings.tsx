@@ -1,5 +1,6 @@
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { t } from '@/lib/i18n';
+import { toast } from 'sonner';
+import { useUIPreferencesStore } from '@/lib/stores/ui-preferences-store';
+import { updateNotificationPreferences } from '@/features/users/server/user-actions';
 
 interface NotificationSettingsProps {
     isOpen: boolean;
@@ -24,32 +28,35 @@ interface NotificationSettingsProps {
  * Also localized all strings.
  */
 export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen, onClose }) => {
-    const DEFAULT_PREFS = {
-        emailMentions: true,
-        pushAssignments: true,
-        dailyDigest: false,
-    };
+    const storedPrefs = useUIPreferencesStore((s) => s.notificationPrefs);
+    const setNotificationPrefs = useUIPreferencesStore((s) => s.setNotificationPrefs);
+    const [preferences, setPreferences] = React.useState(storedPrefs);
 
-    const [preferences, setPreferences] = useState(DEFAULT_PREFS);
+    // Sync local state when store changes (e.g. on mount/rehydration)
+    React.useEffect(() => {
+        setPreferences(storedPrefs);
+    }, [storedPrefs]);
 
-    // Finding #12 (R9): merge parsed localStorage with defaults for schema safety.
-    // Older saved data may be missing keys added in future versions.
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const stored = localStorage.getItem('user_notification_prefs');
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                setPreferences({ ...DEFAULT_PREFS, ...parsed });
-            } catch (e) {
-                console.error("Failed to parse notification prefs", e);
+    const [isSaving, setIsSaving] = React.useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            // Persist to Zustand store (local, survives page reload via persist middleware).
+            setNotificationPrefs(preferences);
+            // Persist to DynamoDB for cross-device consistency.
+            const ok = await updateNotificationPreferences(preferences);
+            if (ok) {
+                toast.success(t('notifications.saved', 'Preferences saved'));
+            } else {
+                toast.error(t('notifications.save_error', 'Failed to save — stored locally'));
             }
+        } catch {
+            toast.error(t('notifications.save_error', 'Failed to save preferences'));
+        } finally {
+            setIsSaving(false);
+            onClose();
         }
-    }, []);
-
-    const handleSave = () => {
-        localStorage.setItem('user_notification_prefs', JSON.stringify(preferences));
-        onClose();
     };
 
     return (
@@ -108,8 +115,10 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                             {t('common.cancel', 'Cancel')}
                         </Button>
                     </DialogClose>
-                    <Button onClick={handleSave}>
-                        {t('notifications.save', 'Save Preferences')}
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving
+                            ? t('common.saving', 'Saving...')
+                            : t('notifications.save', 'Save Preferences')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

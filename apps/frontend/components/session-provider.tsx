@@ -58,9 +58,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleLogout = useCallback(async () => {
-    // Clear user object from localStorage
-    localStorage.removeItem('user');
-
     // Ask backend to clear httpOnly auth cookies
     try {
       await apiRequest(API_ENDPOINTS.auth.logout, { method: 'POST' });
@@ -94,7 +91,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           );
           if (response.success && response.data) {
               if (response.data.user) {
-                  localStorage.setItem('user', JSON.stringify(response.data.user));
                   setUser(response.data.user);
                   resetTimer();
                   return;
@@ -115,19 +111,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
   }, [email, password, isSubmitting, setUser, resetTimer]);
 
-  useEffect(() => {
-      // Pre-fill email/user if user exists
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-          try {
-              const parsedUser = JSON.parse(userStr);
-              setUser(parsedUser);
-              if (parsedUser.email) setEmail(parsedUser.email);
-          } catch (e) {
-              // ignore
-          }
-      }
-  }, []);
+  // User state is loaded from the backend auth session on mount (no localStorage)
 
   useEffect(() => {
     // Activity listeners

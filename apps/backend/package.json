@@ -10,6 +10,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "start:ws": "tsx src/ws-server.ts",
+    "start:worker": "tsx src/worker.ts",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",

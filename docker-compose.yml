@@ -18,6 +18,9 @@ services:
       ENABLE_DEV_LOGIN: "true"
       NEXT_PUBLIC_ENABLE_DEV_LOGIN: "true"
       NODE_OPTIONS: "--max-old-space-size=4096"
+      # Polling — required for reliable HMR on Windows with bind mounts
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
       PORT: ${PORT:-3005}
       BACKEND_PORT: ${BACKEND_PORT:-5005}
       # Auth
@@ -48,6 +51,10 @@ services:
       - "${BACKEND_PORT:-5005}:${BACKEND_PORT:-5005}"
     volumes:
       - ./.env.local:/app/.env.local:ro
+      # Bind-mount source directly — no async sync needed, changes visible instantly
+      - ./apps/frontend:/app/apps/frontend
+      - ./apps/backend/src:/app/apps/backend/src
+      # Named volumes overlay on top of bind mounts for generated/installed dirs
       - root_node_modules:/app/node_modules
       - frontend_node_modules:/app/apps/frontend/node_modules
       - backend_node_modules:/app/apps/backend/node_modules
@@ -63,15 +70,7 @@ services:
         condition: service_healthy
     develop:
       watch:
-        - action: sync
-          path: ./apps/frontend
-          target: /app/apps/frontend
-          ignore:
-            - node_modules/
-            - .next/
-        - action: sync
-          path: ./apps/backend/src
-          target: /app/apps/backend/src
+        # Only rebuild on dependency changes — source is live via bind mount
         - action: rebuild
           path: package.json
         - action: rebuild
@@ -105,6 +104,9 @@ services:
       DYNAMODB_ENDPOINT: http://dynamodb-local:8100
       DYNAMODB_REGION: ${AWS_REGION:-us-east-1}
       DYNAMODB_TABLE_NAME: ${DYNAMODB_TABLE_NAME:-worktree-local}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
       REDIS_URL: redis://redis:6380
       AUTH_SECRET: ${AUTH_SECRET:-change-me-32-chars-minimum-secret}
       NODE_OPTIONS: "--max-old-space-size=256"
@@ -182,19 +184,23 @@ services:
     image: amazon/dynamodb-local:latest
     container_name: worktree-dynamodb
     restart: unless-stopped
-    # -port 8100: non-default port  -sharedDb: all processes share one SQLite dataset
+    # user: root — avoids SQLite permission issues (dynamodblocal uid=1000 can't write root-owned volumes)
+    user: root
+    # -sharedDb: single shared SQLite file so all connections see the same data
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8100"
-    ports:
-      - "8100:8100"
     volumes:
       - dynamodb-data:/data
+    ports:
+      - "8100:8100"
     networks:
       - worktree-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8100 || exit 1"]
+      # DynamoDB Local returns HTTP 400 on GET / (missing auth header) which is expected.
+      # Use python to check TCP port is open since curl may not be available in this image.
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8100)); s.close()\" 2>/dev/null || exit 1"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 15
     deploy:
       resources:
         limits:

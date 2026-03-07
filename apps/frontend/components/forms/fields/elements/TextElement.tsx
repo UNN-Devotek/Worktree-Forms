@@ -24,8 +24,11 @@ function parseMarkdown(text: string): string {
     // Italic: *text* or _text_
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
-    // Links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener noreferrer">$1</a>')
+    // Links: [text](url) — only allow http/https URLs
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+      const safeUrl = /^https?:\/\//i.test(url) ? url : '#'
+      return `<a href="${safeUrl}" class="text-primary underline" target="_blank" rel="noopener noreferrer">${label}</a>`
+    })
     // Line breaks
     .replace(/\n/g, '<br />')
 }

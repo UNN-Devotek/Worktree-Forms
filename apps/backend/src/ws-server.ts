@@ -99,8 +99,6 @@ const server = new Server({
         if (existing) clearTimeout(existing);
 
         const timer = setTimeout(async () => {
-          pendingWrites.delete(documentName);
-
           const yRows = document.getMap('rows');
           const now = new Date().toISOString();
 
@@ -133,6 +131,9 @@ const server = new Server({
               }
             }
           }
+          // Remove from map only after the write loop completes so concurrent
+          // incoming changes set a fresh timer rather than racing with this write.
+          pendingWrites.delete(documentName);
         }, WRITE_DEBOUNCE_MS);
 
         pendingWrites.set(documentName, timer);
@@ -151,10 +152,21 @@ const server = new Server({
       const userId = (decoded.sub ?? decoded.userId) as string;
       const userName = (decoded.name ?? decoded.email ?? 'Unknown') as string;
 
+      // Verify the token was issued for this specific sheet to prevent token reuse across sheets.
+      // Tokens MUST carry a sheetId claim; absence is treated as rejection, not leniency.
+      const { sheetId: docSheetId } = parseDocumentName(documentName);
+      const tokenSheetId = decoded.sheetId as string | undefined;
+      if (!tokenSheetId || tokenSheetId !== docSheetId) {
+        throw new Error('Unauthorized: token not valid for this document');
+      }
+
       return {
         user: { id: userId, name: userName },
       };
-    } catch {
+    } catch (err) {
+      // Log at warn level — JWT error reasons (expired, bad sig) are operational
+      // info, not application errors, and should not appear in error alert channels.
+      console.warn('[ws] Authentication rejected:', err instanceof Error ? err.message : err);
       throw new Error('Unauthorized');
     }
   },
@@ -162,12 +174,10 @@ const server = new Server({
 
 const WS_PORT = Number(process.env.WS_PORT) || 1234;
 
-console.log(`Starting Hocuspocus WebSocket server on port ${WS_PORT}...`);
-
 server
   .listen()
   .then(() => {
-    console.log(`WebSocket server listening on port ${WS_PORT}`);
+    process.stdout.write(`WebSocket server listening on port ${WS_PORT}\n`);
   })
   .catch((err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {

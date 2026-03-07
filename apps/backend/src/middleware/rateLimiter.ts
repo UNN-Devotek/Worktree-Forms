@@ -1,55 +1,67 @@
-import rateLimit from 'express-rate-limit';
-import { Request } from 'express';
+import rateLimit, { ipKeyGenerator, Options, RateLimitRequestHandler } from 'express-rate-limit';
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Rate limiting configuration.
  * Uses Redis store when REDIS_URL is set (production / multi-instance),
  * falls back to in-memory store for local development.
+ *
+ * IMPORTANT: express-rate-limit forbids sharing a single Store instance across
+ * multiple rateLimit() calls. We share the Redis *client* but create a new
+ * RedisStore instance per limiter (with a unique prefix) to satisfy this rule.
  */
 
-// Lazily initialise Redis store to avoid crashing when REDIS_URL is absent
-async function buildStore() {
-  if (!process.env.REDIS_URL) {
-    return undefined; // Use in-memory (default)
+type RedisClientLike = { sendCommand: (args: string[]) => Promise<boolean | number | string> };
+
+// Shared Redis client singleton — connected once, reused by all stores
+let redisClientPromise: Promise<RedisClientLike | undefined> | undefined;
+
+function getRedisClient(): Promise<RedisClientLike | undefined> {
+  if (!redisClientPromise) {
+    redisClientPromise = (async () => {
+      if (!process.env.REDIS_URL) return undefined;
+      try {
+        const { createClient } = await import('redis');
+        const client = createClient({ url: process.env.REDIS_URL });
+        client.on('error', (err: Error) => console.error('Redis rate-limit client error:', err.message));
+        await client.connect();
+        return client as unknown as RedisClientLike;
+      } catch (err) {
+        console.warn('Rate limiter: failed to connect to Redis, falling back to in-memory store:', err instanceof Error ? err.message : err);
+        return undefined;
+      }
+    })();
   }
-  try {
-    const { createClient } = await import('redis');
-    const { RedisStore } = await import('rate-limit-redis');
-    const client = createClient({ url: process.env.REDIS_URL });
-    client.on('error', (err: Error) => console.error('Redis rate-limit client error:', err.message));
-    await client.connect();
-    return new RedisStore({
-      sendCommand: (...args: string[]) =>
-        (client as unknown as { sendCommand: (args: string[]) => Promise<boolean | number | string> }).sendCommand(args),
-    });
-  } catch (err) {
-    console.warn('Rate limiter: failed to connect to Redis, falling back to in-memory store:', err instanceof Error ? err.message : err);
-    return undefined;
-  }
+  return redisClientPromise;
 }
 
-// Store singleton (undefined until first limiter is created)
-let _store: unknown = undefined;
-let _storeInitialized = false;
+/**
+ * Creates a lazy-initialised rate limiter. Each call gets its own RedisStore
+ * instance (with a unique prefix) so express-rate-limit does not throw
+ * ERR_ERL_STORE_REUSE. The underlying Redis client connection is shared.
+ */
+let _limiterCounter = 0;
+function makeRateLimiter(opts: Partial<Options>): RateLimitRequestHandler {
+  const prefix = `rl:${++_limiterCounter}:`;
 
-async function getStore() {
-  if (!_storeInitialized) {
-    _store = await buildStore();
-    _storeInitialized = true;
-  }
-  return _store;
-}
-
-function makeRateLimiter(opts: Parameters<typeof rateLimit>[0]) {
-  // store is set asynchronously after construction via setStore if needed
-  const limiter = rateLimit(opts);
-  // Attach store after it's ready (non-blocking; requests during init use in-memory)
-  getStore().then(store => {
-    if (store) {
-      Object.assign(limiter, { store });
+  const limiterPromise: Promise<RateLimitRequestHandler> = getRedisClient().then(async (client) => {
+    if (client) {
+      const { RedisStore } = await import('rate-limit-redis');
+      const store = new RedisStore({
+        prefix,
+        sendCommand: (...args: string[]) => client.sendCommand(args),
+      });
+      return rateLimit({ ...opts, store });
     }
-  }).catch(() => {/* already handled in getStore */});
-  return limiter;
+    return rateLimit({ ...opts });
+  });
+
+  const middleware = async (req: Request, res: Response, next: NextFunction) => {
+    const limiter = await limiterPromise;
+    return limiter(req, res, next);
+  };
+
+  return middleware as unknown as RateLimitRequestHandler;
 }
 
 /**
@@ -72,7 +84,7 @@ export const authenticatedRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
 });
 
 /**
@@ -96,7 +108,7 @@ export const uploadRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many upload requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
 });
 
 /**
@@ -108,7 +120,18 @@ export const apiRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many API requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
+});
+
+/**
+ * Webhook inbound rate limiter — 60 requests per minute per IP
+ */
+export const webhookInboundLimiter = makeRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many webhook requests.' },
 });
 
 /**

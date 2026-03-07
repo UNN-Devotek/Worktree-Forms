@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
+import { authenticate, AuthenticatedRequest } from '../middleware/authenticate.js';
 import multer from 'multer';
 import sharp from 'sharp';
 import { UploadService } from '../services/upload.service.js';
-import { ProjectEntity } from '../lib/dynamo/index.js';
+import { ProjectEntity, ProjectMemberEntity, docClient, TABLE_NAME } from '../lib/dynamo/index.js';
+import { UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -35,7 +37,7 @@ async function processImage(
 // GENERIC UPLOAD ENDPOINT
 // ==========================================
 
-router.post('/', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/', authenticate, upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file provided' });
@@ -50,14 +52,22 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     const formId = req.body.formId as string | undefined;
     const submissionId = req.body.submissionId as string | undefined;
     const fieldName = req.body.fieldName || req.file.fieldname || 'upload';
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user.id;
+
+    // Verify project membership when a projectId is provided
+    if (projectId) {
+      const membership = await ProjectMemberEntity.query.primary({ projectId, userId }).go();
+      if (!membership.data.length) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+    }
 
     let projectName = projectId || 'unknown';
     if (projectId) {
+      // Single fetch — reused for both quota check and storage increment
       const projectResult = await ProjectEntity.get({ projectId }).go();
       if (projectResult.data) {
         projectName = projectResult.data.name;
-        // Check storage quota
         const quota = projectResult.data.storageQuotaBytes ?? 10737418240;
         const used = projectResult.data.storageUsedBytes ?? 0;
         if (used + req.file.size > quota * 1.1) {
@@ -83,17 +93,17 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     );
     const url = UploadService.getFileUrl(result.objectKey);
 
-    // Increment project storage usage
+    // Atomically increment project storage usage via DynamoDB ADD (avoids read-modify-write race)
     if (projectId) {
-      const projectResult = await ProjectEntity.get({ projectId }).go();
-      if (projectResult.data) {
-        await ProjectEntity.patch({ projectId })
-          .set({
-            storageUsedBytes: (projectResult.data.storageUsedBytes ?? 0) + buffer.length,
-            updatedAt: new Date().toISOString(),
-          })
-          .go();
-      }
+      await docClient.send(new UpdateItemCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: { S: `PROJECT#${projectId}` }, SK: { S: 'PROJECT' } },
+        UpdateExpression: 'ADD storageUsedBytes :n SET updatedAt = :ts',
+        ExpressionAttributeValues: {
+          ':n': { N: String(buffer.length) },
+          ':ts': { S: new Date().toISOString() },
+        },
+      }));
     }
 
     res.json({ success: true, data: { ...result, url } });

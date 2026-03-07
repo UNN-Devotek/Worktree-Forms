@@ -1,4 +1,5 @@
-import { test, expect } from '../support/fixtures/auth.fixture';
+import { test } from '../support/fixtures/auth.fixture';
+import { expect } from '@playwright/test';
 
 test.describe('Authentication', () => {
   test('should allow logging in as dev admin', async ({ page }) => {

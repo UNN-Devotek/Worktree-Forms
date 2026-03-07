@@ -35,8 +35,9 @@ export default function VisaWizard() {
 
         try {
             // 1. Upload File
-            const uploadRes = await fetch('/api/upload', { // Proxy to backend
+            const uploadRes = await fetch('/api/upload', {
                 method: 'POST',
+                credentials: 'include',
                 body: formData,
             });
 
@@ -98,8 +99,9 @@ export default function VisaWizard() {
          // Let's use a Server Action to handle the "Submit Compliance" part, 
          // because the Server Action has access to `auth()` session and can send the ID securely.
          
-         const res = await fetch('/api/compliance-proxy', { 
+         const res = await fetch('/api/compliance-proxy', {
              method: 'POST',
+             credentials: 'include',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({ insuranceUrl: url })
          });

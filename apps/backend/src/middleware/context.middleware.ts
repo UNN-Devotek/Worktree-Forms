@@ -15,7 +15,7 @@ import { runWithContext } from '../lib/async-context';
  * AFTER authenticate middleware so req.user is already populated.
  */
 export const contextMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const userId = (req as any).user?.id ?? null;
+  const userId = (req as Request & { user?: { id: string } }).user?.id ?? null;
 
   runWithContext({ userId }, () => {
     next();

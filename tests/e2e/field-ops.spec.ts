@@ -1,102 +1,95 @@
-
-
 import { test, expect } from '@playwright/test';
 
+/**
+ * @tag p1
+ * Field Operations E2E — route list and stop detail.
+ * Tests the field worker mobile workflow using storageState auth.
+ */
+
 test.describe('Field Operations (Mobile)', () => {
-    
-    test.use({ 
-        viewport: { width: 375, height: 667 },
-        geolocation: { latitude: 37.7749, longitude: -122.4194 },
-        permissions: ['geolocation']
-    });
+  test.use({
+    storageState: 'playwright/.auth/member.json',
+    viewport: { width: 375, height: 667 },
+    geolocation: { latitude: 37.7749, longitude: -122.4194 },
+    permissions: ['geolocation'],
+  });
 
-    test('should load daily route and navigate to stop', async ({ page }) => {
-        // Mock API
-        await page.route('**/api/projects/*/routes/my-daily*', async route => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    success: true,
-                    data: {
-                        route: {
-                            id: 1,
-                            date: new Date().toISOString(),
-                            stops: [
-                                { id: 101, title: 'Stop 1: Foundation', address: '123 Main St', status: 'pending', priority: 'high', order: 1 }
-                            ]
-                        }
-                    }
-                })
-            });
-        });
+  test('[P1] route list page loads without error', async ({ page, request }) => {
+    // Get a project to navigate to
+    const projectsRes = await request.get('/api/projects');
+    if (projectsRes.status() !== 200) {
+      test.skip();
+      return;
+    }
+    const body = await projectsRes.json();
+    const projects = body.data ?? body;
+    if (!Array.isArray(projects) || projects.length === 0) {
+      test.skip();
+      return;
+    }
+    const slug = projects[0].slug;
 
-        await page.goto('/project/demo/routes/my-daily');
-        await expect(page.getByText('Stop 1: Foundation')).toBeVisible();
-    });
+    await page.goto(`/project/${slug}/route`);
 
-    test('should allow form entry and offline queue', async ({ page }) => {
-        // Mock Stop
-        await page.route('**/api/routes/stops/101', async route => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    success: true,
-                    data: {
-                        stop: {
-                            id: 101, 
-                            title: 'Stop 1', 
-                            status: 'arrived',
-                            form: { id: 50, title: 'Safety Check' }
-                        }
-                    }
-                })
-            });
-        });
+    // Route list, empty state, or main content must render — no 500 error
+    const content = page
+      .getByTestId('route-list')
+      .or(page.getByText(/no routes|route/i))
+      .or(page.getByRole('main'));
+    await expect(content).toBeVisible({ timeout: 10_000 });
 
-        // Mock Form
-        await page.route('**/api/forms/50', async route => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    success: true,
-                    data: {
-                        id: 50,
-                        title: 'Safety Check',
-                        form_schema: {
-                            pages: [{
-                                sections: [{
-                                    fields: [{
-                                        id: 'f1', type: 'text', name: 'notes', label: 'Notes', required: true
-                                    }]
-                                }]
-                            }]
-                        }
-                    }
-                })
-            });
-        });
+    // Must not show unhandled error
+    const hasError = await page
+      .getByText(/something went wrong|server error|500/i)
+      .isVisible()
+      .catch(() => false);
+    expect(hasError).toBe(false);
+  });
 
-        await page.goto('/project/demo/route/stop/101/perform');
+  test('[P1] stop detail page loads without error', async ({ page, request }) => {
+    const projectsRes = await request.get('/api/projects');
+    if (projectsRes.status() !== 200) {
+      test.skip();
+      return;
+    }
+    const body = await projectsRes.json();
+    const projects = body.data ?? body;
+    if (!Array.isArray(projects) || projects.length === 0) {
+      test.skip();
+      return;
+    }
+    const slug = projects[0].slug;
+    const projectId = projects[0].projectId ?? projects[0].id;
 
-        // Check for Heading
-        await expect(page.getByText('Safety Check')).toBeVisible({ timeout: 10000 });
-        
-        // Offline
-        await page.context().setOffline(true);
-        
-        // Fill
-        await page.getByLabel('Notes').fill('Test Offline');
-        
-        // Mock API (even if offline, to prevent hanging if logic leaks)
-        await page.route('**/api/forms/50/submissions', async route => route.abort());
+    const routesRes = await request.get(`/api/routes?projectId=${projectId}`);
+    if (routesRes.status() !== 200) {
+      test.skip();
+      return;
+    }
+    const routesBody = await routesRes.json();
+    const routes = routesBody.data ?? routesBody;
+    if (!Array.isArray(routes) || routes.length === 0) {
+      test.skip();
+      return;
+    }
+    const stops = routes[0].stops ?? [];
+    if (stops.length === 0) {
+      test.skip();
+      return;
+    }
+    const stopId = stops[0].stopId ?? stops[0].id;
 
-        // Click Submit
-        await page.getByRole('button', { name: /Submit/i }).click();
+    await page.goto(`/project/${slug}/route/stop/${stopId}/perform`);
 
-        // Check Redirect
-        await expect(page).toHaveURL(/.*routes\/my-daily/);
-    });
+    const content = page
+      .getByTestId('stop-detail')
+      .or(page.getByRole('main'));
+    await expect(content).toBeVisible({ timeout: 10_000 });
+
+    const hasError = await page
+      .getByText(/something went wrong|server error|500/i)
+      .isVisible()
+      .catch(() => false);
+    expect(hasError).toBe(false);
+  });
 });

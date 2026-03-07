@@ -10,20 +10,21 @@ import { GanttView, CalendarView, CardView } from '../views';
 
 interface SheetDetailViewProps {
   sheetId: string;
+  projectId: string;
   title: string;
   token: string;
   user: { name: string; color: string };
 }
 
-export function SheetDetailView({ sheetId, title, token, user }: SheetDetailViewProps) {
+export function SheetDetailView({ sheetId, projectId, title, token, user }: SheetDetailViewProps) {
   return (
     <SheetProvider sheetId={sheetId} token={token} user={user}>
-      <SheetDetailContent title={title} sheetId={sheetId} />
+      <SheetDetailContent title={title} sheetId={sheetId} projectId={projectId} />
     </SheetProvider>
   );
 }
 
-function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string }) {
+function SheetDetailContent({ title, sheetId, projectId }: { title: string; sheetId: string; projectId: string }) {
   const { activeView, doc } = useSheet();
   const [currentTitle, setCurrentTitle] = useState(title);
 
@@ -56,7 +57,7 @@ function SheetDetailContent({ title, sheetId }: { title: string; sheetId: string
             </div>
           );
         }
-        return <LiveTable documentId={sheetId} />;
+        return <LiveTable documentId={sheetId} projectId={projectId} />;
     }
   };
 

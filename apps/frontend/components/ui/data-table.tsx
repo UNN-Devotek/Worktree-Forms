@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   ColumnDef,
   ColumnFiltersState,
+  OnChangeFn,
   SortingState,
   VisibilityState,
   flexRender,
@@ -62,9 +63,9 @@ export function DataTable<TData, TValue>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: onSortingChange as any,
+    onSortingChange: onSortingChange as OnChangeFn<SortingState>,
     getSortedRowModel: getSortedRowModel(),
-    onColumnVisibilityChange: onColumnVisibilityChange as any,
+    onColumnVisibilityChange: onColumnVisibilityChange as OnChangeFn<VisibilityState>,
     state: {
       sorting,
       columnVisibility,

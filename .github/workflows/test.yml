@@ -1,0 +1,295 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  DYNAMODB_ENDPOINT: http://localhost:8100
+  DYNAMODB_REGION: us-east-1
+  DYNAMODB_TABLE_NAME: worktree-test
+  REDIS_URL: redis://localhost:6380
+  S3_ENDPOINT: http://localhost:4510
+  S3_BUCKET: worktree-test
+  AWS_ACCESS_KEY_ID: local
+  AWS_SECRET_ACCESS_KEY: local
+  AWS_REGION: us-east-1
+  AUTH_SECRET: test-secret-for-ci-32-characters-min
+  NEXTAUTH_URL: http://localhost:3005
+  PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+
+jobs:
+  # =========================================================
+  # P0: Critical path — runs on every commit (fast, <5 min)
+  # =========================================================
+  p0-critical:
+    name: P0 Critical Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8100:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000 || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4510:4566
+        env:
+          SERVICES: s3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create DynamoDB tables
+        run: bash scripts/seed-dev.sh --ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application (background)
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3005/api/health --timeout 30000
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run P0 E2E tests
+        run: npx playwright test --grep "@p0" --project=chromium
+        env:
+          CI: true
+
+      - name: Upload P0 test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # =========================================================
+  # Integration: DynamoDB entity tests (Vitest + dynalite)
+  # =========================================================
+  integration:
+    name: Integration Tests (DynamoDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspace=apps/backend
+
+      - name: Run DynamoDB entity integration tests
+        run: npm run test --workspace=apps/backend -- --reporter=verbose
+        env:
+          CI: true
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage
+          path: apps/backend/coverage/
+          retention-days: 7
+
+  # =========================================================
+  # P1: PR gate — runs on every PR to main
+  # =========================================================
+  p1-pr-gate:
+    name: P1 PR Gate Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [p0-critical]
+    if: github.event_name == 'pull_request'
+
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8100:8000
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4510:4566
+        env:
+          SERVICES: s3
+
+    strategy:
+      matrix:
+        shard: [1, 2]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create DynamoDB tables
+        run: bash scripts/seed-dev.sh --ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application (background)
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3005/api/health --timeout 30000
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run P1 E2E tests (shard ${{ matrix.shard }}/2)
+        run: |
+          npx playwright test --grep "@p1" \
+            --shard=${{ matrix.shard }}/2 \
+            --project=chromium
+        env:
+          CI: true
+
+      - name: Upload P1 test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 7
+
+  # =========================================================
+  # Burn-in: Run changed specs 5x to detect flakiness
+  # =========================================================
+  burn-in:
+    name: Burn-in (flakiness detection)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request'
+    needs: [p0-critical]
+
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8100:8000
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4510:4566
+        env:
+          SERVICES: s3
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create DynamoDB tables
+        run: bash scripts/seed-dev.sh --ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application (background)
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3005/api/health --timeout 30000
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Identify changed test files
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD -- 'tests/**/*.spec.ts' | tr '\n' ',' | sed 's/,$//')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Burn-in changed specs (5x)
+        if: steps.changed.outputs.files != ''
+        run: |
+          for i in 1 2 3 4 5; do
+            echo "=== Burn-in run $i/5 ==="
+            npx playwright test ${{ steps.changed.outputs.files }} --project=chromium || exit 1
+          done
+        env:
+          CI: true
+
+  # =========================================================
+  # Security: Static analysis (ESLint edge runtime guard)
+  # =========================================================
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint (includes edge runtime guard)
+        run: npm run lint
+
+      - name: TypeScript type check
+        run: npm run typecheck

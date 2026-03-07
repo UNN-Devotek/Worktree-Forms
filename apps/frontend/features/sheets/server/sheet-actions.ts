@@ -14,7 +14,8 @@ import jwt from 'jsonwebtoken';
 import { auth } from '@/auth';
 import * as Y from 'yjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
 /**
  * Verifies the current user has access to a project.
@@ -28,9 +29,26 @@ async function verifyProjectAccess(projectId: string): Promise<string> {
   return session.user.id;
 }
 
-export async function getSheetToken(sheetId: string) {
+/**
+ * Issues a signed WebSocket JWT for a specific sheet.
+ * Requires `projectId` so the sheet can be verified via direct DynamoDB key lookup
+ * (avoids a full table scan that `getSheet` would perform).
+ */
+export async function getSheetToken(sheetId: string, projectId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;
+
+  // Direct primary key lookup — no table scan
+  const sheetResult = await SheetEntity.query.primary({ projectId, sheetId }).go();
+  if (!sheetResult.data[0]) return null;
+
+  // Verify the caller is a member of this project before issuing a token.
+  // This guard lives here (not just in the page) because server actions
+  // are callable directly by any authenticated client.
+  const member = await ProjectMemberEntity.query
+    .primary({ projectId, userId: session.user.id })
+    .go();
+  if (!member.data.length) return null;
 
   return jwt.sign(
     {
@@ -64,6 +82,8 @@ export async function createSheet(
       projectId = byId.data[0].projectId;
       projectSlug = byId.data[0].slug;
     }
+
+    await verifyProjectAccess(projectId);
 
     const sheetId = nanoid();
 
@@ -217,10 +237,9 @@ export async function getSheetWithData(projectId: string, sheetId: string) {
 // DynamoDB SheetEntity doesn't store binary content; this is a no-op stub.
 export async function saveSheet(sheetId: string, _content: number[]) {
   try {
-    // Update the updatedAt timestamp
     const sheet = await getSheet(sheetId);
     if (!sheet) return false;
-
+    await verifyProjectAccess(sheet.projectId);
     await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
       .set({ updatedAt: new Date().toISOString() })
       .go();
@@ -265,6 +284,7 @@ export async function transferSheetOwnership(sheetId: string, newOwnerId: string
   try {
     const sheet = await getSheet(sheetId);
     if (!sheet) return false;
+    await verifyProjectAccess(sheet.projectId);
 
     await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
       .set({ createdBy: newOwnerId, updatedAt: new Date().toISOString() })
@@ -283,6 +303,7 @@ export async function deleteSheet(sheetId: string) {
   try {
     const sheet = await getSheet(sheetId);
     if (!sheet) return false;
+    await verifyProjectAccess(sheet.projectId);
 
     await SheetEntity.delete({ projectId: sheet.projectId, sheetId }).go();
 
@@ -304,6 +325,7 @@ export async function renameSheet(sheetId: string, title: string) {
   try {
     const sheet = await getSheet(sheetId);
     if (!sheet) return false;
+    await verifyProjectAccess(sheet.projectId);
 
     await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
       .set({ name: title, updatedAt: new Date().toISOString() })
@@ -323,6 +345,7 @@ export async function saveSheetData(sheetId: string, _jsonData: unknown) {
   try {
     const sheet = await getSheet(sheetId);
     if (!sheet) return false;
+    await verifyProjectAccess(sheet.projectId);
 
     await SheetEntity.patch({ projectId: sheet.projectId, sheetId })
       .set({ updatedAt: new Date().toISOString() })
@@ -448,9 +471,181 @@ export async function deleteColumn(
   }
 }
 
+/** Update an existing column's properties (name, type, width, hidden). */
+export async function updateColumn(
+  projectId: string,
+  sheetId: string,
+  columnId: string,
+  updates: { name?: string; type?: string; width?: number; hidden?: boolean }
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetColumnEntity.patch({ sheetId, columnId })
+      .set(updates)
+      .go();
+    return true;
+  } catch (error) {
+    console.error('Failed to update column:', error);
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Misc
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Story 6-3: Row Assignment
+// ---------------------------------------------------------------------------
+
+/**
+ * Assigns (or unassigns) a user to a row.
+ * SheetRowEntity has a first-class `assignedTo` attribute, so we patch it directly.
+ */
+export async function assignRow(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  assignedTo: string | null
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetRowEntity.patch({ sheetId, rowId })
+      .set({ assignedTo: assignedTo ?? undefined, updatedAt: new Date().toISOString() })
+      .go();
+    return true;
+  } catch (error) {
+    console.error('Failed to assign row:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Story 6-7: Row Hierarchy / Grouping
+// ---------------------------------------------------------------------------
+
+/**
+ * Sets or clears the parent of a row.
+ * SheetRowEntity has a first-class `parentRowId` attribute.
+ */
+export async function setRowParent(
+  projectId: string,
+  sheetId: string,
+  rowId: string,
+  parentRowId: string | null
+): Promise<boolean> {
+  try {
+    await verifyProjectAccess(projectId);
+    await SheetRowEntity.patch({ sheetId, rowId })
+      .set({ parentRowId: parentRowId ?? undefined, updatedAt: new Date().toISOString() })
+      .go();
+    return true;
+  } catch (error) {
+    console.error('Failed to set row parent:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Story 6-9: Row Detail
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches a single row with its column definitions for the RowDetailPanel.
+ */
+export async function getRowDetail(
+  projectId: string,
+  sheetId: string,
+  rowId: string
+): Promise<{ row: Record<string, unknown>; columns: { columnId: string; name: string; type: string; order: number }[] } | null> {
+  try {
+    await verifyProjectAccess(projectId);
+    const [rowResult, columnsResult] = await Promise.all([
+      SheetRowEntity.query.primary({ sheetId, rowId }).go(),
+      SheetColumnEntity.query.primary({ sheetId }).go(),
+    ]);
+    const row = rowResult.data[0];
+    if (!row) return null;
+    return {
+      row: { ...row.data, rowId: row.rowId, assignedTo: row.assignedTo, status: row.status, parentRowId: row.parentRowId },
+      columns: columnsResult.data
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((c) => ({ columnId: c.columnId, name: c.name, type: c.type, order: c.order ?? 0 })),
+    };
+  } catch (error) {
+    console.error('Failed to get row detail:', error);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Story 6-12: View Persistence & Privacy
+// ---------------------------------------------------------------------------
+
+export interface ViewConfig {
+  name: string;
+  filters: Record<string, unknown>[];
+  sorts: { columnId: string; direction: 'asc' | 'desc' }[];
+  groupBy: string | null;
+  hiddenColumns: string[];
+  isPrivate: boolean;
+  ownerId: string;
+}
+
+/**
+ * Saves a named view configuration as a SheetRow with order = -1 (metadata sentinel).
+ * The viewId is stored in the rowId field; sheetId scopes it correctly.
+ */
+export async function saveView(
+  projectId: string,
+  sheetId: string,
+  viewConfig: Omit<ViewConfig, 'ownerId'>
+): Promise<string | null> {
+  try {
+    const userId = await verifyProjectAccess(projectId);
+    const viewId = `view-${nanoid()}`;
+    const now = new Date().toISOString();
+    await SheetRowEntity.create({
+      rowId: viewId,
+      sheetId,
+      projectId,
+      order: -1,
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+      data: { ...viewConfig, _type: 'VIEW_CONFIG', ownerId: userId },
+    }).go();
+    return viewId;
+  } catch (error) {
+    console.error('Failed to save view:', error);
+    return null;
+  }
+}
+
+/**
+ * Returns all saved views for a sheet (rows with order = -1 and _type = 'VIEW_CONFIG').
+ * Filters private views so only the owner sees them.
+ */
+export async function getViews(
+  projectId: string,
+  sheetId: string
+): Promise<Array<ViewConfig & { viewId: string }>> {
+  try {
+    const userId = await verifyProjectAccess(projectId);
+    const result = await SheetRowEntity.query.bySheet({ sheetId }).go();
+    return result.data
+      .filter((r) => r.order === -1 && (r.data as Record<string, unknown>)?._type === 'VIEW_CONFIG')
+      .filter((r) => {
+        const d = r.data as Record<string, unknown>;
+        return !d.isPrivate || d.ownerId === userId;
+      })
+      .map((r) => ({ viewId: r.rowId, ...(r.data as Omit<ViewConfig, 'ownerId'> & { ownerId: string }) }));
+  } catch (error) {
+    console.error('Failed to get views:', error);
+    return [];
+  }
+}
+
 
 export async function getFormProjectSlug(formId: string) {
   try {

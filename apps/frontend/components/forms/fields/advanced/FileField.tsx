@@ -262,14 +262,33 @@ const FileFieldRender = forwardRef<HTMLInputElement, { field: FormFieldBase }>(
           }
 
           progress = Math.min(progress + Math.random() * 15 + 5, 100)
-          setFiles(prev => prev.map(f =>
-            f.file === fileItem.file ? { ...f, progress: Math.round(progress), uploadComplete: progress >= 100 } : f
-          ))
 
           if (progress >= 100) {
+            // Build synthetic uploadedData so updateFormValue can persist the file
+            setFiles(prev => {
+              const current = prev.find(f => f.file === fileItem.file)
+              const syntheticData: UploadedFileData = {
+                filename: fileItem.file.name,
+                object_key: `preview/${fileItem.file.name}`,
+                url: current?.preview ?? '',
+                size: fileItem.file.size,
+                content_type: fileItem.file.type,
+              }
+              const updated = prev.map(f =>
+                f.file === fileItem.file
+                  ? { ...f, progress: 100, uploadComplete: true, uploadedData: syntheticData }
+                  : f
+              )
+              setTimeout(() => updateFormValue(updated), 0)
+              return updated
+            })
             clearInterval(interval)
             activeIntervalsRef.current.delete(interval)
             resolve()
+          } else {
+            setFiles(prev => prev.map(f =>
+              f.file === fileItem.file ? { ...f, progress: Math.round(progress) } : f
+            ))
           }
         }, 100)
         activeIntervalsRef.current.add(interval)

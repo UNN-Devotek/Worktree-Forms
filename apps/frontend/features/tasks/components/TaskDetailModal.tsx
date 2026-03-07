@@ -50,7 +50,7 @@ export function TaskDetailModal({ task, open, onOpenChange, onEdit, onRefresh }:
     const images     = parseJsonArray(task.images);
 
     const handleStatusChange = async (newStatus: string) => {
-        await apiClient(`/api/tasks/${task.id}`, {
+        await apiClient(`/api/projects/${task.projectId}/tasks/${task.id}`, {
             method: 'PATCH',
             body: JSON.stringify({ status: newStatus }),
         });
@@ -82,11 +82,11 @@ export function TaskDetailModal({ task, open, onOpenChange, onEdit, onRefresh }:
                 <div className="space-y-4">
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={(PRIORITY_BADGE_MAP[task.priority] ?? 'info') as any}>
+                        <Badge variant={PRIORITY_BADGE_MAP[task.priority] ?? 'info'}>
                             {priority.label}
                         </Badge>
                         <Badge variant="default">{typeName}</Badge>
-                        <Badge variant={(STATUS_BADGE_MAP[task.status] ?? 'pending') as any}>
+                        <Badge variant={STATUS_BADGE_MAP[task.status] ?? 'pending'}>
                             {STATUS_MAP[task.status]?.label ?? task.status}
                         </Badge>
                     </div>

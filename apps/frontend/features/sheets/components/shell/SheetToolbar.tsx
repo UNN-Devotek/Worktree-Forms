@@ -193,7 +193,7 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
     const lower  = query.toLowerCase();
 
     for (const rowId of yOrder.toArray() as string[]) {
-      const row = yRows.get(rowId) as any;
+      const row = yRows.get(rowId) as Record<string, unknown> | undefined;
       if (!row) continue;
       for (const col of columns) {
         const val = row[col.id] != null ? String(row[col.id]) : '';

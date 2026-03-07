@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { AuthenticatedRequest } from "./authenticate.js";
 import { ProjectMemberEntity } from "../lib/dynamo/index.js";
 
 export type ProjectRole = "VIEWER" | "EDITOR" | "ADMIN" | "OWNER";
@@ -25,13 +26,13 @@ export function hasRole(userRoles: string[], minRole: ProjectRole): boolean {
  * On success, attaches `req.projectMember` for downstream handlers.
  */
 export function requireProjectAccess(minRole: ProjectRole = "VIEWER") {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const projectId =
       req.params.projectId ??
       req.body?.projectId ??
       (req.query.projectId as string | undefined);
 
-    const userId = (req as Request & { user?: { id: string } }).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res
@@ -64,7 +65,7 @@ export function requireProjectAccess(minRole: ProjectRole = "VIEWER") {
       }
 
       // Attach membership info for downstream handlers
-      (req as Request & { projectMember: typeof member }).projectMember =
+      (req as AuthenticatedRequest & { projectMember: typeof member }).projectMember =
         member;
       next();
     } catch (error) {

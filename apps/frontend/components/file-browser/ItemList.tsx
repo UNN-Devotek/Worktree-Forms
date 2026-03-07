@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useFileSystemStore } from '@/lib/stores/file-system-store'
-import { FileSystemItem } from '@/types/file-system'
+import { FileSystemItem, FormItem } from '@/types/file-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFolder, faFileAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons'
 import { Card, CardContent } from '@/components/ui/card'
@@ -75,9 +75,9 @@ function FileItem({ item, onNavigate }: { item: FileSystemItem, onNavigate: (id:
       onClick={() => {
         if (isFolder) {
             onNavigate(item.id)
-        } else if ((item as any).formSlug) {
+        } else if ((item as FormItem).formSlug) {
             // It's a form from the backend -> Go to Landing Page
-            router.push(`/forms/${(item as any).formSlug}`)
+            router.push(`/forms/${(item as FormItem).formSlug}`)
         }
       }}
     >

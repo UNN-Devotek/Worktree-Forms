@@ -83,7 +83,7 @@ export function SmartTableColumnEditor({ columns, onChange }: SmartTableColumnEd
                       <Label className="text-xs">Type</Label>
                       <Select 
                         value={column.type} 
-                        onValueChange={(val) => updateColumn(index, { type: val as any })}
+                        onValueChange={(val) => updateColumn(index, { type: val as FormFieldBase['type'] })}
                       >
                          <SelectTrigger className="h-8">
                            <SelectValue />

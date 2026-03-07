@@ -47,8 +47,8 @@ export function AlignmentSelector({ className }: AlignmentSelectorProps) {
   const currentStyle = (() => {
     if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
     if (selectedColumnIds.size > 0 && data[0]) return getCellStyle(data[0].id, [...selectedColumnIds][0]);
-    if (selectedFormattingRowIds.size > 0 && (columns as any[])[0])
-      return getCellStyle([...selectedFormattingRowIds][0], (columns as any[])[0].id);
+    if (selectedFormattingRowIds.size > 0 && columns[0])
+      return getCellStyle([...selectedFormattingRowIds][0], (columns[0] as { id: string }).id);
     return null;
   })();
 

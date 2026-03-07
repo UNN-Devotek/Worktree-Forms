@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ScheduleService } from '../services/schedule.service.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 
 const router = Router();
 
@@ -8,7 +9,7 @@ const router = Router();
 // ==========================================
 
 // Get Project Tasks
-router.get('/projects/:projectId/schedule', async (req: Request, res: Response) => {
+router.get('/projects/:projectId/schedule', requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
     try {
         const tasks = await ScheduleService.getProjectTasks(req.params.projectId);
         res.json({ success: true, data: tasks });
@@ -19,7 +20,7 @@ router.get('/projects/:projectId/schedule', async (req: Request, res: Response) 
 });
 
 // Create Task
-router.post('/projects/:projectId/schedule', async (req: Request, res: Response) => {
+router.post('/projects/:projectId/schedule', requireProjectAccess('EDITOR'), async (req: Request, res: Response) => {
     const { title, startDate, endDate, status, assignedToId } = req.body;
     try {
         const task = await ScheduleService.createTask({
@@ -38,7 +39,7 @@ router.post('/projects/:projectId/schedule', async (req: Request, res: Response)
 });
 
 // Update Task
-router.patch('/projects/:projectId/schedule/:taskId', async (req: Request, res: Response) => {
+router.patch('/projects/:projectId/schedule/:taskId', requireProjectAccess('EDITOR'), async (req: Request, res: Response) => {
     const { title, startDate, endDate, status, assignedToId } = req.body;
     try {
         const task = await ScheduleService.updateTask(req.params.projectId, req.params.taskId, {
@@ -55,7 +56,7 @@ router.patch('/projects/:projectId/schedule/:taskId', async (req: Request, res: 
 });
 
 // Delete Task
-router.delete('/projects/:projectId/schedule/:taskId', async (req: Request, res: Response) => {
+router.delete('/projects/:projectId/schedule/:taskId', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
     try {
         await ScheduleService.deleteTask(req.params.projectId, req.params.taskId);
         res.json({ success: true });

@@ -3,7 +3,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Condition, FormFieldBase } from '@/types/group-forms'
+import { Condition, ConditionalOperator, FormFieldBase } from '@/types/group-forms'
 import { getOperatorsForFieldType } from '@/lib/conditional-logic/operators'
 
 interface ConditionBuilderProps {
@@ -50,7 +50,7 @@ export function ConditionBuilder({
         <Select
           value={condition.operator}
           onValueChange={(operator) =>
-            onChange({ ...condition, operator: operator as any })
+            onChange({ ...condition, operator: operator as ConditionalOperator })
           }
         >
           <SelectTrigger>

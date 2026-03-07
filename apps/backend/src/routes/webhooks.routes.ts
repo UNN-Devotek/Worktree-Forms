@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express';
+import { createHmac, timingSafeEqual } from 'crypto';
+import { AuthenticatedRequest } from '../middleware/authenticate.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 import { WebhookService } from '../services/webhook.service.js';
 import { EmailIngestionService } from '../services/email-ingestion.service.js';
 import { isAllowedWebhookUrl } from '../utils/url-validator.js';
+import { webhookInboundLimiter } from '../middleware/rateLimiter.js';
 
 function sanitizeEmailField(value: unknown, maxLength: number): string {
   const str = String(value ?? '').slice(0, maxLength);
@@ -20,9 +24,9 @@ const router = Router();
 // ============================================
 
 // Register Webhook (Auth Required)
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user.id;
     const { url, events, projectId } = req.body;
 
     if (!url || !events || !Array.isArray(events)) {
@@ -60,7 +64,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // List Webhooks (Auth Required)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
     const projectId = req.query.projectId as string;
 
@@ -77,7 +81,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Delete Webhook (Auth Required)
-router.delete('/:webhookId', async (req: Request, res: Response) => {
+router.delete('/:webhookId', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { webhookId } = req.params;
     const projectId = req.query.projectId as string || req.body.projectId;
@@ -98,9 +102,25 @@ router.delete('/:webhookId', async (req: Request, res: Response) => {
 // Inbound Webhooks
 // ============================================
 
-// Email Ingestion Webhook (Simulated)
-router.post('/inbound-email', async (req: Request, res: Response) => {
+// Email Ingestion Webhook
+router.post('/inbound-email', webhookInboundLimiter, async (req: Request, res: Response) => {
     try {
+      // HMAC-SHA256 signature verification (when secret is configured)
+      const secret = process.env.INBOUND_EMAIL_WEBHOOK_SECRET;
+      if (secret) {
+        const signature = req.headers['x-webhook-signature'] as string | undefined;
+        if (!signature) {
+          return res.status(401).json({ error: 'Missing webhook signature' });
+        }
+        const payload = JSON.stringify(req.body);
+        const expected = createHmac('sha256', secret).update(payload).digest('hex');
+        const sigBuf = Buffer.from(signature);
+        const expBuf = Buffer.from(expected);
+        if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+          return res.status(401).json({ error: 'Invalid webhook signature' });
+        }
+      }
+
       const { from, subject, text } = req.body;
 
       if (!from || !subject) {

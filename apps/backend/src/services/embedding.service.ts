@@ -28,13 +28,14 @@ function getOpenAI(): OpenAI {
  * Falls back to a random mock vector when the API key is missing
  * or set to a placeholder (local development).
  */
-async function createEmbedding(text: string): Promise<number[]> {
+export async function createEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || apiKey.startsWith('sk-placeholder')) {
     console.warn(
-      'OpenAI API Key missing or placeholder. Returning mock embedding.',
+      'OpenAI API Key missing or placeholder. Returning zero embedding.',
     );
-    return new Array(1536).fill(0).map(() => Math.random());
+    // Zero vector — random vectors would pollute a shared Pinecone index with noise
+    return new Array(1536).fill(0);
   }
 
   const response = await getOpenAI().embeddings.create({
@@ -83,15 +84,23 @@ export async function embedSubmission(
 
   await upsertVector(embeddingId, vector, metadata);
 
-  // Store metadata reference in DynamoDB
-  await VectorEmbeddingEntity.upsert({
-    embeddingId,
-    projectId,
-    submissionId,
-    pineconeId: embeddingId,
-    textChunk: text.slice(0, 500),
-    createdAt: new Date().toISOString(),
-  }).go();
+  // Store metadata reference in DynamoDB.
+  // patch().set() only updates the text chunk and leaves createdAt untouched on re-embed.
+  // Falls back to create() when the record doesn't exist yet.
+  try {
+    await VectorEmbeddingEntity.patch({ projectId, embeddingId })
+      .set({ textChunk: text.slice(0, 500) })
+      .go();
+  } catch {
+    await VectorEmbeddingEntity.create({
+      embeddingId,
+      projectId,
+      submissionId,
+      pineconeId: embeddingId,
+      textChunk: text.slice(0, 500),
+      createdAt: new Date().toISOString(),
+    }).go().catch(() => {/* record was created by a concurrent request */});
+  }
 }
 
 /**
@@ -123,12 +132,13 @@ export async function semanticSearch(
   query: string,
   projectId: string,
   topK = 5,
+  minScore = 0.65,
 ): Promise<Array<{ submissionId: string; score: number; text: string }>> {
   const vector = await createEmbedding(query);
   const results = await queryVectors(vector, projectId, topK);
 
   return results
-    .filter((r) => r.metadata.submissionId !== '')
+    .filter((r) => r.metadata.submissionId !== '' && r.score >= minScore)
     .map((r) => ({
       submissionId: r.metadata.submissionId,
       score: r.score,
@@ -165,7 +175,8 @@ export class EmbeddingService {
     content: string,
     pineconeId: string,
   ) {
-    await VectorEmbeddingEntity.create({
+    // Use upsert (not create) so re-calling with the same pineconeId doesn't throw
+    await VectorEmbeddingEntity.upsert({
       embeddingId: pineconeId,
       projectId,
       submissionId,

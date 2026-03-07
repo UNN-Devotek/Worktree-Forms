@@ -49,7 +49,7 @@ export function StopDetail({ stopId }: { stopId: number }) {
   const { data: stop, isLoading, error } = useQuery({
       queryKey: ['stop', stopId],
       queryFn: async () => {
-          const res = await fetch(`/api/routes/stops/${stopId}`);
+          const res = await fetch(`/api/routes/stops/${stopId}`, { credentials: 'include' });
           if (!res.ok) throw new Error('Failed to fetch stop');
           const json = await res.json();
           return json.data.stop as RouteStop;
@@ -62,6 +62,7 @@ export function StopDetail({ stopId }: { stopId: number }) {
           const res = await fetch(`/api/routes/stops/${stopId}/status`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({ status: newStatus, location: locationPayload })
           });
           if (!res.ok) throw new Error('Update failed');

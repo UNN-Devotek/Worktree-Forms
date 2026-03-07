@@ -17,6 +17,7 @@ import {
   faCubes,
 } from "@fortawesome/free-solid-svg-icons";
 import { signOut } from "next-auth/react";
+import { useUIPreferencesStore } from "@/lib/stores/ui-preferences-store";
 
 
 
@@ -26,22 +27,13 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const isCollapsed = useUIPreferencesStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUIPreferencesStore((s) => s.toggleSidebar);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved) {
-        setIsCollapsed(saved === "true");
-    }
   }, []);
-
-  const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem("sidebar-collapsed", String(newState));
-  };
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: faHome },

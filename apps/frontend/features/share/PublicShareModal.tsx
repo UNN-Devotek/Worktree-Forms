@@ -34,11 +34,11 @@ export function PublicShareModal({ resourceType, resourceId, trigger }: PublicSh
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/share-proxy', { // We'll need a proxy route or use direct if CORS allowed (Proxy is safer/easier with auth)
+      const res = await fetch('/api/share-proxy', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
-            // 'x-user-id': session?.user?.id || '' // Proxy will handle this
         },
         body: JSON.stringify({
             resourceType,

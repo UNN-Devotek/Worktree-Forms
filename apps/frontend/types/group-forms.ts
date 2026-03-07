@@ -328,9 +328,15 @@ export type FormType = 'application' | 'general' | 'sub_group_application' | 'su
 export type SubmissionStatus = 'received' | 'pending' | 'approved' | 'rejected' | 'draft'
 
 export interface GroupForm {
-  id: number
+  id: string | number
   group_id: number
   slug: string                   // URL-friendly identifier (unique per group)
+  // DynamoDB fields
+  formId?: string                // DynamoDB primary key (nanoid)
+  projectId?: string             // DynamoDB project scope
+  schema?: any                   // DynamoDB field name for form_schema
+  status?: string                // 'DRAFT' | 'PUBLISHED'
+  name?: string                  // DynamoDB field name for title
   targetSheetId?: string | null  // Linked live table (project-scoped forms)
   title: string
   description?: string

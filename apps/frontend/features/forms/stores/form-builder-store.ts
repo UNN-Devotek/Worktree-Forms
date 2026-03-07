@@ -128,7 +128,7 @@ function createDefaultFormSchema(): FormSchema {
 function createDefaultField(type: string): FormFieldBase {
   const baseField: FormFieldBase = {
     id: nanoid(),
-    type: type as any,
+    type: type as FormFieldBase['type'],
     name: `field_${nanoid(6)}`,
     label: 'New Field',
     required: false,

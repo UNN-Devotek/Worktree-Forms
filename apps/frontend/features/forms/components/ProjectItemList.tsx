@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useProjectFileSystemStore } from '@/lib/stores/project-file-system-store'
-import { FileSystemItem } from '@/types/file-system'
+import { FileSystemItem, FormItem } from '@/types/file-system'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFolder, faFileAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons'
 import { Card, CardContent } from '@/components/ui/card'
@@ -25,7 +25,7 @@ export function ProjectItemList({ onNavigate, projectSlug }: ProjectItemListProp
   const currentItems = items.filter((item) => item.parentId === currentFolderId)
 
   const sortedItems = [...currentItems].sort((a, b) => {
-    if (a.type === b.type) return a.name.localeCompare(b.name)
+    if (a.type === b.type) return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' })
     return a.type === 'folder' ? -1 : 1
   })
 
@@ -77,8 +77,8 @@ function ProjectFileItem({
   const handleClick = () => {
     if (isFolder) {
       onNavigate(item.id)
-    } else if ((item as any).formSlug) {
-      router.push(`/project/${projectSlug}/forms/${(item as any).formSlug}`)
+    } else if ((item as FormItem).formSlug) {
+      router.push(`/project/${projectSlug}/forms/${(item as FormItem).formSlug}`)
     }
   }
 

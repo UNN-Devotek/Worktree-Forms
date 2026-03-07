@@ -192,7 +192,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ projectId, isO
         };
         try {
             const url = isEditing
-                ? `/api/tasks/${editTask!.id}`
+                ? `/api/projects/${editTask!.projectId}/tasks/${editTask!.id}`
                 : `/api/projects/${projectId}/tasks`;
             const res = await apiClient(url, {
                 method: isEditing ? 'PATCH' : 'POST',

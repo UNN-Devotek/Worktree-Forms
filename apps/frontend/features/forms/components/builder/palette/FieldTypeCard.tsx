@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { Card } from '@/components/ui/card'
 import * as Icons from 'lucide-react'
@@ -24,7 +25,7 @@ export function FieldTypeCard({ type, label, description, icon }: FieldTypeCardP
   })
 
   // Dynamically get icon component
-  const IconComponent = (Icons as any)[icon]
+  const IconComponent = (Icons as Record<string, React.ElementType>)[icon]
 
   return (
     <Card

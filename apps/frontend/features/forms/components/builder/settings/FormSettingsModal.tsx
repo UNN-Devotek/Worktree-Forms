@@ -16,10 +16,11 @@ import { FormSettings } from '@/types/group-forms'
 interface FormSettingsModalProps {
   open: boolean
   onClose: () => void
-  groupId: number
+  groupId: number | string | null
   groupSlug?: string
   formId?: string | number
   targetSheetId?: string | null
+  projectId?: string
 }
 
 import { getSheets, getFormProjectSlug } from '@/features/sheets/server/sheet-actions'
@@ -47,7 +48,7 @@ function LinkedSheetRow({ sheetId, projectSlug, sheets }: { sheetId: string; pro
   )
 }
 
-export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, targetSheetId }: FormSettingsModalProps) {
+export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, targetSheetId, projectId }: FormSettingsModalProps) {
   const { formSchema, updateFormSettings, updateFormTheme } = useFormBuilderStore()
   const [activeTab, setActiveTab] = useState('general')
   const [sheets, setSheets] = useState<any[]>([])
@@ -84,7 +85,7 @@ export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, t
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="visibility">Visibility</TabsTrigger>
             <TabsTrigger value="theme">Theme</TabsTrigger>
@@ -134,7 +135,7 @@ export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, t
              <BackgroundSettings
                 settings={formSchema?.settings as FormSettings || {}} 
                 onChange={updateFormSettings}
-                projectId={String(groupId)}
+                projectId={projectId ?? (groupId ? String(groupId) : undefined)}
              />
           </TabsContent>
 

@@ -1,3 +1,12 @@
+import type { badgeVariants } from '@/components/ui/badge';
+import type { VariantProps } from 'class-variance-authority';
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
+
+// Button variant is a string union — use string literal union to avoid widening
+type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' |
+  'neutral' | 'warning' | 'alternative' | 'purple' | 'info';
+
 export const TASK_TYPES = [
     { value: 'RFI',          label: 'RFI',          description: 'Request for Information' },
     { value: 'GENERAL',      label: 'General Task',  description: 'Miscellaneous to-do item' },
@@ -38,7 +47,7 @@ export const PRIORITY_MAP: Record<string, { label: string; color: string; dot: s
 export const KANBAN_STATUS_COLUMNS = ['ACTIVE', 'IN_PROGRESS', 'COMPLETED'] as const;
 
 /** Button variant for each task type column header */
-export const TASK_TYPE_BUTTON_MAP: Record<string, string> = {
+export const TASK_TYPE_BUTTON_MAP: Record<string, ButtonVariant> = {
     RFI:          'default',       // blue
     GENERAL:      'neutral',       // slate
     PUNCH_LIST:   'warning',       // orange
@@ -50,14 +59,14 @@ export const TASK_TYPE_BUTTON_MAP: Record<string, string> = {
 };
 
 /** Badge variant mappings — matches badge.tsx variant names */
-export const STATUS_BADGE_MAP: Record<string, string> = {
+export const STATUS_BADGE_MAP: Record<string, BadgeVariant> = {
     DRAFT:       'pending',
     ACTIVE:      'active',
     IN_PROGRESS: 'processing',
     COMPLETED:   'done',
 };
 
-export const PRIORITY_BADGE_MAP: Record<string, string> = {
+export const PRIORITY_BADGE_MAP: Record<string, BadgeVariant> = {
     LOW:    'low',
     MEDIUM: 'info',
     HIGH:   'high',

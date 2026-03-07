@@ -42,7 +42,7 @@ export default function PerformPage({ params }: PerformPageProps) {
     const { data: routeStop, isLoading } = useQuery({
         queryKey: ['stop', stopId],
         queryFn: async () => {
-            const res = await fetch(`/api/routes/stops/${stopId}`);
+            const res = await fetch(`/api/routes/stops/${stopId}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to load stop');
             const json = await res.json();
             return json.data.stop;
@@ -56,7 +56,7 @@ export default function PerformPage({ params }: PerformPageProps) {
     const { data: form, isLoading: isFormLoading } = useQuery({
         queryKey: ['form', formId],
         queryFn: async () => {
-             const res = await fetch(`/api/forms/${formId}`);
+             const res = await fetch(`/api/forms/${formId}`, { credentials: 'include' });
              if (!res.ok) throw new Error('Failed to load form');
              const json = await res.json();
              return json.data;
@@ -177,15 +177,16 @@ export default function PerformPage({ params }: PerformPageProps) {
                     <p className="text-muted-foreground">{form.description || 'Complete this form to finish the job.'}</p>
                 </div>
 
-                <FormRenderer 
-                    formSchema={form.form_schema || { pages: [] }} 
-                    formId={Number(formId)}
-                    groupId={1} // TODO: dynamic group ID
+                <FormRenderer
+                    formSchema={form.form_schema || { pages: [] }}
+                    formId={formId}
+                    groupId={routeStop?.projectId ?? slug}
                     onSuccess={async () => {
                          // Mark stop complete
                          await fetch(`/api/routes/stops/${stopId}/status`, {
                              method: 'PATCH',
                              headers: { 'Content-Type': 'application/json' },
+                             credentials: 'include',
                              body: JSON.stringify({ status: 'completed' })
                          });
                          queryClient.invalidateQueries({ queryKey: ['stop', stopId] });

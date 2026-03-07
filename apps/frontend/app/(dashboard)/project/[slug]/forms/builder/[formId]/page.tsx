@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { FormBuilderLayout } from '@/features/forms/components/builder/FormBuilderLayout';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams, notFound } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { GroupForm } from '@/types/group-forms';
 import { ApiResponse } from '@/types/api';
@@ -12,30 +12,47 @@ import { toast } from 'sonner';
 export default function ProjectFormBuilderPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const slug = params?.slug ? (Array.isArray(params.slug) ? params.slug[0] : params.slug) : undefined;
-  const formIdRaw = params?.formId ? (Array.isArray(params.formId) ? params.formId[0] : params.formId) : undefined;
-  const formId = formIdRaw ? parseInt(formIdRaw, 10) : undefined;
+  // formId is a nanoid string — do NOT parseInt
+  const formId = params?.formId ? (Array.isArray(params.formId) ? params.formId[0] : params.formId) : undefined;
+  // projectId is the DynamoDB project ID — passed as query param from FormDetailView
+  const projectId = searchParams.get('projectId') ?? slug;
 
   const [form, setForm] = useState<GroupForm | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!formId) {
+    if (!formId || !projectId) {
       setLoading(false);
       return;
     }
 
     const fetchForm = async () => {
       try {
-        const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
-          `/api/groups/1/forms/${formId}`
+        // Use the project-scoped forms endpoint which works with DynamoDB FormEntity
+        const response = await apiClient<ApiResponse<{ forms: GroupForm[] }>>(
+          `/api/projects/${projectId}/forms`
         );
-        if (response.success && response.data?.form) {
-          setForm(response.data.form);
-        } else {
-          toast.error('Form not found', { description: 'The requested form could not be found.' });
-          router.push(`/project/${slug}/forms`);
+        if (response.success && response.data?.forms) {
+          const found = response.data.forms.find((f: any) => (f.formId ?? f.id) === formId);
+          if (found) {
+            // Normalise to GroupForm shape expected by FormBuilderLayout
+            const f = found as GroupForm & { formId?: string; schema?: any; status?: string; name?: string };
+            setForm({
+              ...f,
+              id: f.formId ?? f.id,
+              title: f.name ?? f.title,
+              slug: f.formId ?? f.slug,
+              group_id: null,
+              form_schema: f.schema ?? f.form_schema,
+              is_published: f.status === 'PUBLISHED',
+            } as unknown as GroupForm);
+          } else {
+            toast.error('Form not found', { description: 'The requested form could not be found.' });
+            router.push(`/project/${slug}/forms`);
+          }
         }
       } catch (error) {
         console.error('Error fetching form:', error);
@@ -46,7 +63,7 @@ export default function ProjectFormBuilderPage() {
     };
 
     fetchForm();
-  }, [formId, slug, router]);
+  }, [formId, projectId, slug, router]);
 
   if (loading) {
     return (
@@ -56,21 +73,26 @@ export default function ProjectFormBuilderPage() {
     );
   }
 
-  if (!formId || !form) {
-    return null;
+  if (!formId) {
+    notFound();
+  }
+
+  if (!form) {
+    return null; // redirect to forms list already in flight
   }
 
   return (
     <FormBuilderLayout
       formId={formId}
-      groupId={form.group_id}
+      groupId={null}
       groupSlug={slug}
-      formTitle={form.title}
+      formTitle={form.name ?? form.title}
       formType={form.form_type}
-      initialSchema={form.form_schema}
+      initialSchema={form.schema ?? form.form_schema}
       isNewForm={false}
       isSIGRequestForm={form.is_sig_request_form}
       projectSlug={slug}
+      projectId={projectId}
       targetSheetId={form.targetSheetId}
     />
   );

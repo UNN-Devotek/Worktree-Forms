@@ -15,11 +15,12 @@ import { isElementType } from '@/lib/field-registry'
 
 interface PropertiesTabProps {
   field: FormFieldBase
-  groupId: number
-  formId?: number
+  groupId: string | number | null
+  formId?: string | number
+  projectId?: string
 }
 
-export function PropertiesTab({ field, groupId, formId }: PropertiesTabProps) {
+export function PropertiesTab({ field, groupId, formId, projectId }: PropertiesTabProps) {
   const { updateField } = useFormBuilderStore()
 
   const handleUpdate = (updates: Partial<typeof field>) => {
@@ -120,6 +121,7 @@ export function PropertiesTab({ field, groupId, formId }: PropertiesTabProps) {
             <ImageUploadField
               groupId={groupId}
               formId={formId}
+              projectId={projectId}
               currentUrl={field.imageUrl}
               currentObjectKey={field.imageObjectKey}
               onUpload={(objectKey, url) => handleUpdate({

@@ -32,9 +32,12 @@ import {
   History,
   ChevronDown,
   Check as CheckIcon,
+  User,
 } from "lucide-react"
 import { AddRowIcon, AddColumnIcon } from "./icons/SheetIcons"
 import { AddColumnDialog } from "./controls/ColumnManagerDialog"
+import { RowAssignmentMenu } from "./RowAssignmentMenu"
+import { assignRow } from "../server/sheet-actions"
 
 // Fixed width of the row-meta column (number + actions)
 const ROW_META_WIDTH = 128
@@ -67,13 +70,16 @@ interface DragState {
 
 interface LiveTableProps {
   documentId?: string
+  projectId?: string
   containerClassName?: string
 }
 
-export function LiveTable({ containerClassName }: LiveTableProps) {
+export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
   const [addColumnOpen, setAddColumnOpen] = useState(false)
   // Only one dropdown cell can be open at a time — key is `rowId:columnId`
   const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null)
+  // Row assignment menu state: which row is showing the assign dropdown
+  const [assignMenuRowId, setAssignMenuRowId] = useState<string | null>(null)
 
   const {
     data,
@@ -101,6 +107,7 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     isFormulaEditing,
     insertCellRefCallback,
     doc,
+    sheetId,
   } = useSheet()
 
   // Track comment/file counts per row for blue icon indicators
@@ -566,6 +573,15 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
                                             >
                                                 <History className="h-3.5 w-3.5" />
                                             </button>
+                                            {projectId && (
+                                                <button
+                                                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                    onClick={(e) => { e.stopPropagation(); setAssignMenuRowId(row.original.id); }}
+                                                    aria-label="Assign row"
+                                                >
+                                                    <User className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
                                         </div>
                                     )
                                 })()}
@@ -728,6 +744,25 @@ export function LiveTable({ containerClassName }: LiveTableProps) {
     </div>
 
     <AddColumnDialog open={addColumnOpen} onOpenChange={setAddColumnOpen} />
+
+    {/* Story 6-3: Row Assignment — renders as a Radix DropdownMenu portal */}
+    {projectId && assignMenuRowId && (
+      <RowAssignmentMenu
+        isOpen={Boolean(assignMenuRowId)}
+        onClose={() => setAssignMenuRowId(null)}
+        assignedUserId={
+          (data.find((r: any) => r.id === assignMenuRowId) as any)?.assignedTo ?? undefined
+        }
+        users={collaborators
+          .filter((c) => c.id)
+          .map((c) => ({ id: c.id!, name: c.name, color: c.color }))}
+        onAssign={(userId) => {
+          assignRow(projectId, sheetId, assignMenuRowId, userId || null).catch(
+            (err: unknown) => console.error('[LiveTable] assignRow failed', err)
+          );
+        }}
+      />
+    )}
     </>
   )
 }

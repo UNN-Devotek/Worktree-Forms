@@ -14,12 +14,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 
 interface PropertiesPanelProps {
-  groupId: number
-  formId?: number
+  groupId: string | number | null
+  formId?: string | number
+  projectId?: string
   isSIGRequestForm?: boolean  // When true, default fields are locked
 }
 
-export function PropertiesPanel({ groupId, formId, isSIGRequestForm = false }: PropertiesPanelProps) {
+export function PropertiesPanel({ groupId, formId, projectId, isSIGRequestForm = false }: PropertiesPanelProps) {
   const { selectField, getSelectedField } = useFormBuilderStore()
   const selectedField = getSelectedField()
 
@@ -136,7 +137,7 @@ export function PropertiesPanel({ groupId, formId, isSIGRequestForm = false }: P
 
         <ScrollArea className="flex-1">
           <TabsContent value="properties" className="p-4 m-0">
-            <PropertiesTab field={selectedField} groupId={groupId} formId={formId} />
+            <PropertiesTab field={selectedField} groupId={groupId} formId={formId} projectId={projectId} />
           </TabsContent>
 
           <TabsContent value="logic" className="p-4 m-0">

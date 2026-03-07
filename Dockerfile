@@ -1,88 +1,85 @@
-# Unified Dockerfile for Worktree-Forms
-# Builds both Frontend and Backend and runs them with PM2
+# Unified Dockerfile for Worktree
+# Local dev: uses `deps` stage (docker-compose.yml target: deps)
+# Production: uses `runner` stage
 
 # ==========================================
 # Stage 1: Base & Dependencies
 # ==========================================
 FROM node:20-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache openssl
-RUN npm install -g pnpm turbo
 
-# ==========================================
-# Stage 2: Dependencies & Source (No Build)
-# ==========================================
-FROM base AS deps
 # Copy root package files
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 
-# Install dependencies (including dev deps for build)
+# Install all deps (including devDependencies for tsx / build)
 RUN npm ci
 
 # Copy source code
 COPY . .
 
 # ==========================================
-# Stage 3: Builder
+# Stage 2: Dev dependencies + source (used by docker-compose locally)
 # ==========================================
-FROM deps AS builder
+FROM base AS deps
+# Source already copied in base — this stage is used as-is for local dev
+# docker-compose overrides CMD with: npm run dev -w apps/frontend & npm run dev -w apps/backend
 
-# Build Backend
+# ==========================================
+# Stage 3: Build for production
+# ==========================================
+FROM base AS builder
+
+# Build backend TypeScript
 RUN npm run build -w apps/backend
 
-# Build Frontend
-# Set NEXT_PUBLIC_API_URL for build time if needed, or rely on runtime env
+# Build Next.js frontend
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-
-ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=true
+ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 RUN npm run build -w apps/frontend
 
 # ==========================================
-# Stage 3: Runner
+# Stage 4: Production runtime (ECS Fargate)
 # ==========================================
 FROM node:20-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl wget
 
-# Create non-root user for security
+RUN apk add --no-cache wget
+
+# Non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs appuser
 
 # Install PM2 globally
 RUN npm install -g pm2
 
-# Copy necessary files for Backend
+# Backend: compiled dist + node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
-# Copy necessary files for Frontend (Next.js Standalone mode is preferred but simplified here)
+# Frontend: Next.js build output + public assets
 COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
+COPY --from=builder /app/apps/frontend/node_modules ./apps/frontend/node_modules
 COPY --from=builder /app/apps/frontend/.next ./apps/frontend/.next
 COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
-# Copy PM2 config
+# PM2 config + startup script
 COPY ecosystem.config.js .
+COPY start.sh .
+RUN chmod +x start.sh
 
-# Set ownership and switch to non-root user
 RUN chown -R appuser:nodejs /app
 USER appuser
 
-# Expose ports
 EXPOSE 3005 5005
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget -qO- http://localhost:${BACKEND_PORT:-5005}/api/health || exit 1
+  CMD wget -qO- http://0.0.0.0:${BACKEND_PORT:-5005}/api/health || exit 1
 
-# Start both services
-# Copy startup script
-COPY --chown=appuser:nodejs start.sh .
-RUN chmod +x start.sh
-
-# Start application
 CMD ["./start.sh"]

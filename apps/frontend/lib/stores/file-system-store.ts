@@ -29,36 +29,41 @@ export const useFileSystemStore = create<FileSystemStore>((set, get) => ({
     try {
         const [foldersRes, formsRes] = await Promise.all([
             apiClient<any>('/api/folders'),
-            apiClient<any>('/api/groups/1/forms')
+            apiClient<any>('/api/forms')
         ]);
-        
+
         const items: FileSystemItem[] = [];
 
-        if (foldersRes.success && foldersRes.data.folders) {
+        if (foldersRes.success && foldersRes.data?.folders) {
             foldersRes.data.folders.forEach((f: any) => {
                 items.push({
-                    id: `folder-${f.id}`, // Client-side ID convention
-                    dbId: f.id, // Keep real ID
+                    id: `folder-${f.id}`,
+                    dbId: f.id,
                     name: f.name,
-                    type: 'folder',
+                    type: 'folder' as const,
                     parentId: f.parentId ? `folder-${f.parentId}` : null,
                     createdAt: f.createdAt,
                     updatedAt: f.updatedAt
-                } as any);
+                });
             });
         }
 
-        if (formsRes.success && formsRes.data.forms) {
-             formsRes.data.forms.forEach((f: any) => {
+        // GET /api/forms returns { data: [...] } (array, not { forms: [...] })
+        const formsList: any[] = Array.isArray(formsRes.data) ? formsRes.data : (formsRes.data?.forms ?? []);
+        if (formsRes.success) {
+            formsList.forEach((f: any) => {
+                const id = f.formId ?? f.id;
                 items.push({
-                    id: `form-${f.id}`,
-                    dbId: f.id,
-                    name: f.title,
-                    type: 'form',
+                    id: `form-${id}`,
+                    dbId: id,
+                    name: f.name ?? f.title ?? 'Untitled Form',
+                    type: 'form' as const,
                     parentId: f.folderId ? `folder-${f.folderId}` : null,
                     createdAt: f.createdAt,
                     updatedAt: f.updatedAt,
-                    formSlug: f.slug
+                    formSlug: f.formId ?? f.slug ?? id,
+                    targetSheetId: f.targetSheetId,
+                    projectId: f.projectId,
                 } as any);
             });
         }
@@ -115,23 +120,22 @@ export const useFileSystemStore = create<FileSystemStore>((set, get) => ({
   },
 
   moveItem: async (itemId, targetFolderId) => {
-    // Optimistic update? Better wait for server.
     const item = get().items.find(i => i.id === itemId);
     if (!item) return;
 
     const dbTargetId = targetFolderId ? targetFolderId.replace('folder-', '') : null;
-    // Extract numeric ID from itemId (form-123 or folder-123)
     const isForm = itemId.startsWith('form-');
     const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '');
+    const projectId = (item as any).projectId;
 
     try {
-        if (isForm) {
-            await apiClient(`/api/groups/1/forms/${dbId}`, {
+        if (isForm && projectId) {
+            await apiClient(`/api/projects/${projectId}/forms/${dbId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ folderId: dbTargetId })
             });
-        } else {
+        } else if (!isForm) {
             await apiClient(`/api/folders/${dbId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -139,69 +143,66 @@ export const useFileSystemStore = create<FileSystemStore>((set, get) => ({
             });
         }
 
-        // Update local state
         set(state => ({
-          items: state.items.map(i => 
+          items: state.items.map(i =>
             i.id === itemId ? { ...i, parentId: targetFolderId, updatedAt: new Date().toISOString() } : i
           )
         }))
-
     } catch (error) {
         console.error('Failed to move item:', error);
-        // Clean refresh if failed?
         get().initialize();
     }
   },
 
   deleteItem: async (itemId) => {
+    const item = get().items.find(i => i.id === itemId);
     const isForm = itemId.startsWith('form-');
     const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '');
+    const projectId = (item as any)?.projectId;
 
     try {
-         // Add API call for deletion
-         if (isForm) {
-             // Not implemented in this step, but assuming we might want to delete forms? 
-             // Or just hide them? The user didn't explicitly ask for delete, but "deleteItem" existed.
-             // We'll leave it local-only or implement specific delete later. 
-             // BUT for folders we implemented it.
-         } else {
-             await apiClient(`/api/folders/${dbId}`, { method: 'DELETE' });
-         }
+        if (isForm && projectId) {
+            await apiClient(`/api/projects/${projectId}/forms/${dbId}`, { method: 'DELETE' });
+        } else if (!isForm) {
+            await apiClient(`/api/folders/${dbId}`, { method: 'DELETE' });
+        }
 
         set(state => ({
-          items: state.items.filter(item => item.id !== itemId)
+          items: state.items.filter(i => i.id !== itemId)
         }))
     } catch (error) {
         console.error('Failed to delete item:', error);
     }
   },
-  
+
   renameItem: async (itemId, newName) => {
-     const isForm = itemId.startsWith('form-');
-     const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '');
-     
-     try {
-         if (isForm) {
-             await apiClient(`/api/groups/1/forms/${dbId}`, {
-                 method: 'PUT',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ title: newName })
-             });
-         } else {
-             await apiClient(`/api/folders/${dbId}`, {
-                 method: 'PUT',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ name: newName })
-             });
-         }
-         
+    const item = get().items.find(i => i.id === itemId);
+    const isForm = itemId.startsWith('form-');
+    const dbId = itemId.replace(isForm ? 'form-' : 'folder-', '');
+    const projectId = (item as any)?.projectId;
+
+    try {
+        if (isForm && projectId) {
+            await apiClient(`/api/projects/${projectId}/forms/${dbId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            });
+        } else if (!isForm) {
+            await apiClient(`/api/folders/${dbId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            });
+        }
+
         set(state => ({
           items: state.items.map(item =>
-            item.id === itemId? { ...item, name: newName, updatedAt: new Date().toISOString() } : item
+            item.id === itemId ? { ...item, name: newName, updatedAt: new Date().toISOString() } : item
           )
         }))
-     } catch (error) {
-         console.error('Failed to rename:', error);
-     }
+    } catch (error) {
+        console.error('Failed to rename:', error);
+    }
   }
 }));

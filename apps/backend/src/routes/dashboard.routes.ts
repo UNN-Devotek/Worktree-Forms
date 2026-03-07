@@ -4,8 +4,11 @@ import {
   FormEntity,
   SubmissionEntity,
   ProjectEntity,
+  FileUploadEntity,
 } from '../lib/dynamo/index.js';
 import { getSecurityMiddleware } from '../middleware/security.js';
+import { authenticate, AuthenticatedRequest } from '../middleware/authenticate.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 
 const router = Router();
 
@@ -13,8 +16,12 @@ const router = Router();
 // DASHBOARD & ADMIN ENDPOINTS
 // ==========================================
 
-// Admin Stats
-router.get('/admin/stats', async (_req: Request, res: Response) => {
+// Admin Stats — requires ADMIN system role
+router.get('/admin/stats', authenticate, async (req: Request, res: Response) => {
+  const user = (req as AuthenticatedRequest).user;
+  if (user.systemRole !== 'ADMIN') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
   try {
     const usersResult = await UserEntity.scan.go();
     const formsResult = await FormEntity.scan.go();
@@ -36,9 +43,9 @@ router.get('/admin/stats', async (_req: Request, res: Response) => {
 });
 
 // Get Project Metrics
-router.get('/projects/:id/metrics', getSecurityMiddleware(), async (req: Request, res: Response) => {
+router.get('/projects/:projectId/metrics', requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
   try {
-    const { id: projectId } = req.params;
+    const { projectId } = req.params;
 
     const projectResult = await ProjectEntity.get({ projectId }).go();
     const project = projectResult.data;
@@ -57,16 +64,12 @@ router.get('/projects/:id/metrics', getSecurityMiddleware(), async (req: Request
       });
     }
 
-    // Get submissions for each form
-    let totalSubmissions = 0;
-    const statsByForm: Array<{ formName: string; count: number }> = [];
-
-    for (const form of forms) {
-      const subResult = await SubmissionEntity.query.byForm({ formId: form.formId }).go();
-      const count = subResult.data.length;
-      totalSubmissions += count;
-      statsByForm.push({ formName: form.name, count });
-    }
+    // Get submissions for each form in parallel
+    const submissionCounts = await Promise.all(
+      forms.map((form) => SubmissionEntity.query.byForm({ formId: form.formId }).go()),
+    );
+    const statsByForm = forms.map((form, i) => ({ formName: form.name, count: submissionCounts[i].data.length }));
+    const totalSubmissions = statsByForm.reduce((sum, s) => sum + s.count, 0);
 
     res.json({
       success: true,
@@ -83,9 +86,9 @@ router.get('/projects/:id/metrics', getSecurityMiddleware(), async (req: Request
 });
 
 // Get Project Activity Feed
-router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Request, res: Response) => {
+router.get('/projects/:projectId/activity', requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
   try {
-    const { id: projectId } = req.params;
+    const { projectId } = req.params;
 
     const formsResult = await FormEntity.query.byProject({ projectId }).go();
     const forms = formsResult.data;
@@ -94,14 +97,16 @@ router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Reques
       return res.json({ success: true, data: [] });
     }
 
-    // Gather recent submissions across forms
-    const allSubmissions = [];
-    for (const form of forms) {
-      const subResult = await SubmissionEntity.query.byForm({ formId: form.formId }).go();
-      for (const sub of subResult.data) {
+    // Gather recent submissions across forms in parallel
+    const submissionResults = await Promise.all(
+      forms.map((form) => SubmissionEntity.query.byForm({ formId: form.formId }).go()),
+    );
+    const allSubmissions: Array<Record<string, unknown>> = [];
+    forms.forEach((form, i) => {
+      for (const sub of submissionResults[i].data) {
         allSubmissions.push({ ...sub, formName: form.name });
       }
-    }
+    });
 
     // Sort by createdAt desc and take 20
     allSubmissions.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
@@ -120,6 +125,36 @@ router.get('/projects/:id/activity', getSecurityMiddleware(), async (req: Reques
   } catch (error) {
     console.error('Activity Error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch activity' });
+  }
+});
+
+// Storage Usage Endpoint
+router.get('/projects/:projectId/storage-usage', requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    const [projectResult, filesResult] = await Promise.all([
+      ProjectEntity.get({ projectId }).go(),
+      FileUploadEntity.query.primary({ projectId }).go(),
+    ]);
+
+    const project = projectResult.data;
+    const files = filesResult.data;
+
+    const usedBytes = files.reduce((sum, f) => sum + (f.sizeBytes ?? 0), 0);
+    const quotaBytes = project?.storageQuotaBytes ?? null;
+
+    res.json({
+      success: true,
+      data: {
+        usedBytes,
+        quotaBytes,
+        files: files.length,
+      },
+    });
+  } catch (error) {
+    console.error('Storage Usage Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch storage usage' });
   }
 });
 

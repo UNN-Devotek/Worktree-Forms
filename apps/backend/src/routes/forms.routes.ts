@@ -8,6 +8,7 @@ import {
   ProjectEntity,
   ProjectMemberEntity,
   SheetColumnEntity,
+  SheetRowEntity,
   FileUploadEntity,
 } from '../lib/dynamo/index.js';
 import multer from 'multer';
@@ -49,31 +50,52 @@ const upload = multer({
 
 // Get all forms (or single form by slug when ?slug= is provided)
 router.get('/forms', async (req: Request, res: Response) => {
+  const userId = (req as AuthenticatedRequest).user.id;
+  const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
+
   try {
     const slug = req.query.slug as string | undefined;
     const projectId = req.query.projectId as string | undefined;
 
     if (slug && projectId) {
-      // Look up form by scanning
+      const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+      if (!memberResult.data && !isAdmin) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
       const result = await FormEntity.query.byProject({ projectId }).go();
-      const form = result.data.find((f) => f.name === slug);
+      const form = result.data.find((f) => f.formId === slug || f.name === slug);
       if (!form) return res.status(404).json({ success: false, error: 'Form not found' });
       return res.json({ success: true, data: form });
     }
 
     if (projectId) {
+      const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+      if (!memberResult.data && !isAdmin) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
       const result = await FormEntity.query.byProject({ projectId }).go();
       return res.json({ success: true, data: result.data, meta: { total: result.data.length } });
     }
 
-    // Without projectId, scan all forms (expensive, but maintains backward compat)
-    const result = await FormEntity.scan.go();
-    res.json({ success: true, data: result.data, meta: { total: result.data.length } });
+    // Without projectId: admins see all forms; regular users see forms from their projects.
+    if (isAdmin) {
+      const result = await FormEntity.scan.go();
+      return res.json({ success: true, data: result.data, meta: { total: result.data.length } });
+    }
+
+    const memberships = await ProjectMemberEntity.query.byUser({ userId }).go();
+    const projectIds = memberships.data.map((m) => m.projectId);
+    const allForms = await Promise.all(
+      projectIds.map((pid) => FormEntity.query.byProject({ projectId: pid }).go())
+    );
+    const forms = allForms.flatMap((r) => r.data);
+    res.json({ success: true, data: forms, meta: { total: forms.length } });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch forms' });
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Get all forms for a group (legacy endpoint, maps to project)
 router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
   const projectId = req.params.groupId;
@@ -85,6 +107,7 @@ router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Get specific form
 router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response) => {
   const projectId = req.params.groupId;
@@ -123,6 +146,7 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Create new form
 router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req: Request, res: Response) => {
   const projectId = req.params.groupId;
@@ -170,6 +194,7 @@ router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Update form
 router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, res: Response) => {
   const projectId = req.params.groupId;
@@ -274,9 +299,9 @@ router.get('/groups/:groupId/forms/:formId/versions', async (req: Request, res: 
 });
 
 // Restore Version
-router.post('/groups/:groupId/forms/:formId/versions/:versionNumber/restore', async (req: Request, res: Response) => {
+router.post('/groups/:groupId/forms/:formId/versions/:versionNumber/restore', authenticate, async (req: Request, res: Response) => {
   const { groupId: projectId, formId, versionNumber } = req.params;
-  const userId = req.body.userId;
+  const userId = (req as AuthenticatedRequest).user.id;
   const targetVersionNum = parseInt(versionNumber);
 
   try {
@@ -401,6 +426,33 @@ router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: R
       status: 'PENDING',
     }).go();
 
+    // Write to linked sheet if form has targetSheetId
+    const targetSheetId = formResult.data.targetSheetId;
+    if (targetSheetId) {
+      try {
+        // Map form field names → column IDs so the grid can render cell data
+        const columnsResult = await SheetColumnEntity.query.primary({ sheetId: targetSheetId }).go();
+        const labelToId: Record<string, string> = {};
+        for (const col of columnsResult.data) {
+          labelToId[col.name] = col.columnId;
+        }
+        const mappedData: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(submissionData as Record<string, unknown>)) {
+          mappedData[labelToId[key] ?? key] = value;
+        }
+        await SheetRowEntity.create({
+          rowId: nanoid(),
+          sheetId: targetSheetId,
+          projectId,
+          data: mappedData,
+          createdBy: (req as any).user?.id,
+        }).go();
+      } catch (sheetErr) {
+        console.error('[Submit] Failed to write sheet row:', sheetErr);
+        // Non-fatal — submission was still recorded
+      }
+    }
+
     res.status(201).json({
       success: true,
       submission_id: submissionId,
@@ -448,6 +500,17 @@ router.post('/:formId/submissions', async (req: Request, res: Response) => {
 // Form Analytics
 router.get(['/forms/:formId/analytics', '/:formId/analytics'], async (req: Request, res: Response) => {
   const formId = req.params.formId;
+  const projectId = req.query.projectId as string | undefined;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
+
+  if (projectId) {
+    const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+    if (!memberResult.data && !isAdmin) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+  }
+
   try {
     const result = await SubmissionEntity.query.byForm({ formId }).go();
     const submissions = result.data;
@@ -486,9 +549,17 @@ router.get(['/forms/:formId/analytics', '/:formId/analytics'], async (req: Reque
 // Get Submissions
 router.get(['/forms/:formId/submissions', '/:formId/submissions'], async (req: Request, res: Response) => {
   const formId = req.params.formId;
-  const userId = (req as AuthenticatedRequest).user?.id;
-  if (!userId) {
-    return res.status(401).json({ success: false, error: 'Authentication required' });
+  const projectId = req.query.projectId as string | undefined;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
+
+  if (!projectId) {
+    return res.status(400).json({ success: false, error: 'projectId query parameter required' });
+  }
+
+  const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+  if (!memberResult.data && !isAdmin) {
+    return res.status(403).json({ success: false, error: 'Access denied' });
   }
 
   try {
@@ -501,9 +572,11 @@ router.get(['/forms/:formId/submissions', '/:formId/submissions'], async (req: R
 });
 
 // Download Submission Zip
-router.get('/submissions/:id/zip', async (req: Request, res: Response) => {
+router.get('/submissions/:id/zip', authenticate, async (req: Request, res: Response) => {
   try {
     const submissionId = req.params.id;
+    const userId = (req as AuthenticatedRequest).user.id;
+    const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
 
     // Find submission by scanning (we don't know projectId)
     const scanResult = await SubmissionEntity.scan
@@ -513,6 +586,14 @@ router.get('/submissions/:id/zip', async (req: Request, res: Response) => {
 
     if (!submission) {
       return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    // Verify project membership before serving files
+    if (!isAdmin) {
+      const memberResult = await ProjectMemberEntity.get({ projectId: submission.projectId, userId }).go();
+      if (!memberResult.data) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
 
     // Find files linked to this submission
@@ -558,7 +639,7 @@ import { SheetIntegrationService } from '../services/sheet-integration.service.j
 const bulkImportService = new BulkImportService();
 const sheetIntegrationService = new SheetIntegrationService();
 
-router.post('/:id/import', async (req: Request, res: Response) => {
+router.post('/:id/import', authenticate, async (req: Request, res: Response) => {
   try {
     const { data, projectId } = req.body;
     if (!Array.isArray(data)) {
@@ -566,6 +647,14 @@ router.post('/:id/import', async (req: Request, res: Response) => {
     }
     if (!projectId) {
       return res.status(400).json({ error: 'projectId is required' });
+    }
+    const userId = (req as AuthenticatedRequest).user.id;
+    const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
+    if (!isAdmin) {
+      const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+      if (!memberResult.data) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
     }
     const result = await bulkImportService.importSubmissions(req.params.id, projectId, data);
     res.json({ success: true, count: result.count });
@@ -582,6 +671,15 @@ router.get('/forms/:formId/submissions/:submissionId/export-pdf', async (req: Re
     const projectId = req.query.projectId as string;
     if (!projectId) {
       return res.status(400).json({ success: false, error: 'projectId query parameter required' });
+    }
+
+    const userId = (req as AuthenticatedRequest).user.id;
+    const isAdmin = (req as AuthenticatedRequest).user?.systemRole === 'ADMIN';
+    if (!isAdmin) {
+      const memberResult = await ProjectMemberEntity.get({ projectId, userId }).go();
+      if (!memberResult.data) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
     }
 
     const formResult = await FormEntity.get({ projectId, formId }).go();
@@ -614,3 +712,4 @@ router.get('/forms/:formId/submissions/:submissionId/export-pdf', async (req: Re
 });
 
 export default router;
+

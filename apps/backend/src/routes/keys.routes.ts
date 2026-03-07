@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/authenticate.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 import { ApiKeyService } from '../services/api-key.service.js';
+import { ApiKeyEntity } from '../lib/dynamo/index.js';
 import { deletionLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
@@ -9,9 +12,9 @@ const router = Router();
 // ============================================
 
 // Generate New API Key (Auth Required)
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireProjectAccess('ADMIN'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const { name, scopes, projectId } = req.body;
 
     if (!projectId) {
@@ -42,7 +45,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // List API Keys (Auth Required)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
     const projectId = req.query.projectId as string;
     if (!projectId) {
@@ -67,10 +70,16 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Revoke API Key (Auth Required)
-router.delete('/:keyHash', deletionLimiter, async (req: Request, res: Response) => {
+// Revoke API Key (Auth Required) — projectId required for RBAC
+router.delete('/:keyHash', deletionLimiter, requireProjectAccess('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { keyHash } = req.params;
+    const projectId = req.query.projectId as string || req.body.projectId;
+    // Verify the key belongs to this project via direct primary-key lookup (O(1) vs O(n) list scan)
+    const keyResult = await ApiKeyEntity.get({ keyHash }).go();
+    if (!keyResult.data || keyResult.data.projectId !== projectId) {
+      return res.status(404).json({ success: false, error: 'Key not found in this project' });
+    }
     await ApiKeyService.revokeKey(keyHash);
     res.json({ success: true, message: 'Key revoked' });
   } catch (error) {

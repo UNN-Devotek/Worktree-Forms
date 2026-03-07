@@ -1,19 +1,24 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
+import { AuthenticatedRequest } from '../middleware/authenticate.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 import { ComplianceRecordEntity } from '../lib/dynamo/index.js';
 import { nanoid } from 'nanoid';
 
 const router = Router();
 
 // GET /api/projects/:projectId/compliance/status
-router.get('/projects/:projectId/compliance/status', async (req: Request, res: Response) => {
+router.get('/projects/:projectId/compliance/status', requireProjectAccess('VIEWER'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { projectId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
 
-    // Get all compliance records for this user
-    const result = await ComplianceRecordEntity.query.byUser({ userId }).go();
-    const records = result.data.filter((r) => r.projectId === projectId);
+    // Get compliance records scoped to this project and user via ElectroDB filter
+    const result = await ComplianceRecordEntity.query
+      .byUser({ userId })
+      .where(({ projectId: pid }, { eq }) => eq(pid, projectId))
+      .go();
+    const records = result.data;
 
     const pendingRecords = records.filter((r) => r.status === 'PENDING' || !r.status);
 
@@ -35,17 +40,19 @@ router.get('/projects/:projectId/compliance/status', async (req: Request, res: R
   }
 });
 
+const COMPLIANCE_TYPES = ['SAFETY_TRAINING', 'BACKGROUND_CHECK', 'CERTIFICATION', 'INSURANCE', 'CONTRACT', 'OTHER'] as const;
+
 const submitSchema = z.object({
-  type: z.string(),
-  fileUrl: z.string().optional(),
-  textAnswer: z.string().optional(),
+  type: z.enum(COMPLIANCE_TYPES),
+  fileUrl: z.string().url().optional(),
+  textAnswer: z.string().max(5000).optional(),
 });
 
 // POST /api/projects/:projectId/compliance/submit
-router.post('/projects/:projectId/compliance/submit', async (req: Request, res: Response) => {
+router.post('/projects/:projectId/compliance/submit', requireProjectAccess('EDITOR'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { projectId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const parsed = submitSchema.safeParse(req.body);
 
     if (!parsed.success) {

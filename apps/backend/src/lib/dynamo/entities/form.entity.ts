@@ -15,6 +15,7 @@ export const FormEntity = new Entity(
       currentVersion: { type: "number", default: 1 },
       status: { type: "string", default: "DRAFT" },
       namingTemplate: { type: "string" },
+      targetSheetId: { type: "string" },
       createdBy: { type: "string" },
       createdAt: {
         type: "string",

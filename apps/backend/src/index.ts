@@ -37,7 +37,9 @@ import uploadRoutes from './routes/upload.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
 import filesRoutes from './routes/files.routes.js';
 
-dotenv.config();
+// Load .env then .env.local (same precedence order as Next.js)
+// dotenv/config above loads .env; this loads .env.local without overriding already-set vars
+dotenv.config({ path: '.env.local', override: false });
 
 // Safe BigInt serialization without mutating global prototype
 const bigIntReplacer = (_key: string, value: unknown) =>
@@ -93,6 +95,7 @@ app.use(
     '/api/groups',
     '/api/tasks',
     '/api/specs',
+    '/api/routes',
     '/api/schedule',
     '/api/dashboard',
     '/api/keys',
@@ -220,11 +223,10 @@ const HOST = '0.0.0.0';
 async function startServer() {
   await initializeStorage();
   app.listen(PORT as number, HOST, () => {
-    console.log(`\nWorktree API running on port ${PORT} bound to ${HOST}`);
-    console.log(`API Docs: /api/docs`);
-    console.log(`Health Check: /api/health\n`);
+    process.stdout.write(`\nWorktree API running on port ${PORT} bound to ${HOST}\nAPI Docs: /api/docs\nHealth Check: /api/health\n\n`);
   });
 }
 startServer();
 
 export default app;
+

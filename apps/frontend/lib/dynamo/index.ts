@@ -1,5 +1,6 @@
-// Node.js runtime only -- never export runtime = 'edge' from files importing these.
-// Re-exports from backend entity definitions for use in Server Actions and API routes.
+// SERVER-ONLY: This module uses Node.js-only APIs (DynamoDB SDK, ElectroDB).
+// Import only from 'use server' files, API routes, or Server Components.
+// Do NOT import in Client Components ('use client' files).
 
 export { docClient, TABLE_NAME } from "./client";
 

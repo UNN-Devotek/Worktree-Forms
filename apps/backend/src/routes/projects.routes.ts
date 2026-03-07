@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/authenticate.js';
 import { z } from 'zod';
 import {
   ProjectEntity,
@@ -17,6 +18,7 @@ import { auditMiddleware } from '../middleware/audit.middleware.js';
 import { extractColumnsFromSchema, mapFieldTypeToColumnType } from '../utils/form-schema.js';
 import { SheetIntegrationService } from '../services/sheet-integration.service.js';
 import { nanoid } from 'nanoid';
+import { deletionLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -32,7 +34,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 // Get all projects
 router.get('/', async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
   try {
     // Get projects where user is a member
     const memberResult = await ProjectMemberEntity.query.byUser({ userId }).go();
@@ -42,12 +44,9 @@ router.get('/', async (req: Request, res: Response) => {
       return res.json({ success: true, data: [], meta: { total: 0 } });
     }
 
-    // Fetch each project
-    const projects = [];
-    for (const projectId of projectIds) {
-      const result = await ProjectEntity.get({ projectId }).go();
-      if (result.data) projects.push(result.data);
-    }
+    // Fetch all projects in parallel
+    const projectResults = await Promise.all(projectIds.map((projectId) => ProjectEntity.get({ projectId }).go()));
+    const projects = projectResults.map((r) => r.data).filter(Boolean);
 
     res.json({ success: true, data: projects, meta: { total: projects.length } });
   } catch (error) {
@@ -56,50 +55,11 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// My Daily Route (Field Ops)
-router.get('/:id/routes/my-daily', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const todayStr = new Date().toISOString();
-    const route = {
-      id: 101,
-      date: todayStr,
-      status: 'active',
-      stops: [
-        {
-          id: 1,
-          title: 'Foundation Check',
-          address: '123 Main St, Reno, NV',
-          status: 'pending',
-          priority: 'high',
-          order: 1,
-          latitude: 39.5296,
-          longitude: -119.8138,
-          scheduledAt: new Date().toISOString(),
-          form: { id: 1, title: 'Safety Inspection' },
-        },
-        {
-          id: 2,
-          title: 'Wiring Validation',
-          address: '456 Elm St, Sparks, NV',
-          status: 'pending',
-          priority: 'normal',
-          order: 2,
-          latitude: 39.5345,
-          longitude: -119.75,
-        },
-      ],
-    };
-    res.json({ success: true, data: { route } });
-  } catch (error) {
-    console.error('Daily Route Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch daily route' });
-  }
-});
-
 // Get single project
 router.get('/:idOrSlug', async (req: Request, res: Response) => {
   const { idOrSlug } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
   try {
     // Try ID first
     let projectResult = await ProjectEntity.get({ projectId: idOrSlug }).go();
@@ -114,21 +74,25 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
+
+    const isMember = await verifyProjectMember(project.projectId, userId, systemRole);
+    if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
+
     res.json({ success: true, data: project });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch project' });
   }
 });
 
-// Create project
-router.post('/', auditMiddleware('project.create'), async (req: Request, res: Response) => {
+// Create project (rate limited to prevent resource flooding)
+router.post('/', deletionLimiter, auditMiddleware('project.create'), async (req: Request, res: Response) => {
   const parsed = createProjectSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: 'Validation failed', details: parsed.error.flatten() });
   }
 
   const { name, description } = parsed.data;
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
 
   try {
     const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -164,7 +128,11 @@ router.post('/', auditMiddleware('project.create'), async (req: Request, res: Re
 // Generic Project Upload
 router.post('/:projectId/upload', upload.single('file'), async (req: Request, res: Response) => {
   const { projectId } = req.params;
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+
+  const isMember = await verifyProjectMember(projectId, userId, systemRole);
+  if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
 
   if (!req.file) {
     return res.status(400).json({ success: false, error: 'No file uploaded' });
@@ -186,9 +154,13 @@ router.post('/:projectId/upload', upload.single('file'), async (req: Request, re
 
 // PATCH /api/projects/:id/sheets/:sheetId/rows/:rowId
 router.patch('/:id/sheets/:sheetId/rows/:rowId', async (req: Request, res: Response) => {
-  const userRole = (req as any).user?.systemRole ?? 'MEMBER';
+  const userRole = (req as AuthenticatedRequest).user?.systemRole ?? 'MEMBER';
   const { id: projectId, sheetId, rowId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
   const cellUpdates: Record<string, unknown> = req.body.data ?? {};
+
+  const isMember = await verifyProjectMember(projectId, userId, userRole);
+  if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
 
   try {
     // Check if any updated columns are locked
@@ -223,20 +195,20 @@ router.patch('/:id/sheets/:sheetId/rows/:rowId', async (req: Request, res: Respo
 // Get project members
 router.get('/:projectId/members', async (req: Request, res: Response) => {
   const { projectId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+  const isMember = await verifyProjectMember(projectId, userId, systemRole);
+  if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
   try {
     const memberResult = await ProjectMemberEntity.query.primary({ projectId }).go();
-    const members = [];
-    for (const m of memberResult.data) {
-      const userResult = await UserEntity.get({ userId: m.userId }).go();
-      if (userResult.data) {
-        members.push({
-          id: userResult.data.userId,
-          name: userResult.data.name,
-          email: userResult.data.email,
-          roles: m.roles,
-        });
-      }
-    }
+    const userResults = await Promise.all(memberResult.data.map((m) => UserEntity.get({ userId: m.userId }).go()));
+    const members = memberResult.data
+      .map((m, i) => {
+        const u = userResults[i].data;
+        if (!u) return null;
+        return { id: u.userId, name: u.name, email: u.email, roles: m.roles };
+      })
+      .filter(Boolean);
     res.json({ success: true, data: members });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch members' });
@@ -246,6 +218,10 @@ router.get('/:projectId/members', async (req: Request, res: Response) => {
 // Get project sheets list
 router.get('/:projectId/sheets-list', async (req: Request, res: Response) => {
   const { projectId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+  const isMember = await verifyProjectMember(projectId, userId, systemRole);
+  if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
   try {
     const result = await SheetEntity.query.byProject({ projectId }).go();
     const sheets = result.data.map((s) => ({ id: s.sheetId, title: s.name }));
@@ -275,8 +251,8 @@ async function verifyProjectMember(projectId: string, userId: string, systemRole
 // GET /api/projects/:projectId/forms
 router.get('/:projectId/forms', async (req: Request, res: Response) => {
   const { projectId } = req.params;
-  const userId = (req as any).user.id;
-  const systemRole = (req as any).user?.systemRole;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
 
   try {
     const isMember = await verifyProjectMember(projectId, userId, systemRole);
@@ -293,8 +269,8 @@ router.get('/:projectId/forms', async (req: Request, res: Response) => {
 // POST /api/projects/:projectId/forms
 router.post('/:projectId/forms', auditMiddleware('form.create'), async (req: Request, res: Response) => {
   const { projectId } = req.params;
-  const userId = (req as any).user.id;
-  const systemRole = (req as any).user?.systemRole;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
 
   try {
     const isMember = await verifyProjectMember(projectId, userId, systemRole);
@@ -346,6 +322,7 @@ router.post('/:projectId/forms', auditMiddleware('form.create'), async (req: Req
       name: title,
       schema: form_json ?? {},
       status: 'DRAFT',
+      targetSheetId: sheetId,
       createdBy: userId,
     }).go();
 
@@ -359,9 +336,11 @@ router.post('/:projectId/forms', auditMiddleware('form.create'), async (req: Req
       createdBy: userId,
     }).go();
 
+    // ElectroDB create().go() may return null data; merge in the known formId so the
+    // client can redirect immediately without a secondary fetch.
     res.status(201).json({
       success: true,
-      data: { form: formResult.data, sheet: { sheetId } },
+      data: { form: { ...(formResult.data ?? {}), formId }, sheet: { sheetId } },
       message: 'Form and linked table created',
     });
   } catch (error: unknown) {
@@ -374,11 +353,104 @@ router.post('/:projectId/forms', auditMiddleware('form.create'), async (req: Req
   }
 });
 
+// PUT /api/projects/:projectId/forms/:formId
+router.put('/:projectId/forms/:formId', auditMiddleware('form.update'), async (req: Request, res: Response) => {
+  const { projectId, formId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+
+  try {
+    const isMember = await verifyProjectMember(projectId, userId, systemRole);
+    if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
+
+    const { title, name, form_json, schema, status, is_published, folderId } = req.body;
+    const resolvedName = name ?? title;
+    const resolvedSchema = schema ?? form_json;
+    const resolvedStatus = status ?? (is_published === true ? 'PUBLISHED' : is_published === false ? 'DRAFT' : undefined);
+
+    const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+    if (resolvedName) updates.name = resolvedName;
+    if (resolvedSchema) updates.schema = resolvedSchema;
+    if (resolvedStatus) updates.status = resolvedStatus;
+    if (folderId !== undefined) updates.folderId = folderId ?? null;
+
+    const result = await FormEntity.patch({ projectId, formId }).set(updates).go();
+    res.json({ success: true, data: { form: result.data } });
+  } catch (error) {
+    console.error('Update Project Form Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update form' });
+  }
+});
+
+// DELETE /api/projects/:projectId/forms/:formId
+router.delete('/:projectId/forms/:formId', auditMiddleware('form.delete'), async (req: Request, res: Response) => {
+  const { projectId, formId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+
+  try {
+    const isMember = await verifyProjectMember(projectId, userId, systemRole);
+    if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
+
+    await FormEntity.delete({ projectId, formId }).go();
+    res.json({ success: true, message: 'Form deleted' });
+  } catch (error) {
+    console.error('Delete Project Form Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete form' });
+  }
+});
+
+const BLOCKED_EXTENSIONS = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.dll', '.so', '.bin'];
+const BLOCKED_MIMETYPES = ['application/x-executable', 'application/x-msdownload', 'application/x-sh'];
+
+// POST /api/projects/:projectId/forms/:formId/upload
+router.post('/:projectId/forms/:formId/upload', upload.array('file', 10), async (req: Request, res: Response) => {
+  const { projectId, formId } = req.params;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+
+  try {
+    const isMember = await verifyProjectMember(projectId, userId, systemRole);
+    if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No files uploaded' });
+    }
+
+    for (const file of files) {
+      const ext = '.' + (file.originalname.split('.').pop() || '').toLowerCase();
+      if (BLOCKED_EXTENSIONS.includes(ext) || BLOCKED_MIMETYPES.includes(file.mimetype)) {
+        return res.status(400).json({ success: false, error: `File type not allowed: ${file.originalname}` });
+      }
+    }
+
+    const uploaded = await Promise.all(
+      files.map(async (file) => {
+        const folder = `projects/${projectId}/forms/${formId}`;
+        const record = await UploadService.uploadFile(file, folder, userId, projectId);
+        return {
+          filename: record.originalName,
+          object_key: record.objectKey,
+          url: UploadService.getFileUrl(record.objectKey),
+          size: record.sizeBytes,
+          content_type: record.mimeType,
+        };
+      })
+    );
+
+    res.json({ success: true, data: { files: uploaded } });
+  } catch (error) {
+    console.error('Form Upload Error:', error);
+    res.status(500).json({ success: false, error: 'Upload failed' });
+  }
+});
+
 // GET /:projectId/forms/:formId/analytics
 router.get('/:projectId/forms/:formId/analytics', async (req: Request, res: Response) => {
   const { projectId, formId } = req.params;
-  const userId = (req as any).user.id;
-  const systemRole = (req as any).user?.systemRole;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
 
   try {
     const isMember = await verifyProjectMember(projectId, userId, systemRole);
@@ -424,16 +496,17 @@ router.get('/:projectId/forms/:formId/analytics', async (req: Request, res: Resp
 // GET /:projectId/forms/:formId/submissions
 router.get('/:projectId/forms/:formId/submissions', async (req: Request, res: Response) => {
   const { projectId, formId } = req.params;
-  const userId = (req as any).user.id;
-  const systemRole = (req as any).user?.systemRole;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
+  const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
 
   try {
     const isMember = await verifyProjectMember(projectId, userId, systemRole);
     if (!isMember) return res.status(403).json({ success: false, error: 'Access denied' });
 
-    const result = await SubmissionEntity.query.byForm({ formId }).go();
+    const result = await SubmissionEntity.query.byForm({ formId }).go({ limit });
     const submissions = result.data;
-    res.json({ success: true, data: { submissions }, meta: { total: submissions.length } });
+    res.json({ success: true, data: { submissions }, meta: { total: submissions.length, limit } });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch submissions' });
   }
@@ -442,8 +515,8 @@ router.get('/:projectId/forms/:formId/submissions', async (req: Request, res: Re
 // POST /:projectId/forms/:formId/sync-columns
 router.post('/:projectId/forms/:formId/sync-columns', async (req: Request, res: Response) => {
   const { projectId, formId } = req.params;
-  const userId = (req as any).user.id;
-  const systemRole = (req as any).user?.systemRole;
+  const userId = (req as AuthenticatedRequest).user.id;
+  const systemRole = (req as AuthenticatedRequest).user?.systemRole;
 
   try {
     const isMember = await verifyProjectMember(projectId, userId, systemRole);
@@ -464,23 +537,21 @@ router.post('/:projectId/forms/:formId/sync-columns', async (req: Request, res: 
       type: mapFieldTypeToColumnType(col.type),
     }));
 
-    // Delete existing columns
+    // Delete existing columns in parallel
     const existingCols = await SheetColumnEntity.query.primary({ sheetId }).go();
-    for (const col of existingCols.data) {
-      await SheetColumnEntity.delete({ sheetId, columnId: col.columnId }).go();
-    }
+    await Promise.all(existingCols.data.map((col) => SheetColumnEntity.delete({ sheetId, columnId: col.columnId }).go()));
 
-    // Create new columns
-    for (let i = 0; i < yjsColumns.length; i++) {
-      await SheetColumnEntity.create({
+    // Create new columns in parallel
+    await Promise.all(yjsColumns.map((col, i) =>
+      SheetColumnEntity.create({
         columnId: nanoid(),
         sheetId,
-        name: yjsColumns[i].label,
-        type: yjsColumns[i].type,
+        name: col.label,
+        type: col.type,
         order: i,
         config: { fieldName: newColumns[i].id },
-      }).go();
-    }
+      }).go()
+    ));
 
     // Sync Yjs
     try {

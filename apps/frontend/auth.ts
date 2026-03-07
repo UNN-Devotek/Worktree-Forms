@@ -3,7 +3,7 @@ import { DynamoDBAdapter } from "@auth/dynamodb-adapter";
 import Credentials from "next-auth/providers/credentials";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { authDocClient, AUTH_TABLE_NAME } from "@/lib/dynamo/auth-client";
-import { UserEntity } from "@/lib/dynamo";
+import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import type { Provider } from "@auth/core/providers";
@@ -24,41 +24,76 @@ const providers: Provider[] = [
         credentials
       );
 
-      // 1. Look up user in the main app DynamoDB table via ElectroDB
-      const result = await UserEntity.query.byEmail({ email }).go();
-      let user = result.data[0];
+      const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME ?? "worktree-local";
+
+      // 1. Look up user by email via GSI1 (GSI1PK = email, GSI1SK = "USER")
+      // Use authDocClient which is already proven to work with DynamoDB local
+      let item: Record<string, string> | undefined;
+      try {
+        const queryResult = await authDocClient.send(
+          new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "GSI1",
+            KeyConditionExpression: "GSI1PK = :email AND GSI1SK = :sk",
+            ExpressionAttributeValues: {
+              ":email": email,
+              ":sk": "USER",
+            },
+            Limit: 1,
+          })
+        );
+        item = queryResult.Items?.[0] as Record<string, string> | undefined;
+      } catch (err) {
+        console.error("[auth] DynamoDB user lookup failed:", err);
+        return null;
+      }
 
       // 2. DEV MODE AUTO-SIGNUP (only when explicitly enabled)
       const enableDevLogin =
         process.env.NODE_ENV === "development" ||
         process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === "true";
 
-      if (!user && enableDevLogin) {
+      if (!item && enableDevLogin) {
+        const userId = crypto.randomUUID();
         const hashedPassword = await bcrypt.hash(password || "password", 10);
-        const created = await UserEntity.create({
-          userId: crypto.randomUUID(),
-          email,
-          name: email.split("@")[0],
-          role: "USER",
-          passwordHash: hashedPassword,
-        }).go();
-        user = created.data;
+        const now = new Date().toISOString();
+        await authDocClient.send(
+          new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+              PK: `USER#${userId}`,
+              SK: "USER",
+              GSI1PK: email,
+              GSI1SK: "USER",
+              __edb_e__: "user",
+              __edb_v__: "1",
+              userId,
+              email,
+              name: email.split("@")[0],
+              role: "USER",
+              passwordHash: hashedPassword,
+              createdAt: now,
+              updatedAt: now,
+            },
+          })
+        );
+        item = { userId, email, name: email.split("@")[0], role: "USER", passwordHash: hashedPassword };
       }
 
-      if (!user) return null;
+      if (!item) return null;
 
       // 3. Verify password
-      if (!user.passwordHash) return null;
+      if (!item.passwordHash) return null;
       if (!password) return null;
 
-      const isValid = await bcrypt.compare(password, user.passwordHash);
+      const isValid = await bcrypt.compare(password, item.passwordHash);
       if (!isValid) return null;
 
       return {
-        id: user.userId,
-        email: user.email,
-        name: user.name ?? email,
-        role: user.role,
+        id: item.userId,
+        email: item.email,
+        name: item.name ?? email,
+        role: item.role,
       };
     },
   }),

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/authenticate.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
 
@@ -23,7 +24,7 @@ router.post('/upload', upload.array('files', 10), async (req: Request, res: Resp
       return res.status(400).json({ success: false, error: 'No files provided' });
     }
 
-    const userId = (req as any).user?.id || 'anonymous';
+    const userId = (req as AuthenticatedRequest).user.id;
 
     const urls: string[] = [];
     for (const file of files) {

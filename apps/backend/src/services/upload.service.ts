@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { StorageService } from '../storage.js';
-import { FileUploadEntity } from '../lib/dynamo/index.js';
+import { FileUploadEntity, ProjectEntity } from '../lib/dynamo/index.js';
 import { nanoid } from 'nanoid';
 
 export interface FileUploadRecord {
@@ -68,6 +68,18 @@ export class UploadService {
     const objectKey = `${folder}/${uniqueFilename}`;
 
     try {
+      // Quota enforcement: check before uploading
+      if (projectId !== 'global') {
+        const projectResult = await ProjectEntity.get({ projectId }).go();
+        const project = projectResult.data;
+        if (project && project.storageQuotaBytes) {
+          const used = project.storageUsedBytes ?? 0;
+          if (used + file.size > project.storageQuotaBytes) {
+            throw new Error('Storage quota exceeded');
+          }
+        }
+      }
+
       await StorageService.ensureBucket();
       await StorageService.uploadFile(objectKey, file.buffer, file.mimetype);
 
@@ -81,6 +93,19 @@ export class UploadService {
         sizeBytes: file.size,
         uploadedBy: uploadedBy || undefined,
       }).go();
+
+      // Update project storage usage after successful upload
+      if (projectId !== 'global') {
+        try {
+          const projectResult = await ProjectEntity.get({ projectId }).go();
+          const currentUsed = projectResult.data?.storageUsedBytes ?? 0;
+          await ProjectEntity.patch({ projectId })
+            .set({ storageUsedBytes: currentUsed + file.size })
+            .go();
+        } catch (storageUpdateError) {
+          console.error('UploadService: Failed to update project storage usage:', storageUpdateError);
+        }
+      }
 
       return toFileUploadRecord(result.data, folder);
     } catch (error) {

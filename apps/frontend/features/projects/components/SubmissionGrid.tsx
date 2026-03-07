@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { FileDown, Upload } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ImportWizardModal } from "./ImportWizardModal"
+import { useUIPreferencesStore } from "@/lib/stores/ui-preferences-store"
 // import { useToast } from "@/components/ui/use-toast"
 
 interface SubmissionGridProps {
@@ -16,19 +17,22 @@ interface SubmissionGridProps {
 
 // Define specific type for grid rows to avoid `any`
 interface GridRow {
-  id: number
+  id: string
   formTitle: string
   status: string
   submittedAt: string
   dataSummary: string // Stringified generic data for display
-  [key: string]: any // Allow dynamic columns
+  [key: string]: unknown // Allow dynamic columns
 }
 
 export function SubmissionGrid({ projectId }: SubmissionGridProps) {
   const [data, setData] = React.useState<GridRow[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const [showFailedOnly, setShowFailedOnly] = React.useState(false)
-  const [compactMode, setCompactMode] = React.useState(false)
+  const gridPrefs = useUIPreferencesStore((s) => s.getGridPrefs(projectId))
+  const setGridCompactMode = useUIPreferencesStore((s) => s.setGridCompactMode)
+  const setGridShowFailedOnly = useUIPreferencesStore((s) => s.setGridShowFailedOnly)
+  const showFailedOnly = gridPrefs.showFailedOnly
+  const compactMode = gridPrefs.compactMode
   const [refreshKey, setRefreshKey] = React.useState(0)
   // const { toast } = useToast()
 
@@ -72,13 +76,13 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
     {
       id: "actions",
       cell: ({ row }) => {
-        const id = row.getValue("id");
+        const submissionId = row.getValue("id") as string;
         return (
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
-            onClick={() => window.open(`/api/submissions/${id}/export/pdf`, '_blank')}
-            title="Export Flattened PDF"
+            onClick={() => window.open(`/api/forms/submissions/${submissionId}/zip`, '_blank')}
+            title="Download Submission Files"
           >
             <FileDown className="h-4 w-4" />
           </Button>
@@ -98,7 +102,7 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
         
         // Transform Activity -> GridRow
         const rows: GridRow[] = activities.map(a => ({
-          id: Number(a.id), // Handle both string/number IDs
+          id: a.id,
           formTitle: a.target,
           status: 'completed', // Mock status as activity feed doesn't have it yet
           submittedAt: a.timestamp,
@@ -116,24 +120,7 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
     loadData()
   }, [projectId, refreshKey]) // Trigger reload when refreshKey changes
 
-  // Persistence (Load)
-  React.useEffect(() => {
-      // Mock loading preferences
-      const savedCompact = localStorage.getItem(`grid-compact-${projectId}`)
-      if (savedCompact) setCompactMode(JSON.parse(savedCompact))
-      
-      const savedFailed = localStorage.getItem(`grid-failed-${projectId}`)
-      if (savedFailed) setShowFailedOnly(JSON.parse(savedFailed))
-  }, [projectId])
-
-  // Persistence (Save - Auto)
-  React.useEffect(() => {
-     localStorage.setItem(`grid-compact-${projectId}`, JSON.stringify(compactMode))
-  }, [compactMode, projectId])
-
-  React.useEffect(() => {
-     localStorage.setItem(`grid-failed-${projectId}`, JSON.stringify(showFailedOnly))
-  }, [showFailedOnly, projectId])
+  // Persistence is handled by Zustand persist middleware in useUIPreferencesStore
 
 
   const filteredData = React.useMemo(() => {
@@ -152,7 +139,7 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
                 <Checkbox 
                     id="failed-filter" 
                     checked={showFailedOnly} 
-                    onCheckedChange={(c) => setShowFailedOnly(!!c)} 
+                    onCheckedChange={(c) => setGridShowFailedOnly(projectId, !!c)} 
                 />
                 <label 
                     htmlFor="failed-filter" 
@@ -167,7 +154,7 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
             <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setCompactMode(!compactMode)}
+                onClick={() => setGridCompactMode(projectId, !compactMode)}
             >
                 {compactMode ? "Normal View" : "Compact Mode"}
             </Button>

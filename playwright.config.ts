@@ -6,6 +6,10 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+  /* Exclude legacy tests — pre-migration files that use broken Prisma/mock-auth fixtures */
+  testIgnore: ['**/legacy/**'],
+  /* Global setup: authenticate admin + member, save storageState */
+  globalSetup: './tests/support/global-setup.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -14,8 +18,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : 2, // Limit to 2 workers locally to prevent crashing WSL/Docker
+  /* All test artifacts go into test-results/ (gitignored) */
+  outputDir: './test-results',
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

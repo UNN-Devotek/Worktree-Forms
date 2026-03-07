@@ -22,8 +22,8 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface SaveButtonProps {
-  formId?: number
-  groupId: number
+  formId?: string | number
+  groupId: string | number | null
   groupSlug?: string
   formType?: FormType
   projectId?: string
@@ -44,18 +44,24 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
     const fetchFormStatus = async () => {
       if (!formId) return
       try {
-        const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
-          `/api/groups/${groupId}/forms/${formId}`
-        )
+        const endpoint = projectId
+          ? `/api/projects/${projectId}/forms`
+          : `/api/groups/${groupId}/forms/${formId}`
+        const response = await apiClient<ApiResponse<{ form: GroupForm } | { forms: any[] }>>(endpoint)
         if (response.success && response.data) {
-          setIsPublished(response.data.form.is_published)
+          if ('forms' in response.data) {
+            const found = response.data.forms.find((f: any) => (f.formId ?? f.id) === String(formId))
+            if (found) setIsPublished(found.status === 'PUBLISHED' || found.is_published)
+          } else if ('form' in response.data) {
+            setIsPublished(response.data.form.is_published)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch form status:', error)
       }
     }
     fetchFormStatus()
-  }, [formId, groupId])
+  }, [formId, groupId, projectId])
 
   const handleSave = async (): Promise<boolean> => {
     if (!formSchema) {
@@ -67,19 +73,21 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
     try {
       if (formId) {
         // Update existing form
-        const oneResponsePerUser = formSchema.settings?.oneResponsePerUser ?? false
-        const allowMultiple = !oneResponsePerUser
-        const sigIds = formSchema.settings?.sig_ids || []
-        
+        const title = formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form'
         const payload = {
-            title: formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form',
-            form_json: formSchema,
-            allow_multiple_submissions: allowMultiple,
-            sig_ids: sigIds
+          title,
+          form_json: formSchema,
+          name: title,
+          schema: formSchema,
         }
 
+        // Prefer project-scoped endpoint (DynamoDB); fall back to legacy groups endpoint
+        const updateEndpoint = projectId
+          ? `/api/projects/${projectId}/forms/${formId}`
+          : `/api/groups/${groupId}/forms/${formId}`
+
         const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
-          `/api/groups/${groupId}/forms/${formId}`,
+          updateEndpoint,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -98,7 +106,7 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
         // Create new form
         const title = formSchema.settings?.title || formSchema.pages[0]?.title || 'Untitled Form'
         const folderIdParam = searchParams.get('folderId')
-        const folderId = folderIdParam ? parseInt(folderIdParam) : undefined
+        const folderId = folderIdParam ?? undefined
 
         if (projectId) {
           // Project-scoped create — auto-creates linked Sheet
@@ -120,8 +128,9 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
           }
 
           toast.success('Form created', { description: 'Your form and linked table have been created.' })
-          const createdSlug = response.data.form.slug
-          router.push(`/project/${projectSlug}/forms/${createdSlug}`)
+          const createdForm = response.data.form as any
+          const createdId = createdForm.formId ?? createdForm.id ?? createdForm.slug
+          router.push(`/project/${projectSlug}/forms/${createdId}`)
           return true
         }
 
@@ -200,12 +209,15 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
       }
 
       // Now publish
+      const publishEndpoint = projectId
+        ? `/api/projects/${projectId}/forms/${formId}`
+        : `/api/groups/${groupId}/forms/${formId}`
       const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
-        `/api/groups/${groupId}/forms/${formId}`,
+        publishEndpoint,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_published: true })
+          body: JSON.stringify({ is_published: true, status: 'PUBLISHED' })
         }
       )
 
@@ -229,12 +241,15 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
 
     setIsPublishing(true)
     try {
+      const unpublishEndpoint = projectId
+        ? `/api/projects/${projectId}/forms/${formId}`
+        : `/api/groups/${groupId}/forms/${formId}`
       const response = await apiClient<ApiResponse<{ form: GroupForm }>>(
-        `/api/groups/${groupId}/forms/${formId}`,
+        unpublishEndpoint,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_published: false })
+          body: JSON.stringify({ is_published: false, status: 'DRAFT' })
         }
       )
 

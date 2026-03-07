@@ -25,7 +25,7 @@ export function ValidationRuleCard({
         <Label>Validation Type</Label>
         <Select
           value={rule.type}
-          onValueChange={(type) => onChange({ type: type as any })}
+          onValueChange={(type) => onChange({ type: type as ValidationRule['type'] })}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select validation type" />
