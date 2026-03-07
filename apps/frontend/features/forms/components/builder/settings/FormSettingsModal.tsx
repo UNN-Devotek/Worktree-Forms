@@ -104,7 +104,7 @@ export function FormSettingsModal({ open, onClose, groupId, groupSlug, formId, t
 
           <TabsContent value="visibility" className="space-y-4 mt-4">
             <VisibilitySettings
-              groupId={groupId}
+              groupId={groupId as number}
               settings={formSchema?.settings || {}}
               onChange={updateFormSettings}
             />

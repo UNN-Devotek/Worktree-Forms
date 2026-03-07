@@ -56,7 +56,7 @@ export async function getSheetToken(sheetId: string, projectId: string) {
       name: session.user.name,
       sheetId,
     },
-    JWT_SECRET,
+    JWT_SECRET!,
     { expiresIn: '1h' }
   );
 }
@@ -570,7 +570,7 @@ export async function getRowDetail(
       row: { ...row.data, rowId: row.rowId, assignedTo: row.assignedTo, status: row.status, parentRowId: row.parentRowId },
       columns: columnsResult.data
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((c) => ({ columnId: c.columnId, name: c.name, type: c.type, order: c.order ?? 0 })),
+        .map((c) => ({ columnId: c.columnId, name: c.name, type: c.type ?? 'text', order: c.order ?? 0 })),
     };
   } catch (error) {
     console.error('Failed to get row detail:', error);

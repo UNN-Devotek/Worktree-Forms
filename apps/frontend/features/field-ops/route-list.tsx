@@ -55,7 +55,7 @@ export function RouteList({ projectId, projectSlug }: { projectId?: string; proj
     }
 
     fetchRoute();
-  }, [effectiveProjectId, effectiveUserId]);
+  }, [effectiveProjectId]);
 
   if (loading && !effectiveProjectId) {
       return <div className="p-4 text-center">Loading...</div>;

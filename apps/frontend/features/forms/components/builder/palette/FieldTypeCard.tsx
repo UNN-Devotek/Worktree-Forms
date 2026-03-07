@@ -25,7 +25,7 @@ export function FieldTypeCard({ type, label, description, icon }: FieldTypeCardP
   })
 
   // Dynamically get icon component
-  const IconComponent = (Icons as Record<string, React.ElementType>)[icon]
+  const IconComponent = (Icons as unknown as Record<string, React.ElementType>)[icon]
 
   return (
     <Card

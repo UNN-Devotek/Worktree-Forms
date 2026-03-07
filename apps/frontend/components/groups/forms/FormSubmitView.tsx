@@ -45,7 +45,7 @@ export function FormSubmitView({ form }: FormSubmitViewProps) {
       <div className="max-w-4xl mx-auto py-6">
          <FormRenderer
            formSchema={(form.form_schema ?? (form as any).schema)}
-           formId={form.id}
+           formId={Number(form.id)}
            groupId={form.group_id ?? form.projectId ?? null}
            onSuccess={handleSuccess}
          />

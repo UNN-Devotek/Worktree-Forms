@@ -17,35 +17,47 @@ const ToggleGroupContext = React.createContext<
   variant: "default",
 })
 
+// Cast Root to accept a wider onValueChange type, bypassing the discriminated union
+// constraint that TS cannot narrow through spread. Runtime behaviour is correct.
+type WiderRootProps = Omit<
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>,
+  'onValueChange'
+> & {
+  ref?: React.Ref<HTMLDivElement>;
+  onValueChange?: (value: string | string[]) => void;
+};
+const WiderRoot = ToggleGroupPrimitive.Root as React.FC<WiderRootProps>;
+
 const ToggleGroup = React.forwardRef<
   React.ElementRef<typeof ToggleGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
     VariantProps<typeof toggleVariants>
->(({ className, variant, size, children, ...props }, ref) => {
+>(({ className, variant, size, children, onValueChange, ...props }, ref) => {
   // Access value/defaultValue across single and multiple union types
-  type AnyProps = typeof props & { value?: string | string[]; defaultValue?: string | string[]; onValueChange?: (v: string | string[]) => void };
-  const p = props as AnyProps;
+  const value = (props as { value?: string | string[] }).value;
+  const defaultValue = (props as { defaultValue?: string | string[] }).defaultValue;
+
   const [localActiveValue, setLocalActiveValue] = React.useState<string | string[] | undefined>(
-    p.value ?? p.defaultValue
+    value ?? defaultValue
   )
-  const activeValue = p.value !== undefined ? p.value : localActiveValue
+  const activeValue = value !== undefined ? value : localActiveValue
 
   const handleValueChange = React.useCallback((newValue: string | string[]) => {
-    if (p.value === undefined) setLocalActiveValue(newValue)
-    p.onValueChange?.(newValue)
-  }, [p])
+    if (value === undefined) setLocalActiveValue(newValue)
+    onValueChange?.(newValue as string & string[])
+  }, [value, onValueChange])
 
   return (
-    <ToggleGroupPrimitive.Root
+    <WiderRoot
       ref={ref}
       className={cn("flex items-center justify-center gap-1", className)}
       {...props}
-      onValueChange={handleValueChange as React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>['onValueChange']}
+      onValueChange={handleValueChange}
     >
       <ToggleGroupContext.Provider value={{ variant, size, activeValue }}>
         {children}
       </ToggleGroupContext.Provider>
-    </ToggleGroupPrimitive.Root>
+    </WiderRoot>
   )
 })
 

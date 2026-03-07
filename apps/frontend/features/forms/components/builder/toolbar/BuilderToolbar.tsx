@@ -9,8 +9,8 @@ import { useFormBuilderStore } from '@/features/forms/stores/form-builder-store'
 import { FormType } from '@/types/group-forms'
 
 interface BuilderToolbarProps {
-  formId?: number
-  groupId: number
+  formId?: string | number
+  groupId: string | number | null
   groupSlug?: string
   formSlug?: string
   groupName?: string

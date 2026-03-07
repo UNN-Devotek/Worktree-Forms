@@ -102,7 +102,7 @@ export function SubmissionGrid({ projectId }: SubmissionGridProps) {
         
         // Transform Activity -> GridRow
         const rows: GridRow[] = activities.map(a => ({
-          id: a.id,
+          id: String(a.id),
           formTitle: a.target,
           status: 'completed', // Mock status as activity feed doesn't have it yet
           submittedAt: a.timestamp,

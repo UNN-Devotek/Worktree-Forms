@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { FormSchema } from '@/types/group-forms';
 
 interface UseAutoSaveOptions {
-  formId?: number;
+  formId?: string | number;
   formSchema: FormSchema | null;
   isDirty: boolean;
   debounceMs?: number;

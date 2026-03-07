@@ -151,7 +151,7 @@ export function SaveButton({ formId, groupId, groupSlug, formType = 'general', p
           visible_to_non_members: false,
           visible_to_members: true,
           sig_ids: sigIds,
-          folderId: folderId,
+          folderId: folderId ? Number(folderId) : undefined,
           groupSlug: groupSlug,
         }
 
