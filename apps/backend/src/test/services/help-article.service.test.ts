@@ -129,14 +129,12 @@ describe('HelpArticleService', () => {
     });
 
     it('[P1] scans all when no category filter', async () => {
-      const scanWhere = vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: [] }) });
-      // HelpArticleService.listArticles() with no category calls HelpArticleEntity.scan.go()
-      // but actually it calls scan directly — mock the full chain
       mockEntity.scan.go.mockResolvedValue({ data: [{ articleId: 'a1', status: 'PUBLISHED' }] });
 
       const result = await HelpArticleService.listArticles({});
-      // Should return all articles (no status filter applied)
-      expect(Array.isArray(result)).toBe(true);
+      // Should return the scanned data (no category filter applied)
+      expect(result).toHaveLength(1);
+      expect(result[0].articleId).toBe('a1');
     });
   });
 });
