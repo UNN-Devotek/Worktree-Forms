@@ -68,6 +68,9 @@ _scratch/
 # Test coverage output
 coverage/
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Compiled JS outputs from TS source files
 apps/backend/src/lib/dynamo/client.js
 
