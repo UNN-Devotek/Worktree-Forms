@@ -57,11 +57,22 @@ tests/legacy/
 tests/component/
 .env.dokploy
 
+# Scratch directory (local-only scripts, not committed)
+_scratch/
+
+# Root-level screenshots / test artifacts
+/*.png
+/*.jpg
+/*.jpeg
+
+# Test coverage output
+coverage/
+
+# Compiled JS outputs from TS source files
+apps/backend/src/lib/dynamo/client.js
+
 # Playwright output
 test-results/
 playwright-report/
 playwright/.auth/
-.playwright-mcp/*.png
-.playwright-mcp/*.log
-.playwright-mcp/*.txt
-.playwright-mcp/*.md
+.playwright-mcp/

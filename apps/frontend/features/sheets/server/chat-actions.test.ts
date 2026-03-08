@@ -236,14 +236,20 @@ describe('chat-actions', () => {
       memberOf('proj-1');
       userLookup();
 
-      const entries = Array.from({ length: 120 }, (_, i) => ({
-        auditId: `msg-${i}`,
-        action: 'CHAT_MESSAGE',
-        projectId: 'proj-1',
-        userId: 'user-1',
-        createdAt: `2026-03-01T${String(i).padStart(2, '0')}:00:00Z`,
-        details: { text: `Message ${i}`, senderName: 'User' },
-      }));
+      // Spread across 120 days so createdAt is always valid ISO 8601
+      const baseDate = new Date('2026-01-01T00:00:00Z');
+      const entries = Array.from({ length: 120 }, (_, i) => {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + i);
+        return {
+          auditId: `msg-${i}`,
+          action: 'CHAT_MESSAGE',
+          projectId: 'proj-1',
+          userId: 'user-1',
+          createdAt: d.toISOString(),
+          details: { text: `Message ${i}`, senderName: 'User' },
+        };
+      });
       mockAudit.query.primary.mockReturnValue({
         go: vi.fn().mockResolvedValue({ data: entries }),
       });

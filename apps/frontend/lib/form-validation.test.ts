@@ -125,7 +125,12 @@ describe('generateZodSchema', () => {
       const schema = generateZodSchema(
         makeSchema([field({ name: 'choice', type: 'select', required: true, choices: [] })])
       );
+      // Any non-empty string passes (no enum restriction)
       expect(schema.safeParse({ choice: 'anything' }).success).toBe(true);
+      // required: true still enforces non-empty via .min(1)
+      expect(schema.safeParse({ choice: '' }).success).toBe(false);
+      // Missing field fails
+      expect(schema.safeParse({}).success).toBe(false);
     });
   });
 

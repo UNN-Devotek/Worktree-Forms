@@ -23,7 +23,11 @@ describe('csrfMiddleware', () => {
 
   afterEach(() => {
     process.env.NODE_ENV = originalEnv.NODE_ENV;
-    process.env.ALLOWED_ORIGINS = originalEnv.ALLOWED_ORIGINS;
+    if (originalEnv.ALLOWED_ORIGINS === undefined) {
+      delete process.env.ALLOWED_ORIGINS;
+    } else {
+      process.env.ALLOWED_ORIGINS = originalEnv.ALLOWED_ORIGINS;
+    }
   });
 
   // ─── Safe methods — always pass through ───────────────────────────────────
