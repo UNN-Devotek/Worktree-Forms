@@ -1,7 +1,13 @@
 import { Router, Request, Response } from 'express';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AuthenticatedRequest } from '../middleware/authenticate.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { requireProjectAccess } from '../middleware/rbac.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
+import { FileUploadEntity } from '../lib/dynamo/index.js';
+import { s3, S3_BUCKET } from '../storage.js';
 
 const router = Router();
 const upload = multer({
@@ -15,6 +21,43 @@ const BLOCKED_MIMETYPES = [
   'application/x-msdownload',
   'application/x-sh',
 ];
+
+// GET /api/files/presigned — generate a presigned PUT URL for direct S3 upload
+router.get('/presigned', authenticate, requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
+  const { key, contentType = 'application/octet-stream' } = req.query as Record<string, string>;
+  if (!key) {
+    return res.status(400).json({ success: false, error: 'key query parameter is required' });
+  }
+
+  try {
+    const command = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
+    const url = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 minutes
+    res.json({ success: true, data: { url, key, contentType } });
+  } catch (error) {
+    console.error('Presigned URL error:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate presigned URL' });
+  }
+});
+
+// GET /api/files?projectId — list files for a project
+router.get('/', authenticate, requireProjectAccess('VIEWER'), async (req: Request, res: Response) => {
+  const { projectId } = req.query as Record<string, string>;
+  if (!projectId) {
+    return res.status(400).json({ success: false, error: 'projectId query parameter is required' });
+  }
+
+  try {
+    const result = await FileUploadEntity.query.primary({ projectId }).go();
+    res.json({ success: true, data: result.data });
+  } catch (error) {
+    console.error('List files error:', error);
+    res.status(500).json({ success: false, error: 'Failed to list files' });
+  }
+});
 
 // POST /api/files/upload — multi-file upload for sheet row attachments
 router.post('/upload', upload.array('files', 10), async (req: Request, res: Response) => {

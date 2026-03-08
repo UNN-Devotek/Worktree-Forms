@@ -16,7 +16,7 @@ export class SpecService {
    */
   static async createSpec(data: {
     projectId: string;
-    section: string;
+    section?: string;
     title: string;
     keywords?: string;
     type?: string;
