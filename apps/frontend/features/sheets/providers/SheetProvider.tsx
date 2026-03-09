@@ -131,7 +131,16 @@ export function useSheet() {
   return context;
 }
 
-export function SheetProvider({ 
+// Finding #1 (R9): Map toolbar keys to CellStyleConfig property names.
+// Previously wrote `{ bold: true }` but getCellStyle reads `fontWeight`.
+// Defined at module scope — no React dependencies, no reason to recreate on each render.
+const STYLE_KEY_MAP: Record<'bold' | 'italic' | 'strike', { prop: keyof CellStyleConfig; on: string; off: string }> = {
+  bold:   { prop: 'fontWeight',      on: 'bold',         off: 'normal' },
+  italic: { prop: 'fontStyle',       on: 'italic',       off: 'normal' },
+  strike: { prop: 'textDecoration',  on: 'line-through', off: 'none'   },
+};
+
+export function SheetProvider({
   sheetId, 
   token, 
   user,
@@ -822,13 +831,6 @@ export function SheetProvider({
     });
   }, [doc]);
 
-  // Finding #1 (R9): Map toolbar keys to CellStyleConfig property names.
-  // Previously wrote `{ bold: true }` but getCellStyle reads `fontWeight`.
-  const STYLE_KEY_MAP: Record<'bold' | 'italic' | 'strike', { prop: keyof CellStyleConfig; on: string; off: string }> = {
-    bold:   { prop: 'fontWeight',      on: 'bold',         off: 'normal' },
-    italic: { prop: 'fontStyle',       on: 'italic',       off: 'normal' },
-    strike: { prop: 'textDecoration',  on: 'line-through', off: 'none'   },
-  };
 
   const toggleCellStyle = useCallback((key: string) => {
     if (!doc || selections.length === 0) return;
