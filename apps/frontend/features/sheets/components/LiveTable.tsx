@@ -470,6 +470,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
       // Printable character: start editing with that character as the initial value
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault()
+        focusSingleCell(focusedCell.rowId, focusedCell.columnId)
         setEditingCell({ rowId: focusedCell.rowId, columnId: focusedCell.columnId, initialValue: e.key })
         return
       }
