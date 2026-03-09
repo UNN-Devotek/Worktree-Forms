@@ -118,11 +118,10 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
   const {
     addRow, indentRow, outdentRow, selectedRowId,
     activeView, setActiveView,
-    doc, setFocusedCell,
+    doc, focusSingleCell, clearSelections,
     columns, data,
-    setSelectedColumnIds, setSelectedFormattingRowIds,
     undo, redo, canUndo, canRedo,
-    focusedCell, updateCell,
+    focusedCell, updateCell, toggleCellStyle,
   } = useSheet();
 
   // ---- title editing --------------------------------------------------------
@@ -206,25 +205,25 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
     setSearchResults(results);
     if (results.length > 0) {
       setCurrentSearchIndex(0);
-      setFocusedCell({ rowId: results[0].rowId, columnId: results[0].columnId });
+      focusSingleCell(results[0].rowId, results[0].columnId);
     } else {
       setCurrentSearchIndex(-1);
     }
-  }, [doc, columns, setFocusedCell]);
+  }, [doc, columns, focusSingleCell]);
 
   const handlePreviousResult = useCallback(() => {
     if (!searchResults.length) return;
     const idx = currentSearchIndex <= 0 ? searchResults.length - 1 : currentSearchIndex - 1;
     setCurrentSearchIndex(idx);
-    setFocusedCell({ rowId: searchResults[idx].rowId, columnId: searchResults[idx].columnId });
-  }, [searchResults, currentSearchIndex, setFocusedCell]);
+    focusSingleCell(searchResults[idx].rowId, searchResults[idx].columnId);
+  }, [searchResults, currentSearchIndex, focusSingleCell]);
 
   const handleNextResult = useCallback(() => {
     if (!searchResults.length) return;
     const idx = currentSearchIndex >= searchResults.length - 1 ? 0 : currentSearchIndex + 1;
     setCurrentSearchIndex(idx);
-    setFocusedCell({ rowId: searchResults[idx].rowId, columnId: searchResults[idx].columnId });
-  }, [searchResults, currentSearchIndex, setFocusedCell]);
+    focusSingleCell(searchResults[idx].rowId, searchResults[idx].columnId);
+  }, [searchResults, currentSearchIndex, focusSingleCell]);
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
@@ -287,11 +286,10 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
       toast.error(`Import failed: ${err?.message ?? 'Unknown error'}`);
     } finally {
       setImporting(false);
-      setSelectedColumnIds(new Set());
-      setSelectedFormattingRowIds(new Set());
+      clearSelections();
       e.target.value = '';
     }
-  }, [columns, addRow, setSelectedColumnIds, setSelectedFormattingRowIds]);
+  }, [columns, addRow, clearSelections]);
 
   const handleExport = useCallback((type: 'csv' | 'excel') => {
     const exportData = data.map((row: any) => {
@@ -367,136 +365,163 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
 
   return (
     <TooltipProvider>
-      {/* Hidden file input for import */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept=".csv,.xlsx,.xls"
-        onChange={handleFileChange}
-      />
+      {/* Hidden file inputs */}
+      <input ref={fileInputRef} type="file" className="hidden" accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
+      <input ref={imageFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleImageFileChange} />
 
-      {/* Hidden file input for image insert */}
-      <input
-        ref={imageFileInputRef}
-        type="file"
-        className="hidden"
-        accept="image/*"
-        onChange={handleImageFileChange}
-      />
-
-      {/* ── Row 1: title bar ─────────────────────────────────────────────── */}
+      {/* ── Row 1: title bar ─────────────────────────────────────────────────
+          Breakpoints:
+            xs (<640)   → single ☰ burger with all 5 menus collapsed inside
+            sm (640+)   → File + Automation always visible; ··· overflow holds rest
+            md (768+)   → + Forms inline
+            lg (1024+)  → + Connections inline
+            xl (1280+)  → + Dynamic View inline; ··· overflow disappears
+      ─────────────────────────────────────────────────────────────────────── */}
       <div className="relative flex items-center px-2 h-9 border-b border-table-border bg-table-toolbar shrink-0">
-        {/* Left: menu dropdowns */}
+
+        {/* Left: menus */}
         <div className="flex items-center gap-0.5">
-          {/* File */}
+
+          {/* xs: all menus in one burger */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
-                File <ChevronDown className="h-3 w-3 opacity-60" />
+              <Button variant="ghost" size="sm" className="sm:hidden h-7 px-2 text-xs font-normal gap-0.5">
+                ☰ Menu <ChevronDown className="h-3 w-3 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-52">
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing} className="gap-2 cursor-pointer">
-                <Upload className="h-4 w-4" />
-                Import CSV / Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
-                <Download className="h-4 w-4" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
-                <FileSpreadsheet className="h-4 w-4" />
-                Export as Excel
-              </DropdownMenuItem>
+              <DropdownMenuLabel className="text-xs">File</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing} className="gap-2 cursor-pointer"><Upload className="h-4 w-4" /> Import CSV / Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer"><Download className="h-4 w-4" /> Export as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer"><FileSpreadsheet className="h-4 w-4" /> Export as Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.print()} className="gap-2 cursor-pointer"><Printer className="h-4 w-4" /> Print</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="gap-2 cursor-pointer"><Settings className="h-4 w-4" /> Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.print()} className="gap-2 cursor-pointer">
-                <Printer className="h-4 w-4" />
-                Print
-              </DropdownMenuItem>
+              <DropdownMenuLabel className="text-xs">Automation</DropdownMenuLabel>
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="gap-2 cursor-pointer">
-                <Settings className="h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Automation */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
-                Automation <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Automation</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs">Forms</DropdownMenuLabel>
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs">Connections</DropdownMenuLabel>
+              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs">Dynamic View</DropdownMenuLabel>
               <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Forms */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
-                Forms <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Forms</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* sm+: individual menus with progressive reveal */}
+          <div className="hidden sm:flex items-center gap-0.5">
 
-          {/* Connections */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
-                Connections <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Connections</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            {/* File — always sm+ */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">File <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52">
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing} className="gap-2 cursor-pointer"><Upload className="h-4 w-4" /> Import CSV / Excel</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer"><Download className="h-4 w-4" /> Export as CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer"><FileSpreadsheet className="h-4 w-4" /> Export as Excel</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => window.print()} className="gap-2 cursor-pointer"><Printer className="h-4 w-4" /> Print</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="gap-2 cursor-pointer"><Settings className="h-4 w-4" /> Settings</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* Dynamic View */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">
-                Dynamic View <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Dynamic View</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            {/* Automation — always sm+ */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">Automation <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Automation</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Forms — md+ */}
+            <div className="hidden md:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">Forms <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Forms</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Connections — lg+ */}
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">Connections <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Connections</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Dynamic View — xl+ */}
+            <div className="hidden xl:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">Dynamic View <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Dynamic View</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* ··· overflow for collapsed menus — hidden once all are visible at xl */}
+            <div className="xl:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-normal gap-0.5">··· <ChevronDown className="h-3 w-3 opacity-60" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  {/* Forms: shown below md */}
+                  <DropdownMenuLabel className="md:hidden text-xs text-muted-foreground">Forms</DropdownMenuLabel>
+                  <DropdownMenuItem className="md:hidden text-xs text-muted-foreground" disabled>Coming soon</DropdownMenuItem>
+                  <DropdownMenuSeparator className="md:hidden" />
+                  {/* Connections: shown below lg */}
+                  <DropdownMenuLabel className="lg:hidden text-xs text-muted-foreground">Connections</DropdownMenuLabel>
+                  <DropdownMenuItem className="lg:hidden text-xs text-muted-foreground" disabled>Coming soon</DropdownMenuItem>
+                  <DropdownMenuSeparator className="lg:hidden" />
+                  {/* Dynamic View: always here until xl hides this whole button */}
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Dynamic View</DropdownMenuLabel>
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">Coming soon</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+          </div>
         </div>
 
-        {/* Center: sheet name (absolutely centered) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 max-w-[40%]">
+        {/* Center: sheet name — capped width shrinks at smaller sizes */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 max-w-[28%] sm:max-w-[32%] md:max-w-[36%] lg:max-w-[40%]">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsFavorite(f => !f)}
-                className={cn(
-                  "h-6 w-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50 shrink-0",
-                  isFavorite ? "text-yellow-400" : "text-muted-foreground"
-                )}
+                className={cn("h-6 w-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50 shrink-0", isFavorite ? "text-yellow-400" : "text-muted-foreground")}
                 aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               >
                 <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-yellow-400")} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
-            </TooltipContent>
+            <TooltipContent side="bottom"><p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p></TooltipContent>
           </Tooltip>
           {titleEditing ? (
             <input
@@ -509,13 +534,13 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
                 if (e.key === 'Enter') { e.preventDefault(); commitTitleEdit(); titleInputRef.current?.blur(); }
                 if (e.key === 'Escape') { setTitleDraft(title); setTitleEditing(false); }
               }}
-              className="font-semibold text-sm bg-transparent border-0 border-b border-primary outline-none focus:outline-none text-center min-w-[60px] max-w-[280px] w-auto"
+              className="font-semibold text-sm bg-transparent border-0 border-b border-primary outline-none focus:outline-none text-center min-w-[60px] max-w-[240px] w-auto"
               style={{ width: `${Math.max(60, titleDraft.length * 8)}px` }}
             />
           ) : (
             <button
               onClick={() => { setTitleEditing(true); setTitleDraft(title); }}
-              className="font-semibold text-sm truncate hover:bg-muted/50 rounded px-1.5 py-0.5 transition-colors cursor-text max-w-[240px]"
+              className="font-semibold text-sm truncate hover:bg-muted/50 rounded px-1.5 py-0.5 transition-colors cursor-text max-w-[200px]"
               title="Click to rename"
             >
               {title}
@@ -523,60 +548,48 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
           )}
         </div>
 
-        {/* Right: share button */}
+        {/* Right: Share */}
         <div className="flex items-center ml-auto">
           <ShareModal>
-            <Button size="sm" className="h-7 px-3 text-xs gap-1.5">
+            <Button size="sm" className="h-7 px-2 sm:px-3 text-xs gap-1.5">
               <Share2 className="h-3.5 w-3.5" />
-              {t('toolbar.share', 'Share')}
+              <span className="hidden sm:inline">{t('toolbar.share', 'Share')}</span>
             </Button>
           </ShareModal>
         </div>
       </div>
 
-      {/* ── Row 2: dense toolbar ─────────────────────────────────────────── */}
+      {/* ── Row 2: dense toolbar ──────────────────────────────────────────────
+          Breakpoints:
+            xs  (<640)  → Save/Print/Undo/Redo | View | AddRow/Col | Filter | ···
+            sm  (640+)  → + Sort | Indent/Outdent
+            md  (768+)  → + B/I/U/S | FontFamily | FontSize
+            lg  (1024+) → + Alignment | Colors | Wrap | Clear | FormatPaint
+            xl  (1280+) → + Image | Link | CF | HC
+          Overflow ··· always shows Sort; shows collapsed groups via CSS classes.
+      ─────────────────────────────────────────────────────────────────────── */}
       <div className="flex items-center px-2 h-10 border-b border-table-border bg-table-toolbar shrink-0 gap-0.5 overflow-hidden">
 
-        {/* Save / Print / Undo / Redo ──────────────────────────────────── */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toast.success('Saved')}>
-              <Save className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Save</p></TooltipContent>
-        </Tooltip>
+        {/* Save / Print / Undo / Redo — always */}
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toast.success('Saved')}><Save className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Save</p></TooltipContent></Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Print</p></TooltipContent>
-        </Tooltip>
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => window.print()}><Printer className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Print</p></TooltipContent></Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={undo} disabled={!canUndo}>
-              <Undo2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Undo</p></TooltipContent>
-        </Tooltip>
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={undo} disabled={!canUndo}><Undo2 className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Undo</p></TooltipContent></Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={redo} disabled={!canRedo}>
-              <Redo2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Redo</p></TooltipContent>
-        </Tooltip>
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={redo} disabled={!canRedo}><Redo2 className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Redo</p></TooltipContent></Tooltip>
 
         <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
 
-        {/* View dropdown ───────────────────────────────────────────────── */}
+        {/* View — always */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 px-2 gap-1 shrink-0 font-normal">
@@ -588,8 +601,7 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
           <DropdownMenuContent align="start" className="w-40">
             {VIEW_OPTIONS.map(v => (
               <DropdownMenuItem key={v.value} onClick={() => setActiveView(v.value)} className="gap-2 cursor-pointer">
-                <v.icon className="h-4 w-4" />
-                <span>{v.label}</span>
+                <v.icon className="h-4 w-4" /><span>{v.label}</span>
                 {activeView === v.value && <Check className="h-3.5 w-3.5 ml-auto text-primary" />}
               </DropdownMenuItem>
             ))}
@@ -598,80 +610,43 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
 
         <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
 
-        {/* Add Row / Add Column ────────────────────────────────────────── */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => addRow({ id: crypto.randomUUID(), parentId: null })}
-            >
-              <AddRowIcon className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Add Row</p></TooltipContent>
-        </Tooltip>
+        {/* Add Row / Add Column — always */}
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => addRow({ id: crypto.randomUUID(), parentId: null })}><AddRowIcon className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Add Row</p></TooltipContent></Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setAddColumnOpen(true)}
-            >
-              <AddColumnIcon className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>Add Column</p></TooltipContent>
-        </Tooltip>
+        <Tooltip><TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAddColumnOpen(true)}><AddColumnIcon className="h-4 w-4" /></Button>
+        </TooltipTrigger><TooltipContent side="bottom"><p>Add Column</p></TooltipContent></Tooltip>
 
         <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
 
-        {/* Filter ─────────────────────────────────────────────────────── */}
+        {/* Filter — always */}
         <div className="shrink-0"><FilterModal /></div>
 
-        {/* Sort ── hidden below sm ─────────────────────────────────────── */}
-        <div className="hidden sm:block shrink-0"><SortPopover /></div>
-
-        <Separator orientation="vertical" className="h-5 hidden sm:block shrink-0 mx-0.5" />
-
-        {/* Indent / Outdent ── hidden below sm ───────────────────────── */}
+        {/* sm+: Sort | Indent / Outdent */}
         <div className="hidden sm:flex items-center shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => selectedRowId && outdentRow(selectedRowId)} disabled={!selectedRowId}>
-                <Outdent className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Outdent row</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => selectedRowId && indentRow(selectedRowId)} disabled={!selectedRowId}>
-                <Indent className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Indent row</p></TooltipContent>
-          </Tooltip>
+          <SortPopover />
+          <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => selectedRowId && outdentRow(selectedRowId)} disabled={!selectedRowId}><Outdent className="h-4 w-4" /></Button>
+          </TooltipTrigger><TooltipContent side="bottom"><p>Outdent row</p></TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => selectedRowId && indentRow(selectedRowId)} disabled={!selectedRowId}><Indent className="h-4 w-4" /></Button>
+          </TooltipTrigger><TooltipContent side="bottom"><p>Indent row</p></TooltipContent></Tooltip>
         </div>
 
-        <Separator orientation="vertical" className="h-5 hidden sm:block shrink-0 mx-0.5" />
-
-        {/* Text formatting ── hidden below sm ────────────────────────── */}
-        <div className="hidden sm:flex items-center shrink-0">
+        {/* md+: Text formatting */}
+        <div className="hidden md:flex items-center shrink-0">
+          <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
           <TextFormattingToolbar />
           <FontFamilySelector />
           <FontSizeSelector />
         </div>
 
-        <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
-
-        {/* Color / Alignment / Wrap / Format ── hidden below md ────────────────── */}
-        <div className="hidden md:flex items-center shrink-0">
+        {/* lg+: Alignment / colors / wrap / format paint */}
+        <div className="hidden lg:flex items-center shrink-0">
+          <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
           <AlignmentSelector />
           <BackgroundColorPicker />
           <ColorPicker />
@@ -680,214 +655,139 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
           <FormatPainter />
         </div>
 
-        <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
+        {/* lg+: Image / Link / Conditional Formatting / Highlight Changes */}
+        <div className="hidden lg:flex items-center shrink-0">
+          <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!focusedCell || imageUploading} onClick={() => imageFileInputRef.current?.click()}>
+              {imageUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger><TooltipContent side="bottom"><p>Insert Image</p></TooltipContent></Tooltip>
 
-        {/* Insert Image / Link ─────────────────────────────────────────── */}
-        <div className="hidden md:flex items-center shrink-0">
-          {/* Insert Image */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                disabled={!focusedCell || imageUploading}
-                onClick={() => imageFileInputRef.current?.click()}
-              >
-                {imageUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Insert Image</p></TooltipContent>
-          </Tooltip>
-
-          {/* Insert Link */}
           <Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled={!focusedCell}
-                    onClick={() => { setLinkUrl(''); setLinkText(''); }}
-                  >
-                    <Link2 className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom"><p>Insert Link</p></TooltipContent>
-            </Tooltip>
+            <Tooltip><TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!focusedCell} onClick={() => { setLinkUrl(''); setLinkText(''); }}>
+                  <Link2 className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+            </TooltipTrigger><TooltipContent side="bottom"><p>Insert Link</p></TooltipContent></Tooltip>
             <PopoverContent className="w-72 p-3 space-y-2" align="start">
               <p className="text-sm font-medium">Insert Link</p>
-              <Input
-                placeholder="URL (e.g. https://example.com)"
-                value={linkUrl}
-                onChange={e => setLinkUrl(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }}
-                autoFocus
-              />
-              <Input
-                placeholder="Display text (optional)"
-                value={linkText}
-                onChange={e => setLinkText(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }}
-              />
-              <Button
-                size="sm"
-                className="w-full"
-                disabled={!linkUrl.trim()}
-                onClick={handleInsertLink}
-              >
-                Insert
-              </Button>
+              <Input placeholder="URL (e.g. https://example.com)" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }} autoFocus />
+              <Input placeholder="Display text (optional)" value={linkText} onChange={e => setLinkText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleInsertLink(); }} />
+              <Button size="sm" className="w-full" disabled={!linkUrl.trim()} onClick={handleInsertLink}>Insert</Button>
             </PopoverContent>
           </Popover>
+
+          <Separator orientation="vertical" className="h-5 shrink-0 mx-0.5" />
+
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setConditionalFormattingOpen(true)}><ListFilter className="h-4 w-4" /></Button>
+          </TooltipTrigger><TooltipContent side="bottom"><p>Conditional Formatting</p></TooltipContent></Tooltip>
+
+          <Tooltip><TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setHighlightChangesOpen(true)}><History className="h-4 w-4" /></Button>
+          </TooltipTrigger><TooltipContent side="bottom"><p>Highlight Changes</p></TooltipContent></Tooltip>
         </div>
 
-        <Separator orientation="vertical" className="h-5 hidden md:block shrink-0 mx-0.5" />
-
-        {/* Conditional Formatting ─────────────────────────────────────── */}
-        <div className="hidden md:flex items-center shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setConditionalFormattingOpen(true)}
-              >
-                <ListFilter className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Conditional Formatting</p></TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Highlight Changes ───────────────────────────────────────────── */}
-        <div className="hidden md:flex items-center shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setHighlightChangesOpen(true)}
-              >
-                <History className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Highlight Changes</p></TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Spacer ─────────────────────────────────────────────────────── */}
+        {/* Spacer */}
         <div className="flex-1 min-w-0" />
 
-        {/* Search ── always visible as icon; expands on click ─────────── */}
+        {/* Search — always */}
         <div className="shrink-0 flex items-center">
           {searchVisible ? (
             <div className="flex items-center gap-1">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
                 <Input
-                  autoFocus
-                  value={searchQuery}
+                  autoFocus value={searchQuery}
                   onChange={e => handleSearch(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={t('toolbar.search_sheet', 'Search…')}
-                  className={cn(
-                    'h-8 pl-7 text-xs bg-muted/50 border-none focus-visible:ring-1 transition-all',
-                    searchResults.length > 0 ? 'w-36 pr-2' : 'w-40 pr-7',
-                  )}
+                  className={cn('h-8 pl-7 text-xs bg-muted/50 border-none focus-visible:ring-1 transition-all', searchResults.length > 0 ? 'w-36 pr-2' : 'w-40 pr-7')}
                 />
                 {searchQuery && (
-                  <button
-                    onClick={handleClearSearch}
-                    aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
+                  <button onClick={handleClearSearch} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     <X className="h-3 w-3" />
                   </button>
                 )}
               </div>
               {searchResults.length > 0 && (
                 <div className="flex items-center gap-0.5 bg-muted/50 rounded px-1.5 h-8">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {currentSearchIndex + 1}/{searchResults.length}
-                  </span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePreviousResult}>
-                    <ChevronUp className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNextResult}>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{currentSearchIndex + 1}/{searchResults.length}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePreviousResult}><ChevronUp className="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNextResult}><ChevronDown className="h-3 w-3" /></Button>
                 </div>
               )}
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSearchVisible(false); handleClearSearch(); }}>
-                <X className="h-4 w-4" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSearchVisible(false); handleClearSearch(); }}><X className="h-4 w-4" /></Button>
             </div>
           ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSearchVisible(true)}>
-                  <Search className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom"><p>{t('toolbar.search_sheet', 'Search sheet')}</p></TooltipContent>
-            </Tooltip>
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSearchVisible(true)}><Search className="h-4 w-4" /></Button>
+            </TooltipTrigger><TooltipContent side="bottom"><p>{t('toolbar.search_sheet', 'Search sheet')}</p></TooltipContent></Tooltip>
           )}
         </div>
 
-        {/* ··· overflow menu ─────────────────────────────────────────── */}
+        {/* ··· overflow — Sort always present; collapsed groups via CSS breakpoints */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-              {importing
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <MoreHorizontal className="h-4 w-4" />
-              }
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              {t('toolbar.more_actions', 'More Actions')}
-            </DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('toolbar.more_actions', 'More Actions')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {/* Sort — always available in overflow */}
+            {/* Sort — always in overflow for quick access */}
             <SortMenuItem />
+
+            {/* xs only: Indent / Outdent (sm+ shows them inline) */}
+            <DropdownMenuItem className="sm:hidden gap-2 cursor-pointer" onClick={() => selectedRowId && outdentRow(selectedRowId)} disabled={!selectedRowId}>
+              <Outdent className="h-4 w-4" /> Outdent row
+            </DropdownMenuItem>
+            <DropdownMenuItem className="sm:hidden gap-2 cursor-pointer" onClick={() => selectedRowId && indentRow(selectedRowId)} disabled={!selectedRowId}>
+              <Indent className="h-4 w-4" /> Indent row
+            </DropdownMenuItem>
+
+            {/* below md: basic text format */}
+            <DropdownMenuSeparator className="md:hidden" />
+            <DropdownMenuLabel className="md:hidden text-xs text-muted-foreground">Text Format</DropdownMenuLabel>
+            <DropdownMenuItem className="md:hidden gap-2 cursor-pointer" onClick={() => toggleCellStyle('bold')}>
+              <span className="font-bold w-4 text-center text-sm">B</span> Bold
+            </DropdownMenuItem>
+            <DropdownMenuItem className="md:hidden gap-2 cursor-pointer" onClick={() => toggleCellStyle('italic')}>
+              <span className="italic w-4 text-center text-sm">I</span> Italic
+            </DropdownMenuItem>
+            <DropdownMenuItem className="md:hidden gap-2 cursor-pointer" onClick={() => toggleCellStyle('strike')}>
+              <span className="line-through w-4 text-center text-sm">S</span> Strikethrough
+            </DropdownMenuItem>
+
+            {/* below lg: Image / Link / CF / HC */}
+            <DropdownMenuSeparator className="lg:hidden" />
+            <DropdownMenuItem className="lg:hidden gap-2 cursor-pointer" disabled={!focusedCell || imageUploading} onClick={() => imageFileInputRef.current?.click()}>
+              <ImagePlus className="h-4 w-4" /> Insert Image
+            </DropdownMenuItem>
+            <DropdownMenuItem className="lg:hidden gap-2 cursor-pointer" disabled={!focusedCell} onClick={() => { setLinkUrl(''); setLinkText(''); setLinkPopoverOpen(true); }}>
+              <Link2 className="h-4 w-4" /> Insert Link
+            </DropdownMenuItem>
+            <DropdownMenuItem className="lg:hidden gap-2 cursor-pointer" onClick={() => setConditionalFormattingOpen(true)}>
+              <ListFilter className="h-4 w-4" /> Conditional Formatting
+            </DropdownMenuItem>
+            <DropdownMenuItem className="lg:hidden gap-2 cursor-pointer" onClick={() => setHighlightChangesOpen(true)}>
+              <History className="h-4 w-4" /> Highlight Changes
+            </DropdownMenuItem>
 
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      {/* Settings modal */}
-      <SettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        settings={settings}
-        onSettingsChange={s => { setSettings(s); }}
-      />
-
-      {/* Conditional Formatting modal */}
-      <ConditionalFormattingModal
-        open={conditionalFormattingOpen}
-        onOpenChange={setConditionalFormattingOpen}
-      />
-
-      {/* Highlight Changes modal */}
-      <HighlightChangesModal
-        open={highlightChangesOpen}
-        onOpenChange={setHighlightChangesOpen}
-      />
-
-      {/* Add Column dialog */}
-      <AddColumnDialog
-        open={addColumnOpen}
-        onOpenChange={setAddColumnOpen}
-      />
+      {/* Modals */}
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} onSettingsChange={s => { setSettings(s); }} />
+      <ConditionalFormattingModal open={conditionalFormattingOpen} onOpenChange={setConditionalFormattingOpen} />
+      <HighlightChangesModal open={highlightChangesOpen} onOpenChange={setHighlightChangesOpen} />
+      <AddColumnDialog open={addColumnOpen} onOpenChange={setAddColumnOpen} />
     </TooltipProvider>
   );
 }

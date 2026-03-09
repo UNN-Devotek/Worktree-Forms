@@ -36,21 +36,9 @@ export function AlignmentSelector({ className }: AlignmentSelectorProps) {
     focusedCell,
     getCellStyle,
     applyCellStyle,
-    selectedColumnIds,
-    selectedFormattingRowIds,
-    applyColumnStyle,
-    applyRowStyle,
-    data,
-    columns,
   } = useSheet();
 
-  const currentStyle = (() => {
-    if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
-    if (selectedColumnIds.size > 0 && data[0]) return getCellStyle(data[0].id, [...selectedColumnIds][0]);
-    if (selectedFormattingRowIds.size > 0 && columns[0])
-      return getCellStyle([...selectedFormattingRowIds][0], (columns[0] as { id: string }).id);
-    return null;
-  })();
+  const currentStyle = focusedCell ? getCellStyle(focusedCell.rowId, focusedCell.columnId) : null;
 
   const currentHAlign = currentStyle?.textAlign || 'left';
   const currentVAlign = currentStyle?.verticalAlign || 'middle';
@@ -59,14 +47,10 @@ export function AlignmentSelector({ className }: AlignmentSelectorProps) {
   const applyStyle = (style: { textAlign?: 'left' | 'center' | 'right'; verticalAlign?: 'top' | 'middle' | 'bottom' }) => {
     if (focusedCell) {
       applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
-    } else if (selectedColumnIds.size > 0) {
-      selectedColumnIds.forEach(colId => applyColumnStyle(colId, style));
-    } else if (selectedFormattingRowIds.size > 0) {
-      selectedFormattingRowIds.forEach(rowId => applyRowStyle(rowId, style));
     }
   };
 
-  const isDisabled = !focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0;
+  const isDisabled = !focusedCell;
 
   return (
     <Popover>

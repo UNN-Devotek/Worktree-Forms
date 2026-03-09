@@ -10,7 +10,7 @@ export function SimpleTable() {
     data,
     columns,
     focusedCell,
-    setFocusedCell,
+    focusSingleCell,
     updateCell
   } = useSheet();
 
@@ -98,16 +98,13 @@ export function SimpleTable() {
       }
 
       if (handled && (newRowIndex !== currentRowIndex || newColIndex !== currentColIndex)) {
-        setFocusedCell({
-          rowId: data[newRowIndex].id,
-          columnId: columns[newColIndex].id
-        });
+        focusSingleCell(data[newRowIndex].id, columns[newColIndex].id);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusedCell, data, columns, setFocusedCell]);
+  }, [focusedCell, data, columns, focusSingleCell]);
 
   if (!data || !columns) {
     return (
@@ -153,7 +150,7 @@ export function SimpleTable() {
                     columnType={col.type}
                     value={row[col.id]}
                     isFocused={focusedCell?.rowId === row.id && focusedCell?.columnId === col.id}
-                    onFocus={() => setFocusedCell({ rowId: row.id, columnId: col.id })}
+                    onFocus={() => focusSingleCell(row.id, col.id)}
                     onUpdate={(value) => updateCell(row.id, col.id, value)}
                   />
                 ))}

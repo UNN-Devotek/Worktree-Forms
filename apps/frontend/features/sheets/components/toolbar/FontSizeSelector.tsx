@@ -26,20 +26,9 @@ export function FontSizeSelector({ className }: FontSizeSelectorProps) {
     focusedCell,
     getCellStyle,
     applyCellStyle,
-    selectedColumnIds,
-    selectedFormattingRowIds,
-    applyColumnStyle,
-    applyRowStyle,
-    data,
-    columns,
   } = useSheet();
 
-  const currentStyle = (() => {
-    if (focusedCell) return getCellStyle(focusedCell.rowId, focusedCell.columnId);
-    if (selectedColumnIds.size > 0 && data[0]) return getCellStyle(data[0].id, [...selectedColumnIds][0]);
-    if (selectedFormattingRowIds.size > 0 && columns[0]) return getCellStyle([...selectedFormattingRowIds][0], columns[0].id);
-    return null;
-  })();
+  const currentStyle = focusedCell ? getCellStyle(focusedCell.rowId, focusedCell.columnId) : null;
 
   const currentSize = currentStyle?.fontSize ?? 13;
   const [inputValue, setInputValue] = useState<string>(String(currentSize));
@@ -49,19 +38,15 @@ export function FontSizeSelector({ className }: FontSizeSelectorProps) {
   // Sync the input display value when the cell selection changes
   useEffect(() => {
     setInputValue(currentStyle ? String(currentStyle.fontSize ?? 13) : '—');
-  }, [focusedCell, selectedColumnIds, selectedFormattingRowIds, currentStyle]);
+  }, [focusedCell, currentStyle]);
 
-  const isDisabled = !focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0;
+  const isDisabled = !focusedCell;
 
   const applySize = (size: number) => {
     if (isNaN(size) || size < 1 || size > 400) return;
     const style = { fontSize: size };
     if (focusedCell) {
       applyCellStyle(focusedCell.rowId, focusedCell.columnId, style);
-    } else if (selectedColumnIds.size > 0) {
-      selectedColumnIds.forEach(colId => applyColumnStyle(colId, style));
-    } else if (selectedFormattingRowIds.size > 0) {
-      selectedFormattingRowIds.forEach(rowId => applyRowStyle(rowId, style));
     }
   };
 

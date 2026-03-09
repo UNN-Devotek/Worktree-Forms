@@ -23,6 +23,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -36,7 +37,6 @@ import {
 } from "lucide-react"
 import { AddRowIcon, AddColumnIcon } from "./icons/SheetIcons"
 import { AddColumnDialog } from "./controls/ColumnManagerDialog"
-import { RowAssignmentMenu } from "./RowAssignmentMenu"
 import { assignRow } from "../server/sheet-actions"
 
 // Fixed width of the row-meta column (number + actions)
@@ -78,8 +78,6 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
   const [addColumnOpen, setAddColumnOpen] = useState(false)
   // Only one dropdown cell can be open at a time — key is `rowId:columnId`
   const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null)
-  // Row assignment menu state: which row is showing the assign dropdown
-  const [assignMenuRowId, setAssignMenuRowId] = useState<string | null>(null)
 
   const {
     data,
@@ -91,7 +89,9 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     copiedRow,
     isCut,
     focusedCell,
-    setFocusedCell,
+    focusSingleCell,
+    clearSelections,
+    extendSelection,
     setEditingCell,
     getCellStyle,
     getCellResult,
@@ -99,10 +99,6 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     updateColumnWidth,
     deleteRow,
     addRow,
-    selectedColumnIds,
-    setSelectedColumnIds,
-    selectedFormattingRowIds,
-    setSelectedFormattingRowIds,
     collaborators,
     isFormulaEditing,
     insertCellRefCallback,
@@ -166,24 +162,21 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
       clearTimeout(blurTimerRef.current)
       blurTimerRef.current = null
     }
-    setFocusedCell({ rowId, columnId })
+    focusSingleCell(rowId, columnId)
     // Close any open dropdown when focusing a different cell
     setOpenDropdownKey(prev => {
       if (prev && prev !== `${rowId}:${columnId}`) return null
       return prev
     })
-    // Clicking into a cell clears bulk selections
-    setSelectedColumnIds(new Set())
-    setSelectedFormattingRowIds(new Set())
-  }, [setFocusedCell, setSelectedColumnIds, setSelectedFormattingRowIds, setOpenDropdownKey])
+  }, [focusSingleCell, setOpenDropdownKey])
 
   const handleCellBlur = useCallback(() => {
     blurTimerRef.current = setTimeout(() => {
       // Keep focusedCell alive if the user clicked into the formula bar
       if (document.activeElement?.closest('[data-formula-bar]')) return
-      setFocusedCell(null)
+      clearSelections()
     }, 200)
-  }, [setFocusedCell])
+  }, [clearSelections])
 
   const tableColumns = useMemo<ColumnDef<any>[]>(
     () => {
@@ -207,6 +200,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                         displayValue={displayValue}
                         onChange={(val) => updateCell(row.original.id, col.id, val)}
                         columnType={col.type}
+                        columnWidth={col.width}
                         onFocus={handleCellFocus}
                         onBlur={handleCellBlur}
                         getCellStyle={getCellStyle}
@@ -258,17 +252,16 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     return () => clearTimeout(timer)
   }, [isDetailPanelOpen, rowVirtualizer])
 
-  // Clear bulk column/row selection on Escape
+  // Clear selections on Escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setSelectedColumnIds(new Set())
-        setSelectedFormattingRowIds(new Set())
+        clearSelections()
       }
     }
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [setSelectedColumnIds, setSelectedFormattingRowIds])
+  }, [clearSelections])
 
   // Clear ref drag state when mouse is released outside the grid
   useEffect(() => {
@@ -303,35 +296,35 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
       }
       if (e.key === 'Escape') {
         e.preventDefault()
-        setFocusedCell(null)
+        clearSelections()
         return
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        if (rowIndex > 0) setFocusedCell({ rowId: data[rowIndex - 1].id, columnId: focusedCell.columnId })
+        if (rowIndex > 0) focusSingleCell(data[rowIndex - 1].id, focusedCell.columnId)
         return
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        if (rowIndex < data.length - 1) setFocusedCell({ rowId: data[rowIndex + 1].id, columnId: focusedCell.columnId })
+        if (rowIndex < data.length - 1) focusSingleCell(data[rowIndex + 1].id, focusedCell.columnId)
         return
       }
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        if (colIndex > 0) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex - 1].id })
+        if (colIndex > 0) focusSingleCell(focusedCell.rowId, visibleCols[colIndex - 1].id)
         return
       }
       if (e.key === 'ArrowRight') {
         e.preventDefault()
-        if (colIndex < visibleCols.length - 1) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex + 1].id })
+        if (colIndex < visibleCols.length - 1) focusSingleCell(focusedCell.rowId, visibleCols[colIndex + 1].id)
         return
       }
       if (e.key === 'Tab') {
         e.preventDefault()
         if (e.shiftKey) {
-          if (colIndex > 0) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex - 1].id })
+          if (colIndex > 0) focusSingleCell(focusedCell.rowId, visibleCols[colIndex - 1].id)
         } else {
-          if (colIndex < visibleCols.length - 1) setFocusedCell({ rowId: focusedCell.rowId, columnId: visibleCols[colIndex + 1].id })
+          if (colIndex < visibleCols.length - 1) focusSingleCell(focusedCell.rowId, visibleCols[colIndex + 1].id)
         }
         return
       }
@@ -366,7 +359,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [focusedCell, data, columns, updateCell, setFocusedCell, setEditingCell])
+  }, [focusedCell, data, columns, updateCell, focusSingleCell, clearSelections, setEditingCell])
 
   return (
     <>
@@ -377,9 +370,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
             <div
                 className={cn(
                   "flex-none h-10 border-r-2 border-b border-table-row-actions-border transition-colors",
-                  selectedFormattingRowIds.size > 0 || selectedColumnIds.size > 0
-                    ? "bg-primary/15"
-                    : "bg-table-row-actions"
+                  "bg-table-row-actions"
                 )}
                 style={{ width: ROW_META_WIDTH }}
             />
@@ -396,39 +387,16 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                    "relative h-10 px-4 flex items-center font-medium text-table-header-fg border-r border-b border-table-border select-none cursor-pointer transition-colors",
                                    headerHAlign === 'center' ? 'justify-center' :
                                    headerHAlign === 'right'  ? 'justify-end'    : '',
-                                   selectedColumnIds.has(header.column.id)
-                                     ? "bg-primary/15 text-primary z-20 border-b-transparent"
-                                     : focusedCell?.columnId === header.column.id
-                                       ? "bg-primary/10 hover:bg-table-row-hover"
-                                       : "hover:bg-table-row-hover"
+                                   focusedCell?.columnId === header.column.id
+                                     ? "bg-primary/10 hover:bg-table-row-hover"
+                                     : "hover:bg-table-row-hover"
                                  )}
                                  style={{
                                    width: header.getSize(),
                                    textAlign: headerHAlign as React.CSSProperties['textAlign'],
-                                   ...(selectedColumnIds.has(header.column.id) ? {
-                                     boxShadow: [
-                                       'inset 2px 0 0 var(--primary)',
-                                       'inset -2px 0 0 var(--primary)',
-                                       'inset 0 2px 0 var(--primary)',
-                                     ].join(', '),
-                                   } : {}),
                                  }}
-                                 onClick={(e) => {
-                                   const colId = header.column.id
-                                   if (e.ctrlKey || e.metaKey) {
-                                     setSelectedColumnIds(prev => {
-                                       const next = new Set(prev)
-                                       if (next.has(colId)) next.delete(colId); else next.add(colId)
-                                       return next
-                                     })
-                                   } else {
-                                     setSelectedColumnIds(
-                                       selectedColumnIds.has(colId) && selectedColumnIds.size === 1
-                                         ? new Set() : new Set([colId])
-                                     )
-                                   }
-                                   setSelectedFormattingRowIds(new Set())
-                                   setFocusedCell(null)
+                                 onClick={() => {
+                                   clearSelections()
                                  }}>
                                 {header.isPlaceholder
                                     ? null
@@ -498,48 +466,21 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                             {/* Row meta: number + actions */}
                             <div
                                 className={cn(
-                                  "flex-none border-r-2 border-b border-table-row-actions-border flex items-center px-2 min-h-[40px] gap-2 transition-colors",
-                                  selectedFormattingRowIds.has(row.original.id)
-                                    ? "bg-table-row-actions z-10"
-                                    : "bg-table-row-actions group-hover:bg-table-row-hover"
+                                  "flex-none border-r-2 border-b border-table-row-actions-border flex items-center px-1.5 min-h-[40px] gap-1 transition-colors overflow-hidden",
+                                  "bg-table-row-actions group-hover:bg-table-row-hover"
                                 )}
                                 style={{
                                   width: ROW_META_WIDTH,
-                                  ...(selectedFormattingRowIds.has(row.original.id) ? {
-                                    borderRightWidth: 0,
-                                    boxShadow: [
-                                      'inset 0 2px 0 var(--primary)',
-                                      'inset 0 -2px 0 var(--primary)',
-                                      'inset 2px 0 0 var(--primary)',
-                                    ].join(', '),
-                                  } : {}),
                                 }}
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* Row number — click to select entire row for formatting */}
                                 <span
-                                  className={cn(
-                                    "text-sm tabular-nums select-none w-7 text-right shrink-0 cursor-pointer rounded px-0.5 hover:bg-primary/20 transition-colors leading-none self-center",
-                                    selectedFormattingRowIds.has(row.original.id)
-                                      ? "text-primary font-semibold"
-                                      : "text-muted-foreground"
-                                  )}
+                                  className="text-sm tabular-nums select-none w-7 text-right shrink-0 cursor-pointer rounded px-0.5 hover:bg-primary/20 transition-colors leading-none self-center text-muted-foreground"
                                   onClick={(e) => {
-                                    const rowId = row.original.id
-                                    if (e.ctrlKey || e.metaKey) {
-                                      setSelectedFormattingRowIds(prev => {
-                                        const next = new Set(prev)
-                                        if (next.has(rowId)) next.delete(rowId); else next.add(rowId)
-                                        return next
-                                      })
-                                    } else {
-                                      setSelectedFormattingRowIds(
-                                        selectedFormattingRowIds.has(rowId) && selectedFormattingRowIds.size === 1
-                                          ? new Set() : new Set([rowId])
-                                      )
-                                    }
-                                    setSelectedColumnIds(new Set())
-                                    setFocusedCell(null)
+                                    e.stopPropagation()
+                                    // Row selection will be handled by Task 3 pointer-based selection
+                                    clearSelections()
                                   }}
                                 >
                                     {virtualRow.index + 1}
@@ -551,36 +492,76 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                     const hasComments = (meta?.comments ?? 0) > 0
                                     const hasFiles = (meta?.files ?? 0) > 0
                                     return (
-                                        <div className={cn("flex items-center gap-px transition-opacity self-center", (hasComments || hasFiles) ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                                        <div className={cn("flex items-center gap-0 transition-opacity self-center", (hasComments || hasFiles) ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                                             <button
-                                                className={cn("h-6 w-6 rounded flex items-center justify-center hover:bg-muted transition-colors", hasComments ? "text-blue-500" : "text-muted-foreground hover:text-foreground")}
+                                                className={cn("h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors", hasComments ? "text-blue-500" : "text-muted-foreground hover:text-foreground")}
                                                 onClick={() => openDetailPanel(row.original.id, 'chat')}
                                                 aria-label="Open chat"
                                             >
-                                                <MessageSquare className="h-3.5 w-3.5" />
+                                                <MessageSquare className="h-3 w-3" />
                                             </button>
                                             <button
-                                                className={cn("h-6 w-6 rounded flex items-center justify-center hover:bg-muted transition-colors", hasFiles ? "text-blue-500" : "text-muted-foreground hover:text-foreground")}
+                                                className={cn("h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors", hasFiles ? "text-blue-500" : "text-muted-foreground hover:text-foreground")}
                                                 onClick={() => openDetailPanel(row.original.id, 'files')}
                                                 aria-label="Open files"
                                             >
-                                                <Paperclip className="h-3.5 w-3.5" />
+                                                <Paperclip className="h-3 w-3" />
                                             </button>
                                             <button
-                                                className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                                                 onClick={() => openDetailPanel(row.original.id, 'history')}
                                                 aria-label="Open history"
                                             >
-                                                <History className="h-3.5 w-3.5" />
+                                                <History className="h-3 w-3" />
                                             </button>
                                             {projectId && (
-                                                <button
-                                                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                    onClick={(e) => { e.stopPropagation(); setAssignMenuRowId(row.original.id); }}
-                                                    aria-label="Assign row"
-                                                >
-                                                    <User className="h-3.5 w-3.5" />
-                                                </button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button
+                                                            className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            aria-label="Assign row"
+                                                        >
+                                                            <User className="h-3 w-3" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent
+                                                        align="start"
+                                                        className="w-48"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <DropdownMenuLabel className="text-xs">Assign to</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        {collaborators.filter(c => c.id).length === 0 ? (
+                                                            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                                                                No collaborators online
+                                                            </DropdownMenuItem>
+                                                        ) : collaborators.filter(c => c.id).map(c => (
+                                                            <DropdownMenuItem
+                                                                key={c.id}
+                                                                className={cn("gap-2 cursor-pointer", (row.original as any).assignedTo === c.id && "bg-accent/50")}
+                                                                onClick={() => assignRow(projectId, sheetId, row.original.id, c.id!).catch((err: unknown) => console.error('[LiveTable] assignRow failed', err))}
+                                                            >
+                                                                <div className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white shrink-0" style={{ backgroundColor: c.color }}>
+                                                                    {c.name[0]}
+                                                                </div>
+                                                                <span className="flex-1 truncate">{c.name}</span>
+                                                                {(row.original as any).assignedTo === c.id && <span className="text-xs">✓</span>}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                        {(row.original as any).assignedTo && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive focus:text-destructive cursor-pointer"
+                                                                    onClick={() => assignRow(projectId, sheetId, row.original.id, null).catch((err: unknown) => console.error('[LiveTable] assignRow failed', err))}
+                                                                >
+                                                                    Unassign
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             )}
                                         </div>
                                     )
@@ -596,8 +577,6 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                     const isFocused =
                                         focusedCell?.rowId === row.original.id &&
                                         focusedCell?.columnId === colId
-                                    const isColSelected = selectedColumnIds.has(colId)
-                                    const isRowSelected = selectedFormattingRowIds.has(row.original.id)
 
                                     const isInRefDrag = isFormulaEditing && refDragState !== null && (() => {
                                         const minR = Math.min(refDragState.startRowIndex, refDragState.endRowIndex)
@@ -612,39 +591,6 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                     const cellVAlign = thisCellStyle.verticalAlign || 'middle'
                                     const cellHAlign = thisCellStyle.textAlign || 'left'
 
-                                    const isFirstRow = virtualRow.index === 0
-                                    const isLastRow  = virtualRow.index === data.length - 1
-                                    const isFirstCol = colIndex === 0
-                                    const isLastCol  = colIndex === visibleCols.length - 1
-
-                                    // Build perimeter-only selection borders using inset box-shadow.
-                                    // box-shadow doesn't conflict with Tailwind border classes and
-                                    // var(--primary) is a complete oklch() value (not raw hsl channels).
-                                    const selectionShadow = (() => {
-                                        if (isFocused || isInRefDrag) return undefined
-                                        const c = 'var(--primary)'
-                                        const w = 2 // border width in px
-                                        if (isColSelected) {
-                                            const shadows = [
-                                                `inset ${w}px 0 0 ${c}`,   // left
-                                                `inset -${w}px 0 0 ${c}`,  // right
-                                            ]
-                                            // No top on first row — header cell flows into it
-                                            if (isLastRow)  shadows.push(`inset 0 -${w}px 0 ${c}`)  // bottom
-                                            return shadows.join(', ')
-                                        }
-                                        if (isRowSelected) {
-                                            const shadows = [
-                                                `inset 0 ${w}px 0 ${c}`,   // top
-                                                `inset 0 -${w}px 0 ${c}`,  // bottom
-                                            ]
-                                            // No left on first col — row actions cell flows into it
-                                            if (isLastCol)  shadows.push(`inset -${w}px 0 0 ${c}`)  // right
-                                            return shadows.join(', ')
-                                        }
-                                        return undefined
-                                    })()
-
                                     return (
                                         <div
                                             key={cell.id}
@@ -656,11 +602,10 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                                 cellHAlign === 'center' ? 'justify-center' :
                                                 cellHAlign === 'right'  ? 'justify-end'    : '',
                                                 isFocused && "outline outline-2 outline-primary outline-offset-[-1px] z-10",
-                                                (isColSelected || isRowSelected) && "bg-primary/15 z-[1]",
                                                 isInRefDrag && "bg-blue-200/50 outline outline-2 outline-blue-400",
                                                 isFormulaEditing && "cursor-crosshair"
                                             )}
-                                            style={{ width: cell.column.getSize(), textAlign: cellHAlign as React.CSSProperties['textAlign'], boxShadow: selectionShadow }}
+                                            style={{ width: cell.column.getSize(), textAlign: cellHAlign as React.CSSProperties['textAlign'] }}
                                             onClick={(e) => {
                                                 e.stopPropagation()
                                                 if (!isFormulaEditing) {
@@ -745,24 +690,6 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
 
     <AddColumnDialog open={addColumnOpen} onOpenChange={setAddColumnOpen} />
 
-    {/* Story 6-3: Row Assignment — renders as a Radix DropdownMenu portal */}
-    {projectId && assignMenuRowId && (
-      <RowAssignmentMenu
-        isOpen={Boolean(assignMenuRowId)}
-        onClose={() => setAssignMenuRowId(null)}
-        assignedUserId={
-          (data.find((r: any) => r.id === assignMenuRowId) as any)?.assignedTo ?? undefined
-        }
-        users={collaborators
-          .filter((c) => c.id)
-          .map((c) => ({ id: c.id!, name: c.name, color: c.color }))}
-        onAssign={(userId) => {
-          assignRow(projectId, sheetId, assignMenuRowId, userId || null).catch(
-            (err: unknown) => console.error('[LiveTable] assignRow failed', err)
-          );
-        }}
-      />
-    )}
     </>
   )
 }
@@ -780,9 +707,126 @@ function parseImageValue(v: string): ImageCellData | null {
   try { return JSON.parse(v.slice(7)) as ImageCellData } catch { return null }
 }
 
+function parseCarouselValue(v: string): ImageCellData[] | null {
+  if (!v.startsWith('__carousel__')) return null
+  try {
+    const arr = JSON.parse(v.slice(12)) as ImageCellData[]
+    return Array.isArray(arr) && arr.length > 0 ? arr : null
+  } catch { return null }
+}
+
 function parseLinkValue(v: string): LinkCellData | null {
   if (!v.startsWith('__link__')) return null
   try { return JSON.parse(v.slice(8)) as LinkCellData } catch { return null }
+}
+
+// ---------------------------------------------------------------------------
+// Image Carousel Cell (multiple images from form upload)
+// ---------------------------------------------------------------------------
+
+function ImageCarouselCell({ images, columnId, onChange }: {
+  images: ImageCellData[]
+  columnId: string
+  onChange: (val: string) => void
+}) {
+  const { updateColumnWidth, columns } = useSheet()
+  const [index, setIndex] = useState(0)
+  const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null)
+
+  const current = images[index]
+  const displayW = imgSize?.width  ?? current.width
+  const displayH = imgSize?.height ?? current.height
+
+  // Auto-advance every 10 seconds
+  useEffect(() => {
+    if (images.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % images.length)
+    }, 10_000)
+    return () => clearInterval(timer)
+  }, [images.length])
+
+  // Auto-expand column to fit image width — only if narrower than needed
+  useEffect(() => {
+    const needed = current.width + 24
+    const currentWidth = (columns.find((c: any) => c.id === columnId) as any)?.width ?? 0
+    if (needed > currentWidth) {
+      updateColumnWidth(columnId, needed)
+    }
+  // We intentionally run this once per mount with snapshot of columns at mount time
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const prev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIndex((i) => (i - 1 + images.length) % images.length)
+  }
+  const next = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIndex((i) => (i + 1) % images.length)
+  }
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startW = displayW
+    const startH = displayH
+    const aspect = startH / startW
+
+    const onMove = (me: MouseEvent) => {
+      const dw = me.clientX - startX
+      const newW = Math.max(40, Math.min(400, startW + dw))
+      setImgSize({ width: newW, height: Math.round(newW * aspect) })
+    }
+    const onUp = (me: MouseEvent) => {
+      const dw = me.clientX - startX
+      const newW = Math.max(40, Math.min(400, startW + dw))
+      const newH = Math.round(newW * aspect)
+      const updated = images.map((img, i) => i === index ? { ...img, width: newW, height: newH } : img)
+      onChange(`__carousel__${JSON.stringify(updated)}`)
+      updateColumnWidth(columnId, newW + 24)
+      setImgSize(null)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  return (
+    <div className="relative flex-shrink-0" style={{ width: displayW + 8, height: displayH + 24 }}>
+      <img
+        src={current.url}
+        alt=""
+        draggable={false}
+        style={{ width: displayW, height: displayH, objectFit: 'contain', display: 'block' }}
+      />
+      {/* Carousel controls */}
+      {images.length > 1 && (
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-1 h-6 bg-black/50">
+          <button
+            className="text-white text-xs px-1 hover:bg-white/20 rounded"
+            onClick={prev}
+          >
+            ‹
+          </button>
+          <span className="text-white text-[10px]">{index + 1}/{images.length}</span>
+          <button
+            className="text-white text-xs px-1 hover:bg-white/20 rounded"
+            onClick={next}
+          >
+            ›
+          </button>
+        </div>
+      )}
+      {/* Resize handle */}
+      <div
+        className="absolute top-0 right-0 w-3 h-3 bg-primary opacity-60 hover:opacity-100 cursor-se-resize"
+        onMouseDown={handleResizeMouseDown}
+      />
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -797,6 +841,7 @@ interface EditableCellProps {
   displayValue?: any
   onChange: (val: any) => void
   columnType?: string
+  columnWidth?: number
   onFocus: (rowId: string, columnId: string) => void
   onBlur: () => void
   getCellStyle: (rowId: string, columnId: string) => any
@@ -817,6 +862,7 @@ function EditableCell({
   displayValue,
   onChange,
   columnType,
+  columnWidth,
   onFocus,
   onBlur,
   getCellStyle,
@@ -836,6 +882,18 @@ function EditableCell({
     const [signatureInfo, setSignatureInfo] = useState<{ fnName: string; argIndex: number } | null>(null)
     const [signaturePos, setSignaturePos] = useState<{ top: number; left: number } | null>(null)
     const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null)
+
+    // Auto-expand column width to fit image when value changes
+    useEffect(() => {
+        const rawStr = String(initialValue ?? '')
+        const imgData = parseImageValue(rawStr)
+        if (!imgData) return
+        const neededWidth = imgData.width + 24
+        if (columnWidth !== undefined && neededWidth > columnWidth) {
+            updateColumnWidth(columnId, neededWidth)
+        }
+    }, [initialValue, columnWidth, columnId, updateColumnWidth])
+
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     // Keep a ref so the insertCellRefCallback closure is never stale
@@ -1392,6 +1450,17 @@ function EditableCell({
                         onMouseDown={handleResizeMouseDown}
                     />
                 </div>
+            )
+        }
+
+        const carouselData = parseCarouselValue(rawStr)
+        if (carouselData) {
+            return (
+                <ImageCarouselCell
+                    images={carouselData}
+                    columnId={columnId}
+                    onChange={onChange}
+                />
             )
         }
 

@@ -9,7 +9,9 @@ import { DEFAULT_CELL_STYLE } from '../types/cell-styles';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
-
+import type { SelectionRange, SelectionActiveUpdate, CellPosition } from '../types/selection';
+import { MAX_SELECTION_RANGES } from '../types/selection';
+import { getAllSelectedCellKeys } from '../lib/selection-helpers';
 
 /** Clipboard state for row cut/copy/paste (local per-user, not synced via Yjs) */
 interface CopiedRowState {
@@ -24,8 +26,7 @@ interface SheetContextType {
   setActiveView: (view: string) => void;
   selectedRowId: string | null;
   setSelectedRowId: (id: string | null) => void;
-  focusedCell: { rowId: string, columnId: string } | null;
-  setFocusedCell: (cell: { rowId: string, columnId: string } | null) => void;
+  focusedCell: CellPosition | null;
   editingCell: { rowId: string, columnId: string, initialValue?: string } | null;
   setEditingCell: (cell: { rowId: string, columnId: string, initialValue?: string } | null) => void;
   /** True while the user is composing a formula in the formula bar or a cell input */
@@ -92,11 +93,15 @@ interface SheetContextType {
   unhideAllColumns: () => void;
   updateColumnWidth: (columnId: string, width: number) => void;
 
-  // Bulk selection for formatting (multi-select with Ctrl+Click)
-  selectedColumnIds: Set<string>;
-  setSelectedColumnIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  selectedFormattingRowIds: Set<string>;
-  setSelectedFormattingRowIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  // Unified multi-range selection
+  selections: SelectionRange[];
+  isDraggingSelection: boolean;
+  startSelection: (range: SelectionRange, ctrl: boolean) => void;
+  updateActiveSelection: (update: SelectionActiveUpdate) => void;
+  endSelection: () => void;
+  clearSelections: () => void;
+  focusSingleCell: (rowId: string, columnId: string) => void;
+  extendSelection: (newActive: CellPosition) => void;
   applyColumnStyle: (columnId: string, style: Partial<CellStyleConfig>) => void;
   applyRowStyle: (rowId: string, style: Partial<CellStyleConfig>) => void;
 
@@ -146,7 +151,16 @@ export function SheetProvider({
   const [columns, setColumns] = useState<any[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const [focusedCell, setFocusedCell] = useState<{ rowId: string, columnId: string } | null>(null);
+  const [selections, setSelections] = useState<SelectionRange[]>([]);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+
+  // Derived: null for column/row ranges (no single focused cell — formula bar shows blank, which is acceptable)
+  const focusedCell = useMemo<CellPosition | null>(() => {
+    const last = selections[selections.length - 1];
+    if (!last || last.mode !== 'cells') return null;
+    return last.active;
+  }, [selections]);
+
   const [editingCell, setEditingCell] = useState<{ rowId: string, columnId: string, initialValue?: string } | null>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [detailPanelTab, setDetailPanelTab] = useState('fields');
@@ -155,10 +169,63 @@ export function SheetProvider({
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
   const [copiedRow, setCopiedRow] = useState<CopiedRowState | null>(null);
   const [isCut, setIsCut] = useState(false);
-  const [selectedColumnIds, setSelectedColumnIds] = useState<Set<string>>(new Set());
-  const [selectedFormattingRowIds, setSelectedFormattingRowIds] = useState<Set<string>>(new Set());
   const [isFormulaEditing, setIsFormulaEditing] = useState(false);
   const insertCellRefCallback = useRef<((ref: string) => void) | null>(null);
+
+  // Selection mutation helpers
+  const startSelection = useCallback((range: SelectionRange, ctrl: boolean) => {
+    setSelections(prev => {
+      if (!ctrl) return [range];
+      if (prev.length >= MAX_SELECTION_RANGES) return prev; // silently ignore at cap
+      return [...prev, range];
+    });
+    setIsDraggingSelection(true);
+  }, []);
+
+  /**
+   * Update the active corner of the last (dragging) range.
+   * Uses a discriminated update type — the mode must match the current range's mode.
+   * Mismatched updates (e.g., sending activeColId when current range is 'cells') are silently rejected.
+   */
+  const updateActiveSelection = useCallback((update: SelectionActiveUpdate) => {
+    setSelections(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      if (last.mode !== update.mode) return prev; // mode mismatch — reject
+      let updated: SelectionRange;
+      if (update.mode === 'cells' && last.mode === 'cells') {
+        updated = { ...last, active: update.active };
+      } else if (update.mode === 'columns' && last.mode === 'columns') {
+        updated = { ...last, activeColId: update.activeColId };
+      } else if (update.mode === 'rows' && last.mode === 'rows') {
+        updated = { ...last, activeRowId: update.activeRowId };
+      } else {
+        return prev;
+      }
+      return [...prev.slice(0, -1), updated];
+    });
+  }, []);
+
+  const endSelection = useCallback(() => setIsDraggingSelection(false), []);
+
+  const clearSelections = useCallback(() => {
+    setSelections([]);
+    setIsDraggingSelection(false);
+  }, []);
+
+  const focusSingleCell = useCallback((rowId: string, columnId: string) => {
+    setSelections([{ mode: 'cells', anchor: { rowId, columnId }, active: { rowId, columnId } }]);
+    setIsDraggingSelection(false);
+  }, []);
+
+  const extendSelection = useCallback((newActive: CellPosition) => {
+    setSelections(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      if (last.mode !== 'cells') return prev;
+      return [...prev.slice(0, -1), { ...last, active: newActive }];
+    });
+  }, []);
 
   // Undo / Redo via Y.UndoManager
   const undoManagerRef = useRef<Y.UndoManager | null>(null);
@@ -248,11 +315,26 @@ export function SheetProvider({
     return () => disconnect();
   }, [sheetId, token, userName, userColor, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Broadcast our focused cell to collaborators via Yjs awareness
+  // Broadcast our focused cell and selections to collaborators via Yjs awareness
+  const awarenessSelectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!provider || !provider.awareness) return;
-    provider.awareness.setLocalStateField('focusedCell', focusedCell);
-  }, [provider, focusedCell]);
+    const awareness = provider.awareness;
+    // focusedCell: cheap scalar, broadcast immediately
+    awareness.setLocalStateField('focusedCell', focusedCell);
+
+    // selections: can change rapidly during drag (50+ updates/second) — debounce to avoid
+    // flooding all peers with WebSocket messages on every pointermove
+    if (awarenessSelectionTimerRef.current) clearTimeout(awarenessSelectionTimerRef.current);
+    awarenessSelectionTimerRef.current = setTimeout(() => {
+      awareness.setLocalStateField('selections', selections);
+    }, 100);
+
+    return () => {
+      if (awarenessSelectionTimerRef.current) clearTimeout(awarenessSelectionTimerRef.current);
+    };
+  }, [provider, focusedCell, selections]);
 
   // Derive remote collaborators from Yjs awareness states (exclude local user)
   const localUserId = userId;
@@ -289,9 +371,15 @@ export function SheetProvider({
     const yCells = doc.getMap('cells');
 
     const updateState = () => {
-      const order = yOrder.toArray() as string[];
+      // Deduplicate order and columns defensively — concurrent Yjs edits can produce duplicate entries
+      const order = [...new Set(yOrder.toArray() as string[])];
       const allRows = order.map(id => yRows.get(id) as any).filter(Boolean);
-      const cols = yColumns.toArray() as any[];
+      const seenColIds = new Set<string>();
+      const cols = (yColumns.toArray() as any[]).filter(col => {
+        if (!col?.id || seenColIds.has(col.id)) return false;
+        seenColIds.add(col.id);
+        return true;
+      });
       setRawData({ rows: allRows, cols });
     };
     const updateCellsRevision = () => setCellsRevision(v => v + 1);
@@ -533,9 +621,10 @@ export function SheetProvider({
     const yOrder = doc.getArray('order');
     doc.transact(() => {
       yRows.delete(rowId);
-      const index = yOrder.toArray().indexOf(rowId);
-      if (index > -1) {
-        yOrder.delete(index, 1);
+      // Remove all occurrences — handles any accidental duplicates in the order array
+      const orderArr = yOrder.toArray() as string[];
+      for (let i = orderArr.length - 1; i >= 0; i--) {
+        if (orderArr[i] === rowId) yOrder.delete(i, 1);
       }
     });
   }, [doc]);
@@ -741,47 +830,37 @@ export function SheetProvider({
     strike: { prop: 'textDecoration',  on: 'line-through', off: 'none'   },
   };
 
-  const toggleCellStyle = useCallback((styleKey: 'bold' | 'italic' | 'strike') => {
-    if (!doc) return;
-    if (!focusedCell && selectedColumnIds.size === 0 && selectedFormattingRowIds.size === 0) return;
+  const toggleCellStyle = useCallback((key: string) => {
+    if (!doc || selections.length === 0) return;
+    const map = STYLE_KEY_MAP[key as keyof typeof STYLE_KEY_MAP];
+    if (!map) return;
 
-    const { prop, on, off } = STYLE_KEY_MAP[styleKey];
+    // IMPORTANT: Read from Yjs directly — not from rawData/columns React state.
+    // React state is one render behind; using it here causes stale closure bugs
+    // where formatting applies to the wrong rows after a concurrent update.
+    const yOrder = doc.getArray<string>('order');
+    const yColumns = doc.getArray<{ id: string; hidden?: boolean }>('columns');
+    const rowIds = yOrder.toArray();
+    const colIds = yColumns.toArray().filter(c => !c.hidden).map(c => c.id);
 
-    if (focusedCell) {
-      const cellKey = `${focusedCell.rowId}:${focusedCell.columnId}`;
-      const cellsMap = doc.getMap('cells');
-      const current = cellsMap.get(cellKey) as any;
-      const currentStyle = current?.style || {};
-      const isActive = currentStyle[prop] === on;
-      doc.transact(() => {
-        const cell = cellsMap.get(cellKey) as any;
-        const newStyle = { ...(cell?.style || {}), [prop]: isActive ? off : on };
-        cellsMap.set(cellKey, cell ? { ...cell, style: newStyle } : { value: null, type: 'TEXT', style: newStyle });
-      });
-    } else if (selectedColumnIds.size > 0) {
-      const cellsMap = doc.getMap('cells');
-      const yOrder = doc.getArray('order');
-      const firstRowId = (yOrder.toArray() as string[])[0];
-      const firstColId = [...selectedColumnIds][0];
-      const firstKey = firstRowId ? `${firstRowId}:${firstColId}` : null;
-      const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
-      const isActive = firstCell?.style?.[prop] === on;
-      selectedColumnIds.forEach(colId => {
-        applyColumnStyle(colId, { [prop]: isActive ? off : on } as any);
-      });
-    } else if (selectedFormattingRowIds.size > 0) {
-      const cellsMap = doc.getMap('cells');
-      const yColumns = doc.getArray('columns');
-      const firstCol = (yColumns.toArray() as Array<{ id: string }>)[0];
-      const firstRowId = [...selectedFormattingRowIds][0];
-      const firstKey = firstCol ? `${firstRowId}:${firstCol.id}` : null;
-      const firstCell = firstKey ? (cellsMap.get(firstKey) as any) : null;
-      const isActive = firstCell?.style?.[prop] === on;
-      selectedFormattingRowIds.forEach(rowId => {
-        applyRowStyle(rowId, { [prop]: isActive ? off : on } as any);
-      });
-    }
-  }, [doc, focusedCell, selectedColumnIds, selectedFormattingRowIds, applyColumnStyle, applyRowStyle]);
+    const cellKeys = getAllSelectedCellKeys(selections, rowIds, colIds);
+    if (cellKeys.length === 0) return;
+
+    const cellsMap = doc.getMap('cells');
+    const firstCell = cellsMap.get(cellKeys[0]) as any;
+    const currentVal = firstCell?.style?.[map.prop] ?? map.off;
+    const nextVal = currentVal === map.on ? map.off : map.on;
+
+    doc.transact(() => {
+      for (const cellKey of cellKeys) {
+        const existing = cellsMap.get(cellKey) as any ?? {};
+        cellsMap.set(cellKey, {
+          ...existing,
+          style: { ...(existing.style ?? {}), [map.prop]: nextVal },
+        });
+      }
+    });
+  }, [doc, selections]);
 
   // Finding #9 (R3): sortRows now preserves hierarchy.
   // Previously it sorted the flat order array, breaking parent-child grouping.
@@ -1085,7 +1164,6 @@ export function SheetProvider({
         selectedRowId,
         setSelectedRowId,
         focusedCell,
-        setFocusedCell,
         editingCell,
         setEditingCell,
         isDetailPanelOpen,
@@ -1133,11 +1211,15 @@ export function SheetProvider({
         hideColumn,
         unhideAllColumns,
         updateColumnWidth,
-        // Bulk selection
-        selectedColumnIds,
-        setSelectedColumnIds,
-        selectedFormattingRowIds,
-        setSelectedFormattingRowIds,
+        // Unified multi-range selection
+        selections,
+        isDraggingSelection,
+        startSelection,
+        updateActiveSelection,
+        endSelection,
+        clearSelections,
+        focusSingleCell,
+        extendSelection,
         applyColumnStyle,
         applyRowStyle,
         // Formula editing coordination
