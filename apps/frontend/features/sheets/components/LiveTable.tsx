@@ -38,6 +38,13 @@ import {
 import { AddRowIcon, AddColumnIcon } from "./icons/SheetIcons"
 import { AddColumnDialog } from "./controls/ColumnManagerDialog"
 import { assignRow } from "../server/sheet-actions"
+import type { SelectionRange, SelectionActiveUpdate } from '../types/selection';
+import {
+  anyCellInSelection,
+  anyColumnInSelection,
+  anyRowInSelection,
+  buildSelectionShadowMap,
+} from '../lib/selection-helpers';
 
 // Fixed width of the row-meta column (number + actions)
 const ROW_META_WIDTH = 128
@@ -92,6 +99,11 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     focusSingleCell,
     clearSelections,
     extendSelection,
+    selections,
+    startSelection,
+    updateActiveSelection,
+    endSelection,
+    isDraggingSelection,
     setEditingCell,
     getCellStyle,
     getCellResult,
@@ -105,6 +117,21 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     doc,
     sheetId,
   } = useSheet()
+
+  const rowOrder = useMemo(
+    () => (data as Array<{ id: string }>).map(r => r.id),
+    [data],
+  );
+  const colOrder = useMemo(
+    () => (columns as Array<{ id: string; hidden?: boolean }>)
+      .filter(c => !c.hidden)
+      .map(c => c.id),
+    [columns],
+  );
+  const selectionShadowMap = useMemo(
+    () => buildSelectionShadowMap(selections, rowOrder, colOrder),
+    [selections, rowOrder, colOrder],
+  );
 
   // Track comment/file counts per row for blue icon indicators
   const [rowMetaCounts, setRowMetaCounts] = useState<Map<string, { comments: number; files: number }>>(new Map())
@@ -177,6 +204,50 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
       clearSelections()
     }, 200)
   }, [clearSelections])
+
+  const dragModeRef = useRef<'cells' | 'columns' | 'rows' | null>(null);
+
+  const handleCellPointerDown = useCallback((
+    e: React.PointerEvent<HTMLDivElement>,
+    rowId: string,
+    colId: string,
+  ) => {
+    if (e.button !== 0) return;
+    // Don't interfere with formula reference drag (handled separately by onMouseDown)
+    if (isFormulaEditing) return;
+    dragModeRef.current = 'cells';
+    startSelection(
+      { mode: 'cells', anchor: { rowId, columnId: colId }, active: { rowId, columnId: colId } },
+      e.ctrlKey || e.metaKey,
+    );
+  }, [startSelection, isFormulaEditing]);
+
+  const handleColHeaderPointerDown = useCallback((
+    e: React.PointerEvent<HTMLDivElement>,
+    colId: string,
+  ) => {
+    if (e.button !== 0) return;
+    // Avoid triggering on the resize handle (which has data-resizer="true")
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-resizer]')) return;
+    dragModeRef.current = 'columns';
+    startSelection(
+      { mode: 'columns', anchorColId: colId, activeColId: colId },
+      e.ctrlKey || e.metaKey,
+    );
+  }, [startSelection]);
+
+  const handleRowHeaderPointerDown = useCallback((
+    e: React.PointerEvent<HTMLSpanElement>,
+    rowId: string,
+  ) => {
+    if (e.button !== 0) return;
+    dragModeRef.current = 'rows';
+    startSelection(
+      { mode: 'rows', anchorRowId: rowId, activeRowId: rowId },
+      e.ctrlKey || e.metaKey,
+    );
+  }, [startSelection]);
 
   const tableColumns = useMemo<ColumnDef<any>[]>(
     () => {
@@ -272,6 +343,54 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp)
   }, [isFormulaEditing])
 
+  // Document-level pointer drag for multi-cell selection
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const mode = dragModeRef.current;
+      if (!mode) return;
+
+      if (mode === 'cells') {
+        const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+        const cellEl = el?.closest('[data-row-id]') as HTMLElement | null;
+        const rowId = cellEl?.dataset['rowId'];
+        const colId = cellEl?.dataset['colId'];
+        if (rowId && colId) {
+          const update: SelectionActiveUpdate = { mode: 'cells', active: { rowId, columnId: colId } };
+          updateActiveSelection(update);
+        }
+      } else if (mode === 'columns') {
+        const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+        const headerEl = el?.closest('[data-col-header-id]') as HTMLElement | null;
+        const colId = headerEl?.dataset['colHeaderId'];
+        if (colId) {
+          const update: SelectionActiveUpdate = { mode: 'columns', activeColId: colId };
+          updateActiveSelection(update);
+        }
+      } else {
+        const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+        const rowNumEl = el?.closest('[data-row-header-id]') as HTMLElement | null;
+        const rowId = rowNumEl?.dataset['rowHeaderId'];
+        if (rowId) {
+          const update: SelectionActiveUpdate = { mode: 'rows', activeRowId: rowId };
+          updateActiveSelection(update);
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (!dragModeRef.current) return;
+      dragModeRef.current = null;
+      endSelection();
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [updateActiveSelection, endSelection]);
+
   // Grid-level keyboard handler: fires when a cell is focused but NOT in text-edit mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -280,9 +399,8 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
       if (active?.closest('[role="dialog"], [role="menu"], [data-radix-popper-content-wrapper]')) return
 
-      const visibleCols = columns.filter((c: any) => !c.hidden)
-      const rowIndex = data.findIndex((r: any) => r.id === focusedCell.rowId)
-      const colIndex = visibleCols.findIndex((c: any) => c.id === focusedCell.columnId)
+      const ri = rowOrder.indexOf(focusedCell.rowId);
+      const ci = colOrder.indexOf(focusedCell.columnId);
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()
@@ -299,32 +417,31 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
         clearSelections()
         return
       }
-      if (e.key === 'ArrowUp') {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        if (rowIndex > 0) focusSingleCell(data[rowIndex - 1].id, focusedCell.columnId)
-        return
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        if (rowIndex < data.length - 1) focusSingleCell(data[rowIndex + 1].id, focusedCell.columnId)
-        return
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        if (colIndex > 0) focusSingleCell(focusedCell.rowId, visibleCols[colIndex - 1].id)
-        return
-      }
-      if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        if (colIndex < visibleCols.length - 1) focusSingleCell(focusedCell.rowId, visibleCols[colIndex + 1].id)
-        return
+        if (ri === -1 || ci === -1) return;
+
+        let newRi = ri, newCi = ci;
+        if (e.key === 'ArrowUp')    newRi = Math.max(0, ri - 1);
+        if (e.key === 'ArrowDown')  newRi = Math.min(rowOrder.length - 1, ri + 1);
+        if (e.key === 'ArrowLeft')  newCi = Math.max(0, ci - 1);
+        if (e.key === 'ArrowRight') newCi = Math.min(colOrder.length - 1, ci + 1);
+
+        const newPos = { rowId: rowOrder[newRi], columnId: colOrder[newCi] };
+
+        if (e.shiftKey) {
+          extendSelection(newPos);
+        } else {
+          focusSingleCell(newPos.rowId, newPos.columnId);
+        }
+        return;
       }
       if (e.key === 'Tab') {
         e.preventDefault()
         if (e.shiftKey) {
-          if (colIndex > 0) focusSingleCell(focusedCell.rowId, visibleCols[colIndex - 1].id)
+          if (ci > 0) focusSingleCell(focusedCell.rowId, colOrder[ci - 1])
         } else {
-          if (colIndex < visibleCols.length - 1) focusSingleCell(focusedCell.rowId, visibleCols[colIndex + 1].id)
+          if (ci < colOrder.length - 1) focusSingleCell(focusedCell.rowId, colOrder[ci + 1])
         }
         return
       }
@@ -359,7 +476,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [focusedCell, data, columns, updateCell, focusSingleCell, clearSelections, setEditingCell])
+  }, [focusedCell, data, rowOrder, colOrder, updateCell, focusSingleCell, extendSelection, clearSelections, setEditingCell])
 
   return (
     <>
@@ -383,21 +500,20 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                         return (
                         <ColumnContextMenu key={header.id} columnId={header.column.id} column={colData}>
                             <div
+                                 data-col-header-id={header.column.id}
                                  className={cn(
                                    "relative h-10 px-4 flex items-center font-medium text-table-header-fg border-r border-b border-table-border select-none cursor-pointer transition-colors",
                                    headerHAlign === 'center' ? 'justify-center' :
                                    headerHAlign === 'right'  ? 'justify-end'    : '',
-                                   focusedCell?.columnId === header.column.id
-                                     ? "bg-primary/10 hover:bg-table-row-hover"
+                                   anyColumnInSelection(header.column.id, selections, colOrder)
+                                     ? "bg-primary/20 text-primary"
                                      : "hover:bg-table-row-hover"
                                  )}
                                  style={{
                                    width: header.getSize(),
                                    textAlign: headerHAlign as React.CSSProperties['textAlign'],
                                  }}
-                                 onClick={() => {
-                                   clearSelections()
-                                 }}>
+                                 onPointerDown={(e) => handleColHeaderPointerDown(e, header.column.id)}>
                                 {header.isPlaceholder
                                     ? null
                                     : flexRender(
@@ -406,6 +522,7 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                     )}
                                 {/* Resize handle */}
                                 <div
+                                    data-resizer="true"
                                     onMouseDown={header.getResizeHandler()}
                                     onTouchStart={header.getResizeHandler()}
                                     className={cn(
@@ -476,11 +593,16 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                             >
                                 {/* Row number — click to select entire row for formatting */}
                                 <span
-                                  className="text-sm tabular-nums select-none w-7 text-right shrink-0 cursor-pointer rounded px-0.5 hover:bg-primary/20 transition-colors leading-none self-center text-muted-foreground"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    // Row selection will be handled by Task 3 pointer-based selection
-                                    clearSelections()
+                                  data-row-header-id={row.original.id}
+                                  className={cn(
+                                    "text-sm tabular-nums select-none w-7 text-right shrink-0 cursor-pointer rounded px-0.5 hover:bg-primary/20 transition-colors leading-none self-center",
+                                    anyRowInSelection(row.original.id, selections, rowOrder)
+                                      ? "bg-primary/20 text-primary font-semibold"
+                                      : "text-muted-foreground",
+                                  )}
+                                  onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                    handleRowHeaderPointerDown(e, row.original.id);
                                   }}
                                 >
                                     {virtualRow.index + 1}
@@ -591,9 +713,16 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                     const cellVAlign = thisCellStyle.verticalAlign || 'middle'
                                     const cellHAlign = thisCellStyle.textAlign || 'left'
 
+                                    const isSelected = anyCellInSelection(row.original.id, colId, selections, rowOrder, colOrder);
+                                    const isColSelected = anyColumnInSelection(colId, selections, colOrder);
+                                    const isRowSelected = anyRowInSelection(row.original.id, selections, rowOrder);
+                                    const selectionShadow = selectionShadowMap.get(`${row.original.id}:${colId}`);
+
                                     return (
                                         <div
                                             key={cell.id}
+                                            data-row-id={row.original.id}
+                                            data-col-id={colId}
                                             className={cn(
                                                 "px-2 border-r border-table-border flex relative min-h-[40px] transition-colors",
                                                 cellVAlign === 'top'    ? 'items-start pt-1'  :
@@ -603,15 +732,21 @@ export function LiveTable({ containerClassName, projectId }: LiveTableProps) {
                                                 cellHAlign === 'right'  ? 'justify-end'    : '',
                                                 isFocused && "outline outline-2 outline-primary outline-offset-[-1px] z-10",
                                                 isInRefDrag && "bg-blue-200/50 outline outline-2 outline-blue-400",
-                                                isFormulaEditing && "cursor-crosshair"
+                                                isFormulaEditing && "cursor-crosshair",
+                                                (isSelected || isColSelected || isRowSelected) && 'bg-primary/15 z-[1]',
                                             )}
-                                            style={{ width: cell.column.getSize(), textAlign: cellHAlign as React.CSSProperties['textAlign'] }}
+                                            style={{
+                                              width: cell.column.getSize(),
+                                              textAlign: cellHAlign as React.CSSProperties['textAlign'],
+                                              boxShadow: selectionShadow,
+                                            }}
                                             onClick={(e) => {
                                                 e.stopPropagation()
                                                 if (!isFormulaEditing) {
                                                     handleCellFocus(row.original.id, colId)
                                                 }
                                             }}
+                                            onPointerDown={(e) => handleCellPointerDown(e, row.original.id, colId)}
                                             onMouseDown={(e) => {
                                                 if (isFormulaEditing) {
                                                     e.preventDefault()
