@@ -5,16 +5,16 @@ import { apiClient } from '@/lib/api'
 import { useSession } from '@/components/session-provider'
 
 interface UseFormSubmissionProps {
-  formId: number
-  groupId: number
+  formId: string
+  groupId: string
   latestVersionId?: number | null // [VERSIONING]
-  onSuccess?: (submissionId: number) => void
+  onSuccess?: (submissionId: string) => void
   onError?: (error: string) => void
 }
 
 interface SubmitResponse {
   success: boolean
-  submission_id?: number
+  submission_id?: string
   message?: string
   error?: string
 }
@@ -44,7 +44,7 @@ export function useFormSubmission({
         const { MutationQueue } = await import('@/lib/sync/mutation-queue');
         const { toast } = await import('sonner');
 
-        const submissionId = Math.floor(Math.random() * 1000000); // Temp ID
+        const submissionId = String(Math.floor(Math.random() * 1000000)); // Temp ID
 
         await MutationQueue.enqueue({
           url: `/api/groups/${groupId}/forms/${formId}/submit`,

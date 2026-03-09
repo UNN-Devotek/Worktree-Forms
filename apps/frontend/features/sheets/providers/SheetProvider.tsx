@@ -102,9 +102,6 @@ interface SheetContextType {
   clearSelections: () => void;
   focusSingleCell: (rowId: string, columnId: string) => void;
   extendSelection: (newActive: CellPosition) => void;
-  applyColumnStyle: (columnId: string, style: Partial<CellStyleConfig>) => void;
-  applyRowStyle: (rowId: string, style: Partial<CellStyleConfig>) => void;
-
   // Conditional formatting (Yjs-synced across collaborators)
   conditionalFormats: ConditionalFormatRule[];
   setConditionalFormats: (rules: ConditionalFormatRule[]) => void;
@@ -174,7 +171,6 @@ export function SheetProvider({
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [detailPanelTab, setDetailPanelTab] = useState('fields');
   // Finding #7 (R5): cellStyles local state removed — getCellStyle reads from Yjs `cells` map directly.
-  // applyCellStyle kept for local-only style previews before committing to Yjs.
   const [activeFilters, setActiveFilters] = useState<FilterRule[]>([]);
   const [copiedRow, setCopiedRow] = useState<CopiedRowState | null>(null);
   const [isCut, setIsCut] = useState(false);
@@ -785,51 +781,30 @@ export function SheetProvider({
     return withCf;
   }, [getCellStyle, conditionalFormats, highlightChanges, doc]);
 
-  // Finding #7 (R5): applyCellStyle now writes to Yjs, consistent with getCellStyle above.
+  // Apply a style to all currently selected cells.
+  // Reads row/col order from Yjs directly (not React state) to avoid stale closure bugs.
+  // When no selection exists, falls back to applying to the specific rowId/columnId passed
+  // (e.g. FormatPainter painting a freshly-focused cell before React state syncs).
   const applyCellStyle = useCallback((rowId: string, columnId: string, style: Partial<CellStyleConfig>) => {
     if (!doc) return;
+    const rowIds = doc.getArray<string>('order').toArray();
+    const colIds = doc.getArray<{ id: string; hidden?: boolean }>('columns')
+      .toArray().filter(c => !c.hidden).map(c => c.id);
+    const cellKeys = selections.length > 0
+      ? getAllSelectedCellKeys(selections, rowIds, colIds)
+      : [getCellStyleKey(rowId, columnId)];
+    if (cellKeys.length === 0) return;
     const cellsMap = doc.getMap('cells');
-    const key = getCellStyleKey(rowId, columnId);
     doc.transact(() => {
-      const cell = cellsMap.get(key) as any;
-      const existing = cell?.style || {};
-      cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
-    });
-  }, [doc]);
-
-  // Apply a style to every cell in a column (all current rows).
-  const applyColumnStyle = useCallback((columnId: string, style: Partial<CellStyleConfig>) => {
-    if (!doc) return;
-    const cellsMap = doc.getMap('cells');
-    const yRows = doc.getMap('rows');
-    const yOrder = doc.getArray('order');
-    const order = yOrder.toArray() as string[];
-    doc.transact(() => {
-      for (const rowId of order) {
-        if (!yRows.get(rowId)) continue;
-        const key = getCellStyleKey(rowId, columnId);
-        const cell = cellsMap.get(key) as any;
-        const existing = cell?.style || {};
-        cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
+      for (const key of cellKeys) {
+        const existing = cellsMap.get(key) as any ?? {};
+        cellsMap.set(key, {
+          ...existing,
+          style: { ...(existing.style ?? {}), ...style },
+        });
       }
     });
-  }, [doc]);
-
-  // Apply a style to every cell in a row (all visible columns).
-  const applyRowStyle = useCallback((rowId: string, style: Partial<CellStyleConfig>) => {
-    if (!doc) return;
-    const cellsMap = doc.getMap('cells');
-    const yColumns = doc.getArray('columns');
-    const cols = yColumns.toArray() as Array<{ id: string }>;
-    doc.transact(() => {
-      for (const col of cols) {
-        const key = getCellStyleKey(rowId, col.id);
-        const cell = cellsMap.get(key) as any;
-        const existing = cell?.style || {};
-        cellsMap.set(key, { ...(cell || { value: null, type: 'TEXT' }), style: { ...existing, ...style } });
-      }
-    });
-  }, [doc]);
+  }, [doc, selections]);
 
 
   const toggleCellStyle = useCallback((key: string) => {
@@ -1222,8 +1197,6 @@ export function SheetProvider({
         clearSelections,
         focusSingleCell,
         extendSelection,
-        applyColumnStyle,
-        applyRowStyle,
         // Formula editing coordination
         isFormulaEditing,
         setIsFormulaEditing,
