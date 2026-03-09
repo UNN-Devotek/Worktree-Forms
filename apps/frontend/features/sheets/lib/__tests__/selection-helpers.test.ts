@@ -6,6 +6,8 @@ import {
   getSelectionEdges,
   getAllSelectedCellKeys,
   anyCellInSelection,
+  anyColumnInSelection,
+  anyRowInSelection,
   buildSelectionShadowMap,
 } from '../selection-helpers';
 import type { SelectionRange } from '../../types/selection';
@@ -253,6 +255,70 @@ describe('anyCellInSelection', () => {
     ];
     expect(anyCellInSelection('r4', 'c3', ranges, ROWS, COLS)).toBe(true);
     expect(anyCellInSelection('r4', 'c2', ranges, ROWS, COLS)).toBe(false);
+  });
+});
+
+describe('anyColumnInSelection', () => {
+  it('returns true when column is in a ColumnRange within the ranges array', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'columns', anchorColId: 'c2', activeColId: 'c3' },
+    ];
+    expect(anyColumnInSelection('c2', ranges, COLS)).toBe(true);
+    expect(anyColumnInSelection('c3', ranges, COLS)).toBe(true);
+  });
+
+  it('returns false when column is not covered by any range', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'columns', anchorColId: 'c2', activeColId: 'c3' },
+    ];
+    expect(anyColumnInSelection('c1', ranges, COLS)).toBe(false);
+    expect(anyColumnInSelection('c4', ranges, COLS)).toBe(false);
+  });
+
+  it('returns false for a CellRange even if the column overlaps', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'cells', anchor: { rowId: 'r1', columnId: 'c2' }, active: { rowId: 'r4', columnId: 'c2' } },
+    ];
+    expect(anyColumnInSelection('c2', ranges, COLS)).toBe(false);
+  });
+
+  it('returns false for unknown columnId', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'columns', anchorColId: 'c1', activeColId: 'c4' },
+    ];
+    expect(anyColumnInSelection('c-DELETED', ranges, COLS)).toBe(false);
+  });
+});
+
+describe('anyRowInSelection', () => {
+  it('returns true when row is in a RowRange within the ranges array', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'rows', anchorRowId: 'r2', activeRowId: 'r3' },
+    ];
+    expect(anyRowInSelection('r2', ranges, ROWS)).toBe(true);
+    expect(anyRowInSelection('r3', ranges, ROWS)).toBe(true);
+  });
+
+  it('returns false when row is not covered by any range', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'rows', anchorRowId: 'r2', activeRowId: 'r3' },
+    ];
+    expect(anyRowInSelection('r1', ranges, ROWS)).toBe(false);
+    expect(anyRowInSelection('r4', ranges, ROWS)).toBe(false);
+  });
+
+  it('returns false for a CellRange even if the row overlaps', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'cells', anchor: { rowId: 'r2', columnId: 'c1' }, active: { rowId: 'r2', columnId: 'c4' } },
+    ];
+    expect(anyRowInSelection('r2', ranges, ROWS)).toBe(false);
+  });
+
+  it('returns false for unknown rowId', () => {
+    const ranges: SelectionRange[] = [
+      { mode: 'rows', anchorRowId: 'r1', activeRowId: 'r4' },
+    ];
+    expect(anyRowInSelection('r-DELETED', ranges, ROWS)).toBe(false);
   });
 });
 
