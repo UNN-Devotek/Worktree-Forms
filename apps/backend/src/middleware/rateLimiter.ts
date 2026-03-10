@@ -84,7 +84,7 @@ export const authenticatedRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req.ip ?? '0.0.0.0'),
 });
 
 /**
@@ -108,7 +108,7 @@ export const uploadRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many upload requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req.ip ?? '0.0.0.0'),
 });
 
 /**
@@ -120,7 +120,7 @@ export const apiRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many API requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req.ip ?? '0.0.0.0'),
 });
 
 /**
