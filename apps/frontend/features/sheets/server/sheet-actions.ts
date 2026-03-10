@@ -14,8 +14,11 @@ import jwt from 'jsonwebtoken';
 import { auth } from '@/auth';
 import * as Y from 'yjs';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET env var is required');
+  return secret;
+}
 
 /**
  * Verifies the current user has access to a project.
@@ -56,7 +59,7 @@ export async function getSheetToken(sheetId: string, projectId: string) {
       name: session.user.name,
       sheetId,
     },
-    JWT_SECRET!,
+    getJwtSecret(),
     { expiresIn: '1h' }
   );
 }
