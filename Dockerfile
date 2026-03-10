@@ -33,10 +33,13 @@ FROM base AS deps
 # ==========================================
 FROM base AS builder
 
+# Signal to next.config.js to skip TS type checking (runs in CI)
+ENV DOCKER_BUILD=1
+
 # Build backend TypeScript
 RUN npm run build -w apps/backend
 
-# Build Next.js frontend
+# Build Next.js frontend (standalone mode — traces only needed deps)
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
@@ -44,6 +47,9 @@ ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 # Cache .next/cache across builds for faster incremental compilation
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
     npm run build -w apps/frontend
+
+# Prune devDependencies for smaller production image
+RUN npm prune --production --ignore-scripts
 
 # ==========================================
 # Stage 4: Production runtime (ECS Fargate)
@@ -57,24 +63,19 @@ RUN apk add --no-cache wget
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs appuser
 
-# Install PM2 globally
-RUN npm install -g pm2
-
-# Backend: compiled dist + node_modules
+# Backend: compiled dist + production node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
-# Frontend: Next.js build output + public assets
-COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
-COPY --from=builder /app/apps/frontend/node_modules ./apps/frontend/node_modules
-COPY --from=builder /app/apps/frontend/.next ./apps/frontend/.next
-COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
+# Frontend: Next.js standalone output (includes only traced dependencies)
+COPY --from=builder /app/apps/frontend/.next/standalone ./apps/frontend-standalone
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend-standalone/apps/frontend/.next/static
+COPY --from=builder /app/apps/frontend/public ./apps/frontend-standalone/apps/frontend/public
 
-# PM2 config + startup script
-COPY ecosystem.config.js .
+# Startup script
 COPY start.sh .
 RUN chmod +x start.sh
 

@@ -15,6 +15,7 @@ turbopackResolveAlias[path.resolve(__dirname, '../backend/src/lib/dynamo/client'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   cacheMaxMemorySize: 0, // Disable in-memory ISR cache — use Redis for multi-instance ECS
   cacheHandler: require.resolve("./lib/cache-handler.js"),
@@ -106,7 +107,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    // Type checking runs in CI — skip during Docker builds for speed
+    ignoreBuildErrors: !!process.env.DOCKER_BUILD,
   },
   webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;
