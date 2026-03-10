@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Unified Dockerfile for Worktree
 # Local dev: uses `deps` stage (docker-compose.yml target: deps)
 # Production: uses `runner` stage
@@ -13,8 +14,9 @@ COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 
-# Install all deps (including devDependencies for tsx / build)
-RUN npm ci
+# Install all deps with npm cache mount (persists across builds)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # Copy source code
 COPY . .
@@ -39,7 +41,9 @@ ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
-RUN npm run build -w apps/frontend
+# Cache .next/cache across builds for faster incremental compilation
+RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
+    npm run build -w apps/frontend
 
 # ==========================================
 # Stage 4: Production runtime (ECS Fargate)

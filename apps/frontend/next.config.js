@@ -102,7 +102,8 @@ const nextConfig = {
   },
 
   eslint: {
-    ignoreDuringBuilds: false,
+    // Skip lint during Docker builds — run separately in CI/pre-commit
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
