@@ -54,7 +54,17 @@ services:
     ports:
       - "${PORT:-3005}:${PORT:-3005}"
       - "${BACKEND_PORT:-5005}:${BACKEND_PORT:-5005}"
-
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.worktree.rule=Host(`worktree.pro`)"
+      - "traefik.http.routers.worktree.entrypoints=websecure"
+      - "traefik.http.routers.worktree.tls=true"
+      - "traefik.http.routers.worktree.tls.certresolver=letsencrypt"
+      - "traefik.http.services.worktree.loadbalancer.server.port=3005"
+      - "traefik.http.routers.worktree-http.rule=Host(`worktree.pro`)"
+      - "traefik.http.routers.worktree-http.entrypoints=web"
+      - "traefik.http.routers.worktree-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     depends_on:
       dynamodb-local:
         condition: service_healthy
