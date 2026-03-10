@@ -283,6 +283,7 @@ export interface FormSettings {
   oneResponsePerUser?: boolean    // Limit to one submission per user (maps to !allow_multiple_submissions)
   sig_ids?: number[]              // SIG visibility restriction
   backgroundPdfUrl?: string       // For PDF Overlay Mapping
+  attachmentMode?: 'embed_cells' | 'attach_row' | 'both'  // How file uploads are stored when syncing to a sheet
 }
 
 // ============================================

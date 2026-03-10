@@ -38,7 +38,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           className={cn(
-            "flex-1",
+            "flex-1 min-h-0",
             isFullScreen ? "p-0 overflow-hidden" : "p-4 md:p-8 overflow-y-auto"
           )}
         >

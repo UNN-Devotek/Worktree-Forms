@@ -102,7 +102,7 @@ export function FormBuilderLayout({ formId, groupId, groupSlug, formSlug, groupN
 
 
   return (
-    <div className="h-screen flex flex-col bg-background border rounded-tl-lg overflow-hidden">
+    <div className="h-screen flex flex-col bg-background border overflow-hidden">
       {/* Top Toolbar */}
       <BuilderToolbar
         formId={formId}

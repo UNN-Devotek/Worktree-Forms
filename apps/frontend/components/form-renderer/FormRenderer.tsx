@@ -26,11 +26,11 @@ import { FormUploadProvider } from '@/contexts/form-upload-context'
 
 interface FormRendererProps {
   formSchema: FormSchema
-  formId: number
-  groupId: number
+  formId: string
+  groupId: string
   allowAnonymous?: boolean
   latestVersionId?: number | null // [VERSIONING]
-  onSuccess?: (submissionId: number) => void
+  onSuccess?: (submissionId: string) => void
 }
 
 export function FormRenderer({

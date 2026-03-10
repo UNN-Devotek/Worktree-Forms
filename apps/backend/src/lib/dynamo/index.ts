@@ -22,3 +22,5 @@ export { ApiKeyEntity } from "./entities/api-key.entity.js";
 export { WebhookEntity } from "./entities/webhook.entity.js";
 export { InvitationEntity } from "./entities/invitation.entity.js";
 export { FolderEntity } from "./entities/folder.entity.js";
+export { FavoriteEntity } from "./entities/favorite.entity.js";
+export { RecentItemEntity } from "./entities/recent-item.entity.js";

@@ -1,10 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { FileText, LayoutList, Users, CheckSquare, Map, Table2 } from 'lucide-react';
 import { DashboardMetrics } from '@/services/dashboard.service';
-import { cn } from '@/lib/utils';
 
 interface MetricsGridProps {
     metrics: DashboardMetrics;
@@ -12,92 +10,59 @@ interface MetricsGridProps {
 }
 
 export function MetricsGrid({ metrics }: MetricsGridProps) {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const activeFilter = searchParams.get('filter');
-
-    const handleFilter = (filterKey: string) => {
-        const newParams = new URLSearchParams(searchParams.toString());
-        if (activeFilter === filterKey) {
-            newParams.delete('filter'); // Toggle off
-        } else {
-            newParams.set('filter', filterKey);
-        }
-        router.push(`?${newParams.toString()}`);
-    };
+    const cards = [
+        {
+            title: 'Submissions',
+            icon: FileText,
+            value: metrics.totalSubmissions,
+            subtext: `+${metrics.thisWeekSubmissions} this week`,
+        },
+        {
+            title: 'Active Forms',
+            icon: LayoutList,
+            value: metrics.activeForms,
+            subtext: `of ${metrics.formCount} total`,
+        },
+        {
+            title: 'Team Members',
+            icon: Users,
+            value: metrics.memberCount,
+            subtext: 'on this project',
+        },
+        {
+            title: 'Open Tasks',
+            icon: CheckSquare,
+            value: metrics.openTaskCount,
+            subtext: `of ${metrics.taskCount} total`,
+        },
+        {
+            title: 'Routes',
+            icon: Map,
+            value: metrics.routeCount,
+            subtext: 'configured',
+        },
+        {
+            title: 'Sheets',
+            icon: Table2,
+            value: metrics.sheetCount,
+            subtext: 'data sheets',
+        },
+    ];
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            
-            {/* Total Submissions Card */}
-            <Card 
-                className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    activeFilter === 'total' && "ring-2 ring-primary"
-                )}
-                onClick={() => handleFilter('total')}
-            >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                        Total Submissions
-                    </CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{metrics.totalSubmissions}</div>
-                    <p className="text-xs text-muted-foreground">
-                        All time
-                    </p>
-                </CardContent>
-            </Card>
-
-            {/* Dynamic cards based on Form Types present */}
-            {metrics.statsByForm.map((stat, idx) => (
-                <Card 
-                    key={idx}
-                    className={cn(
-                        "cursor-pointer transition-all hover:shadow-md",
-                        activeFilter === `form_${stat.formName}` && "ring-2 ring-primary"
-                    )}
-                    onClick={() => handleFilter(`form_${stat.formName}`)}
-                >
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            {cards.map(({ title, icon: Icon, value, subtext }) => (
+                <Card key={title}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium truncate" title={stat.formName}>
-                            {stat.formName}
-                        </CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stat.count}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Version {stat.version}
-                        </p>
+                        <div className="text-2xl font-bold">{value}</div>
+                        <p className="text-xs text-muted-foreground">{subtext}</p>
                     </CardContent>
                 </Card>
             ))}
-
-            {/* Placeholder Aggregates (Simulated for Story 5.1 Requirement 2) */}
-            <Card className="opacity-70">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">--%</div>
-                    <p className="text-xs text-muted-foreground">Not calculated yet</p>
-                </CardContent>
-            </Card>
-
-             <Card className="opacity-70">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Issues</CardTitle>
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">No open issues</p>
-                </CardContent>
-            </Card>
         </div>
     );
 }

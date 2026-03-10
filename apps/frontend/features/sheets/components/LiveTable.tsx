@@ -867,11 +867,15 @@ function ImageCarouselCell({ images, columnId, onChange }: {
 }) {
   const { updateColumnWidth, columns } = useSheet()
   const [index, setIndex] = useState(0)
-  const [imgSize, setImgSize] = useState<{ width: number; height: number } | null>(null)
+  const [containerOverride, setContainerOverride] = useState<{ width: number; height: number } | null>(null)
+
+  // Fixed container size = max width/height across all images (stable across slides)
+  const baseW = Math.max(...images.map((img) => img.width))
+  const baseH = Math.max(...images.map((img) => img.height))
+  const containerW = containerOverride?.width ?? baseW
+  const containerH = containerOverride?.height ?? baseH
 
   const current = images[index]
-  const displayW = imgSize?.width  ?? current.width
-  const displayH = imgSize?.height ?? current.height
 
   // Auto-advance every 10 seconds
   useEffect(() => {
@@ -882,9 +886,9 @@ function ImageCarouselCell({ images, columnId, onChange }: {
     return () => clearInterval(timer)
   }, [images.length])
 
-  // Auto-expand column to fit image width — only if narrower than needed
+  // Auto-expand column to fit container width — only if narrower than needed
   useEffect(() => {
-    const needed = current.width + 24
+    const needed = baseW + 24
     const currentWidth = (columns.find((c: any) => c.id === columnId) as any)?.width ?? 0
     if (needed > currentWidth) {
       updateColumnWidth(columnId, needed)
@@ -902,27 +906,32 @@ function ImageCarouselCell({ images, columnId, onChange }: {
     setIndex((i) => (i + 1) % images.length)
   }
 
+  // Resize the fixed container, then scale all images proportionally to fit
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     const startX = e.clientX
-    const startW = displayW
-    const startH = displayH
-    const aspect = startH / startW
+    const startW = containerW
+    const aspect = containerH / containerW
 
     const onMove = (me: MouseEvent) => {
       const dw = me.clientX - startX
       const newW = Math.max(40, Math.min(400, startW + dw))
-      setImgSize({ width: newW, height: Math.round(newW * aspect) })
+      setContainerOverride({ width: newW, height: Math.round(newW * aspect) })
     }
     const onUp = (me: MouseEvent) => {
       const dw = me.clientX - startX
       const newW = Math.max(40, Math.min(400, startW + dw))
       const newH = Math.round(newW * aspect)
-      const updated = images.map((img, i) => i === index ? { ...img, width: newW, height: newH } : img)
+      const scale = newW / baseW
+      const updated = images.map((img) => ({
+        ...img,
+        width: Math.round(img.width * scale),
+        height: Math.round(img.height * scale),
+      }))
       onChange(`__carousel__${JSON.stringify(updated)}`)
       updateColumnWidth(columnId, newW + 24)
-      setImgSize(null)
+      setContainerOverride(null)
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
     }
@@ -931,12 +940,20 @@ function ImageCarouselCell({ images, columnId, onChange }: {
   }
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: displayW + 8, height: displayH + 24 }}>
+    <div
+      className="relative flex-shrink-0 flex items-center justify-center"
+      style={{ width: containerW + 8, height: containerH + 24 }}
+    >
       <img
         src={current.url}
         alt=""
         draggable={false}
-        style={{ width: displayW, height: displayH, objectFit: 'contain', display: 'block' }}
+        style={{
+          maxWidth: containerW,
+          maxHeight: containerH,
+          objectFit: 'contain',
+          display: 'block',
+        }}
       />
       {/* Carousel controls */}
       {images.length > 1 && (

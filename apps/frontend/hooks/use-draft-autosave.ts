@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef } from 'react'
 const DRAFT_KEY_PREFIX = 'form_draft_'
 const AUTOSAVE_DEBOUNCE_MS = 500
 
-export function useDraftAutosave(formId: number, enabled: boolean = false) {
+export function useDraftAutosave(formId: string | number, enabled: boolean = false) {
   const draftKey = `${DRAFT_KEY_PREFIX}${formId}`
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

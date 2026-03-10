@@ -26,7 +26,7 @@ export const GET = auth(async (req: any) => {
     { algorithm: 'HS256', expiresIn: '15m' }
   );
 
-  const response = NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true, token });
   response.cookies.set('access_token', token, {
     httpOnly: true,
     sameSite: 'lax',

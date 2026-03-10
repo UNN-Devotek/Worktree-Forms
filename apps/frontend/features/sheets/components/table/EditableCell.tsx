@@ -133,6 +133,10 @@ export function EditableCell({
         className={`h-12 px-4 ${isFocused ? 'ring-2 ring-primary' : ''}`}
         aria-label={`${columnId}, ${value ? 'checked' : 'unchecked'}, checkbox`}
         role="gridcell"
+        style={{
+          color: style.color ?? undefined,
+          backgroundColor: style.backgroundColor ?? undefined,
+        }}
       >
         <Checkbox
           checked={value === true || value === 'true'}
@@ -240,7 +244,9 @@ export function EditableCell({
         style={{
           fontWeight: style.fontWeight === 'bold' ? 'bold' : 'normal',
           fontStyle: style.fontStyle === 'italic' ? 'italic' : 'normal',
-          textDecoration: style.textDecoration === 'line-through' ? 'line-through' : 'none'
+          textDecoration: style.textDecoration === 'line-through' ? 'line-through' : 'none',
+          color: style.color ?? undefined,
+          backgroundColor: isEditing ? undefined : (style.backgroundColor ?? undefined),
         }}
       >
         {!isEditing && (
@@ -315,7 +321,9 @@ export function EditableCell({
           fontWeight: style.fontWeight === 'bold' ? 'bold' : 'normal',
           fontStyle: style.fontStyle === 'italic' ? 'italic' : 'normal',
           textDecoration: style.textDecoration === 'line-through' ? 'line-through' : 'none',
-          textAlign: 'right'
+          textAlign: 'right',
+          color: style.color ?? undefined,
+          backgroundColor: isEditing ? undefined : (style.backgroundColor ?? undefined),
         }}
       >
         {!isEditing && (
@@ -383,7 +391,9 @@ export function EditableCell({
       style={{
         fontWeight: style.fontWeight === 'bold' ? 'bold' : 'normal',
         fontStyle: style.fontStyle === 'italic' ? 'italic' : 'normal',
-        textDecoration: style.textDecoration === 'line-through' ? 'line-through' : 'none'
+        textDecoration: style.textDecoration === 'line-through' ? 'line-through' : 'none',
+        color: style.color ?? undefined,
+        backgroundColor: isEditing ? undefined : (style.backgroundColor ?? undefined),
       }}
     >
       {/* Hover indicator */}

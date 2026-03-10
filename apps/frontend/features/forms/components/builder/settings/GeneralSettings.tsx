@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 
 interface GeneralSettingsProps {
   settings: any
@@ -13,164 +13,176 @@ interface GeneralSettingsProps {
   sheets?: any[]
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {children}
+    </p>
+  )
+}
+
+function ToggleRow({ id, label, description, checked, onCheckedChange }: {
+  id: string
+  label: string
+  description?: string
+  checked: boolean
+  onCheckedChange: (v: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between px-3 py-3">
+      <div className="flex-1 pr-6 space-y-0.5">
+        <Label htmlFor={id} className="text-sm font-normal cursor-pointer leading-snug">{label}</Label>
+        {description && <p className="text-[11px] text-muted-foreground leading-snug">{description}</p>}
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  )
+}
+
 export function GeneralSettings({ settings, onChange, sheets = [] }: GeneralSettingsProps) {
-  const handleUpdate = (key: string, value: any) => {
-    onChange({
-      ...settings,
-      [key]: value
-    })
-  }
+  const set = (key: string, value: any) => onChange({ ...settings, [key]: value })
 
   return (
     <div className="space-y-6">
-      {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-          <CardDescription>Form title and description</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="formTitle">Form Title</Label>
-            <Input
-              id="formTitle"
-              value={settings.title || ''}
-              onChange={(e) => handleUpdate('title', e.target.value)}
-              placeholder="Enter form title"
-            />
-          </div>
+      {/* Identity */}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="formTitle">Title</Label>
+          <Input
+            id="formTitle"
+            value={settings.title || ''}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder="Enter form title"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="formDescription">Description</Label>
+          <Textarea
+            id="formDescription"
+            value={settings.description || ''}
+            onChange={(e) => set('description', e.target.value)}
+            placeholder="Optional description shown to respondents"
+            rows={2}
+          />
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="formDescription">Description</Label>
-            <Textarea
-              id="formDescription"
-              value={settings.description || ''}
-              onChange={(e) => handleUpdate('description', e.target.value)}
-              placeholder="Enter form description"
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <Separator />
 
-      {/* Display Options */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Display Options</CardTitle>
-          <CardDescription>Control how the form is displayed</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show Progress Bar</Label>
-              <p className="text-sm text-muted-foreground">
-                Track and display completion of required fields
-              </p>
+      {/* Progress */}
+      <div className="space-y-3">
+        <SectionLabel>Progress</SectionLabel>
+        <div className="divide-y divide-border rounded-md border">
+          <ToggleRow
+            id="showProgress"
+            label="Show Progress Indicator"
+            description="Display completion progress to respondents"
+            checked={settings.showProgress ?? true}
+            onCheckedChange={(v) => set('showProgress', v)}
+          />
+          {(settings.showProgress ?? true) && (
+            <div className="px-3 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="progressStyle" className="text-sm font-normal shrink-0">Style</Label>
+                <Select value={settings.progressStyle || 'bar'} onValueChange={(v) => set('progressStyle', v)}>
+                  <SelectTrigger id="progressStyle" className="h-8 w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bar">Progress Bar</SelectItem>
+                    <SelectItem value="steps">Step Indicators</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Switch
-              checked={settings.showProgress ?? true}
-              onCheckedChange={(checked) => handleUpdate('showProgress', checked)}
-            />
-          </div>
+          )}
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="progressStyle">Progress Style</Label>
+      <Separator />
+
+      {/* Submission */}
+      <div className="space-y-3">
+        <SectionLabel>Submission</SectionLabel>
+        <div className="divide-y divide-border rounded-md border">
+          <ToggleRow
+            id="allowAnonymous"
+            label="Allow Anonymous Submissions"
+            description="Respondents can submit without signing in"
+            checked={settings.allowAnonymous ?? false}
+            onCheckedChange={(v) => set('allowAnonymous', v)}
+          />
+          <ToggleRow
+            id="allowSave"
+            label="Allow Save as Draft"
+            description="Respondents can save progress and return later"
+            checked={settings.allowSave ?? false}
+            onCheckedChange={(v) => set('allowSave', v)}
+          />
+          <ToggleRow
+            id="confirmBeforeSubmit"
+            label="Confirm Before Submit"
+            description="Show a confirmation dialog before final submission"
+            checked={settings.confirmBeforeSubmit ?? false}
+            onCheckedChange={(v) => set('confirmBeforeSubmit', v)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="successMessage">Success Message</Label>
+          <Textarea
+            id="successMessage"
+            value={settings.successMessage || ''}
+            onChange={(e) => set('successMessage', e.target.value)}
+            placeholder="Thank you for your submission!"
+            rows={2}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Output */}
+      <div className="space-y-3">
+        <SectionLabel>Output Sheet</SectionLabel>
+        <div className="space-y-1.5">
+          <Label htmlFor="targetSheet">Linked Sheet</Label>
+          <Select
+            value={settings.targetSheetId || ''}
+            onValueChange={(v) => set('targetSheetId', v)}
+          >
+            <SelectTrigger id="targetSheet">
+              <SelectValue placeholder="Select a sheet…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None — don't sync</SelectItem>
+              {sheets.map((sheet) => (
+                <SelectItem key={sheet.id} value={sheet.id}>
+                  {sheet.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">Submissions are appended as new rows to this sheet</p>
+        </div>
+        {settings.targetSheetId && settings.targetSheetId !== 'none' && (
+          <div className="space-y-1.5">
+            <Label htmlFor="attachmentMode">File Attachment Mode</Label>
             <Select
-              value={settings.progressStyle || 'bar'}
-              onValueChange={(value) => handleUpdate('progressStyle', value)}
+              value={settings.attachmentMode || 'embed_cells'}
+              onValueChange={(v) => set('attachmentMode', v)}
             >
-              <SelectTrigger id="progressStyle">
+              <SelectTrigger id="attachmentMode">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bar">Progress Bar</SelectItem>
-                <SelectItem value="steps">Step Indicators</SelectItem>
+                <SelectItem value="embed_cells">Embed photos in cells</SelectItem>
+                <SelectItem value="attach_row">Attach files to row</SelectItem>
+                <SelectItem value="both">Both — embed + attach</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Submission Options */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Submission Options</CardTitle>
-          <CardDescription>Control form submission behavior</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Allow Anonymous Submissions</Label>
-              <p className="text-sm text-muted-foreground">
-                Users can submit without logging in
-              </p>
-            </div>
-            <Switch
-              checked={settings.allowAnonymous ?? false}
-              onCheckedChange={(checked) => handleUpdate('allowAnonymous', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Allow Save as Draft</Label>
-              <p className="text-sm text-muted-foreground">
-                Users can save progress and return later
-              </p>
-            </div>
-            <Switch
-              checked={settings.allowSave ?? false}
-              onCheckedChange={(checked) => handleUpdate('allowSave', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Confirm Before Submit</Label>
-              <p className="text-sm text-muted-foreground">
-                Show confirmation dialog before submission
-              </p>
-            </div>
-            <Switch
-              checked={settings.confirmBeforeSubmit ?? false}
-              onCheckedChange={(checked) => handleUpdate('confirmBeforeSubmit', checked)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="successMessage">Success Message</Label>
-            <Textarea
-              id="successMessage"
-              value={settings.successMessage || ''}
-              onChange={(e) => handleUpdate('successMessage', e.target.value)}
-              placeholder="Thank you for your submission!"
-              rows={3}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="targetSheet">Output to Sheet</Label>
-            <p className="text-sm text-muted-foreground">
-              Automatically append submissions to a specific sheet
-            </p>
-            <Select
-              value={settings.targetSheetId || ''}
-              onValueChange={(value) => handleUpdate('targetSheetId', value)}
-            >
-              <SelectTrigger id="targetSheet">
-                <SelectValue placeholder="Select a sheet..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None (Don't sync)</SelectItem>
-                {sheets?.map((sheet) => (
-                  <SelectItem key={sheet.id} value={sheet.id}>
-                    {sheet.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   )
 }

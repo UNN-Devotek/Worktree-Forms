@@ -38,6 +38,9 @@ import type {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FONT_FAMILIES = ['Auto', 'Inter', 'Arial', 'Roboto', 'Georgia', 'Courier New', 'Times New Roman'];
+
+const CF_TEXT_PRESETS = ['#000000', '#FF0000', '#00CC00', '#0000FF', '#FF8800', '#9900CC', '#00AAAA', '#FFFFFF'];
+const CF_BG_PRESETS   = ['#FFFF00', '#90EE90', '#ADD8E6', '#FFB6C1', '#FFA500', '#E6E6FA', '#FFE4B5', '#F0F0F0'];
 const FONT_SIZES = ['Auto', 10, 11, 12, 14, 16, 18, 24, 36] as const;
 
 const TEXT_OPERATORS: { value: FilterOperator; label: string }[] = [
@@ -427,7 +430,7 @@ function FormatPopover({ style, onStyleChange, children }: FormatPopoverProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="w-[260px] p-3 space-y-3"
+        className="w-[280px] p-3 space-y-3"
         side="bottom"
         align="start"
         sideOffset={4}
@@ -534,58 +537,107 @@ function FormatPopover({ style, onStyleChange, children }: FormatPopoverProps) {
         <Separator />
 
         {/* Background color */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Background color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={style.backgroundColor ?? '#ffffff'}
-              onChange={(e) => update({ backgroundColor: e.target.value })}
-              className="h-7 w-10 rounded border border-input cursor-pointer p-0.5"
-            />
-            <span className="text-xs text-muted-foreground flex-1 truncate">
-              {style.backgroundColor ?? 'none'}
-            </span>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Background color</Label>
             {style.backgroundColor && (
               <button
                 type="button"
-                onClick={() => {
-                  const { backgroundColor: _bg, ...rest } = style;
-                  onStyleChange(rest);
-                }}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => { const { backgroundColor: _bg, ...rest } = style; onStyleChange(rest); }}
+                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
               >
                 Clear
               </button>
             )}
           </div>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={style.backgroundColor ?? '#ffffff'}
+              onChange={(e) => update({ backgroundColor: e.target.value })}
+              className="h-7 w-9 shrink-0 rounded border border-input cursor-pointer p-0.5"
+            />
+            <Input
+              type="text"
+              value={style.backgroundColor ?? ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) update({ backgroundColor: v });
+              }}
+              className="h-7 flex-1 font-mono text-xs"
+              placeholder="#rrggbb"
+              maxLength={7}
+            />
+          </div>
+          <div className="grid grid-cols-8 gap-1">
+            {CF_BG_PRESETS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => update({ backgroundColor: c })}
+                className={cn(
+                  'h-5 w-full rounded border transition-all hover:scale-110',
+                  style.backgroundColor?.toLowerCase() === c.toLowerCase()
+                    ? 'border-primary ring-1 ring-primary/20'
+                    : 'border-border',
+                )}
+                style={{ backgroundColor: c }}
+                title={c}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Text color */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Text color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={style.color ?? '#000000'}
-              onChange={(e) => update({ color: e.target.value })}
-              className="h-7 w-10 rounded border border-input cursor-pointer p-0.5"
-            />
-            <span className="text-xs text-muted-foreground flex-1 truncate">
-              {style.color ?? 'none'}
-            </span>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Text color</Label>
             {style.color && (
               <button
                 type="button"
-                onClick={() => {
-                  const { color: _c, ...rest } = style;
-                  onStyleChange(rest);
-                }}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => { const { color: _c, ...rest } = style; onStyleChange(rest); }}
+                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
               >
                 Clear
               </button>
             )}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={style.color ?? '#000000'}
+              onChange={(e) => update({ color: e.target.value })}
+              className="h-7 w-9 shrink-0 rounded border border-input cursor-pointer p-0.5"
+            />
+            <Input
+              type="text"
+              value={style.color ?? ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) update({ color: v });
+              }}
+              className="h-7 flex-1 font-mono text-xs"
+              placeholder="#rrggbb"
+              maxLength={7}
+            />
+          </div>
+          <div className="grid grid-cols-8 gap-1">
+            {CF_TEXT_PRESETS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => update({ color: c })}
+                className={cn(
+                  'h-5 w-full rounded border transition-all hover:scale-110',
+                  c === '#FFFFFF' ? 'border-border' : '',
+                  style.color?.toLowerCase() === c.toLowerCase()
+                    ? 'border-primary ring-1 ring-primary/20'
+                    : 'border-border',
+                )}
+                style={{ backgroundColor: c }}
+                title={c}
+              />
+            ))}
           </div>
         </div>
       </PopoverContent>

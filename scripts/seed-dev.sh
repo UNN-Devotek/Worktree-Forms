@@ -224,9 +224,88 @@ aws s3api put-object \
   --endpoint-url "${S3_ENDPOINT}" \
   --region "${REGION}" 2>/dev/null && echo "  ✓ S3 project folder created" || echo "  ✓ S3 project folder already exists"
 
-# ─── Step 5: Done ─────────────────────────────────────────────────────────────
+# ─── Step 5: Seed dashboard data (favorites, recent items, news) ─────────────
+echo "[ 5/7 ] Seeding dashboard favorites..."
+
+aws dynamodb put-item \
+  --table-name "${TABLE}" \
+  --item "{
+    \"PK\":{\"S\":\"USER#${ADMIN_ID}\"},
+    \"SK\":{\"S\":\"FAVORITE#PROJECT#${PROJECT_ID}\"},
+    \"GSI1PK\":{\"S\":\"FAVORITE#${PROJECT_ID}\"},
+    \"GSI1SK\":{\"S\":\"USER#${ADMIN_ID}\"},
+    \"userId\":{\"S\":\"${ADMIN_ID}\"},
+    \"itemId\":{\"S\":\"${PROJECT_ID}\"},
+    \"itemType\":{\"S\":\"PROJECT\"},
+    \"itemName\":{\"S\":\"Sample Project\"},
+    \"projectId\":{\"S\":\"${PROJECT_ID}\"},
+    \"projectSlug\":{\"S\":\"sample-project\"},
+    \"createdAt\":{\"S\":\"${NOW}\"},
+    \"__edb_e__\":{\"S\":\"favorite\"},
+    \"__edb_v__\":{\"S\":\"1\"}
+  }" \
+  --condition-expression "attribute_not_exists(PK) OR attribute_not_exists(SK)" \
+  --endpoint-url "${ENDPOINT}" \
+  --region "${REGION}" 2>/dev/null && echo "  ✓ Favorite seeded" || echo "  ✓ Favorite already exists"
+
+echo "[ 6/7 ] Seeding dashboard recent items..."
+
+aws dynamodb put-item \
+  --table-name "${TABLE}" \
+  --item "{
+    \"PK\":{\"S\":\"USER#${ADMIN_ID}\"},
+    \"SK\":{\"S\":\"RECENT#${NOW}#${PROJECT_ID}\"},
+    \"userId\":{\"S\":\"${ADMIN_ID}\"},
+    \"itemId\":{\"S\":\"${PROJECT_ID}\"},
+    \"itemType\":{\"S\":\"PROJECT\"},
+    \"itemName\":{\"S\":\"Sample Project\"},
+    \"projectId\":{\"S\":\"${PROJECT_ID}\"},
+    \"projectSlug\":{\"S\":\"sample-project\"},
+    \"accessedAt\":{\"S\":\"${NOW}\"},
+    \"ttl\":{\"N\":\"$(($(date +%s) + 2592000))\"},
+    \"__edb_e__\":{\"S\":\"recentItem\"},
+    \"__edb_v__\":{\"S\":\"1\"}
+  }" \
+  --condition-expression "attribute_not_exists(PK) OR attribute_not_exists(SK)" \
+  --endpoint-url "${ENDPOINT}" \
+  --region "${REGION}" 2>/dev/null && echo "  ✓ Recent item seeded" || echo "  ✓ Recent item already exists"
+
+echo "[ 7/7 ] Seeding news articles..."
+
+for i in 1 2 3; do
+  case $i in
+    1) TITLE="Welcome to Worktree"; CONTENT="Worktree is your all-in-one project management platform. Create projects, build forms, manage tasks, and collaborate with your team in real-time." ;;
+    2) TITLE="Smart Sheets Now Available"; CONTENT="Real-time collaborative spreadsheets are here. Create sheets, add columns, and work together with your team using our Yjs-powered Smart Grid." ;;
+    3) TITLE="Form Builder Updates"; CONTENT="The form builder has been updated with new question types, conditional logic, and improved mobile responsiveness for field workers." ;;
+  esac
+
+  aws dynamodb put-item \
+    --table-name "${TABLE}" \
+    --item "{
+      \"PK\":{\"S\":\"HELPARTICLE#news-${i}\"},
+      \"SK\":{\"S\":\"HELPARTICLE\"},
+      \"GSI1PK\":{\"S\":\"HELPCATEGORY#news\"},
+      \"GSI1SK\":{\"S\":\"${NOW}\"},
+      \"articleId\":{\"S\":\"news-${i}\"},
+      \"title\":{\"S\":\"${TITLE}\"},
+      \"content\":{\"S\":\"${CONTENT}\"},
+      \"category\":{\"S\":\"news\"},
+      \"status\":{\"S\":\"PUBLISHED\"},
+      \"authorId\":{\"S\":\"${ADMIN_ID}\"},
+      \"publishedAt\":{\"S\":\"${NOW}\"},
+      \"createdAt\":{\"S\":\"${NOW}\"},
+      \"updatedAt\":{\"S\":\"${NOW}\"},
+      \"__edb_e__\":{\"S\":\"helpArticle\"},
+      \"__edb_v__\":{\"S\":\"1\"}
+    }" \
+    --condition-expression "attribute_not_exists(PK)" \
+    --endpoint-url "${ENDPOINT}" \
+    --region "${REGION}" 2>/dev/null && echo "  ✓ News article ${i} seeded" || echo "  ✓ News article ${i} already exists"
+done
+
+# ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""
-echo "[ 5/5 ] Seed complete!"
+echo "Seed complete!"
 echo ""
 echo "  Dev credentials:"
 echo "    Admin:   admin@worktree.pro  / password"

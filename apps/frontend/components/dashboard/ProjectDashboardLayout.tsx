@@ -34,20 +34,12 @@ interface ProjectDashboardLayoutProps {
 
 export function ProjectDashboardLayout({ children }: ProjectDashboardLayoutProps) {
     return (
-        <div className="w-full h-full flex flex-col space-y-6 p-6 print:p-0 print:space-y-4">
+        <div className="w-full flex flex-col space-y-6 p-6 print:p-0 print:space-y-4">
             {/* Header Area */}
             <div className="flex items-center justify-between pb-4 border-b print:border-none">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Project Overview</h1>
                     <p className="text-muted-foreground">High-level metrics and recent activity.</p>
-                </div>
-                <div className="print:hidden">
-                    <button 
-                        onClick={() => window.print()} 
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                    >
-                        Print Report
-                    </button>
                 </div>
             </div>
 
@@ -58,7 +50,7 @@ export function ProjectDashboardLayout({ children }: ProjectDashboardLayoutProps
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 w-full">
+            <div className="w-full">
                 {children}
             </div>
 

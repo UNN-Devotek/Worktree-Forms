@@ -267,6 +267,9 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
     if (updates.description) setData.description = updates.description;
     if (updates.form_json) setData.schema = updates.form_json;
     if (updates.is_published !== undefined) setData.status = updates.is_published ? 'PUBLISHED' : 'DRAFT';
+    // Persist targetSheetId as top-level attribute if present in schema settings
+    const schemaTargetSheetId = (updates.form_json as any)?.settings?.targetSheetId;
+    if (schemaTargetSheetId && schemaTargetSheetId !== 'none') setData.targetSheetId = schemaTargetSheetId;
 
     await FormEntity.patch({ projectId, formId }).set(setData).go();
     const updatedFormResult = await FormEntity.get({ projectId, formId }).go();
@@ -403,6 +406,72 @@ router.post(
   },
 );
 
+interface AttachedFileRecord {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedBy: string;
+  timestamp: number;
+}
+
+interface EncodedField {
+  cellValue: unknown;
+  attachedFiles: AttachedFileRecord[];
+}
+
+/**
+ * Encode a form field value based on the form's attachmentMode.
+ * - embed_cells: images → __img__ (single) or __carousel__ (multiple)
+ * - attach_row:  images → returned as attachedFiles (stored in row _files_)
+ * - both:        images → encoded for cells AND returned as attachedFiles
+ */
+function encodeFormValueForSheet(
+  value: unknown,
+  attachmentMode: 'embed_cells' | 'attach_row' | 'both' = 'embed_cells',
+  uploadedBy = 'form',
+): EncodedField {
+  if (!Array.isArray(value) || value.length === 0) {
+    return { cellValue: value, attachedFiles: [] };
+  }
+
+  const images = (value as Record<string, unknown>[]).filter(
+    (item) =>
+      typeof item?.url === 'string' &&
+      typeof item?.content_type === 'string' &&
+      (item.content_type as string).startsWith('image/'),
+  );
+
+  if (images.length === 0) {
+    return { cellValue: value, attachedFiles: [] };
+  }
+
+  const attachedFiles: AttachedFileRecord[] = (attachmentMode === 'attach_row' || attachmentMode === 'both')
+    ? images.map((img) => ({
+        id: nanoid(),
+        name: String(img.filename ?? img.url ?? 'image'),
+        size: typeof img.size === 'number' ? img.size : 0,
+        type: String(img.content_type ?? 'image/*'),
+        url: String(img.url),
+        uploadedBy,
+        timestamp: Date.now(),
+      }))
+    : [];
+
+  let cellValue: unknown = value;
+  if (attachmentMode === 'embed_cells' || attachmentMode === 'both') {
+    if (images.length === 1) {
+      cellValue = `__img__${JSON.stringify({ url: images[0].url, width: 200, height: 150 })}`;
+    } else {
+      const imgArray = images.map((img) => ({ url: img.url, width: 200, height: 150 }));
+      cellValue = `__carousel__${JSON.stringify(imgArray)}`;
+    }
+  }
+
+  return { cellValue, attachedFiles };
+}
+
 // Create Submission
 router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: Response) => {
   const projectId = req.params.groupId;
@@ -427,19 +496,45 @@ router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: R
     }).go();
 
     // Write to linked sheet if form has targetSheetId
-    const targetSheetId = formResult.data.targetSheetId;
-    if (targetSheetId) {
+    const targetSheetId = formResult.data.targetSheetId
+      ?? ((formResult.data.schema as any)?.settings?.targetSheetId as string | undefined);
+    if (targetSheetId && targetSheetId !== 'none') {
       try {
-        // Map form field names → column IDs so the grid can render cell data
+        const attachmentMode: 'embed_cells' | 'attach_row' | 'both' =
+          ((formResult.data.schema as any)?.settings?.attachmentMode as 'embed_cells' | 'attach_row' | 'both') ?? 'embed_cells';
+
         const columnsResult = await SheetColumnEntity.query.primary({ sheetId: targetSheetId }).go();
-        const labelToId: Record<string, string> = {};
+        const fieldNameToId: Record<string, string> = {};
+        const fieldLabelToId: Record<string, string> = {};
         for (const col of columnsResult.data) {
-          labelToId[col.name] = col.columnId;
+          const fieldName = (col.config as Record<string, unknown>)?.fieldName as string | undefined;
+          fieldNameToId[fieldName ?? col.name] = col.columnId;
+          fieldLabelToId[col.name] = col.columnId;
         }
+
         const mappedData: Record<string, unknown> = {};
+        const rowFiles: AttachedFileRecord[] = [];
+
         for (const [key, value] of Object.entries(submissionData as Record<string, unknown>)) {
-          mappedData[labelToId[key] ?? key] = value;
+          const { cellValue, attachedFiles } = encodeFormValueForSheet(
+            value,
+            attachmentMode,
+            (req as any).user?.id ?? 'form',
+          );
+          const mappedKey = fieldNameToId[key] ?? fieldLabelToId[key] ?? key;
+          if (attachmentMode !== 'attach_row') {
+            mappedData[mappedKey] = cellValue;
+          } else {
+            // attach_row: still write non-image values as plain text
+            if (!Array.isArray(value)) mappedData[mappedKey] = value;
+          }
+          rowFiles.push(...attachedFiles);
         }
+
+        if (rowFiles.length > 0) {
+          mappedData._files_ = rowFiles;
+        }
+
         await SheetRowEntity.create({
           rowId: nanoid(),
           sheetId: targetSheetId,
@@ -449,7 +544,6 @@ router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: R
         }).go();
       } catch (sheetErr) {
         console.error('[Submit] Failed to write sheet row:', sheetErr);
-        // Non-fatal — submission was still recorded
       }
     }
 
@@ -490,6 +584,57 @@ router.post('/:formId/submissions', async (req: Request, res: Response) => {
       data: submissionData,
       status: 'PENDING',
     }).go();
+
+    // Write to linked sheet if form has targetSheetId
+    const targetSheetId = formResult.data.targetSheetId
+      ?? ((formResult.data.schema as any)?.settings?.targetSheetId as string | undefined);
+    if (targetSheetId && targetSheetId !== 'none') {
+      try {
+        const attachmentMode: 'embed_cells' | 'attach_row' | 'both' =
+          ((formResult.data.schema as any)?.settings?.attachmentMode as 'embed_cells' | 'attach_row' | 'both') ?? 'embed_cells';
+
+        const columnsResult = await SheetColumnEntity.query.primary({ sheetId: targetSheetId }).go();
+        const fieldNameToId: Record<string, string> = {};
+        const fieldLabelToId: Record<string, string> = {};
+        for (const col of columnsResult.data) {
+          const fieldName = (col.config as Record<string, unknown>)?.fieldName as string | undefined;
+          fieldNameToId[fieldName ?? col.name] = col.columnId;
+          fieldLabelToId[col.name] = col.columnId;
+        }
+
+        const mappedData: Record<string, unknown> = {};
+        const rowFiles: AttachedFileRecord[] = [];
+
+        for (const [key, value] of Object.entries(submissionData as Record<string, unknown>)) {
+          const { cellValue, attachedFiles } = encodeFormValueForSheet(
+            value,
+            attachmentMode,
+            (req as any).user?.id ?? 'form',
+          );
+          const mappedKey = fieldNameToId[key] ?? fieldLabelToId[key] ?? key;
+          if (attachmentMode !== 'attach_row') {
+            mappedData[mappedKey] = cellValue;
+          } else {
+            if (!Array.isArray(value)) mappedData[mappedKey] = value;
+          }
+          rowFiles.push(...attachedFiles);
+        }
+
+        if (rowFiles.length > 0) {
+          mappedData._files_ = rowFiles;
+        }
+
+        await SheetRowEntity.create({
+          rowId: nanoid(),
+          sheetId: targetSheetId,
+          projectId: String(projectId),
+          data: mappedData,
+          createdBy: (req as any).user?.id,
+        }).go();
+      } catch (sheetErr) {
+        console.error('[Submit] Failed to write sheet row:', sheetErr);
+      }
+    }
 
     res.status(201).json({ success: true, data: { submission: result.data } });
   } catch (e) {

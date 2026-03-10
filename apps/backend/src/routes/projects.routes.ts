@@ -373,6 +373,9 @@ router.put('/:projectId/forms/:formId', auditMiddleware('form.update'), async (r
     if (resolvedSchema) updates.schema = resolvedSchema;
     if (resolvedStatus) updates.status = resolvedStatus;
     if (folderId !== undefined) updates.folderId = folderId ?? null;
+    // Persist targetSheetId as top-level attribute if present in schema settings
+    const schemaTargetSheetId = (resolvedSchema as any)?.settings?.targetSheetId;
+    if (schemaTargetSheetId && schemaTargetSheetId !== 'none') updates.targetSheetId = schemaTargetSheetId;
 
     const result = await FormEntity.patch({ projectId, formId }).set(updates).go();
     res.json({ success: true, data: { form: result.data } });

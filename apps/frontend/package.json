@@ -4,7 +4,7 @@
   "description": "Frontend for Worktree-Forms using Next.js 15",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0 -p 3005 --turbo",
+    "dev": "next dev -H 0.0.0.0 -p 3005",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
     "lint": "eslint . --ext .ts,.tsx",

@@ -48,12 +48,11 @@ const server = new Server({
           const yOrder = document.getArray('order');
           const yColumns = document.getArray('columns');
 
-          // Only hydrate if the document is empty (first load)
-          if (yRows.size === 0 && yColumns.length === 0) {
+          if (yColumns.length === 0) {
+            // Fresh document — full hydration of columns and rows
             const sortedCols = columnsResult.data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
             document.transact(() => {
-              // Hydrate columns (sorted by order)
               for (const col of sortedCols) {
                 yColumns.push([{
                   id: col.columnId,
@@ -64,20 +63,54 @@ const server = new Server({
                 }]);
               }
 
-              // Hydrate rows
               for (const row of rowsResult.data) {
                 const rowData = (row.data ?? {}) as Record<string, unknown>;
-                const yRow = new Y.Map();
-                yRow.set('id', row.rowId);
-                Object.entries(rowData).forEach(([k, v]) => {
-                  yRow.set(k, v);
-                });
-                yRows.set(row.rowId, yRow);
+                // Store plain objects (not Y.Map) — SheetProvider reads rows as plain objects
+                yRows.set(row.rowId, { id: row.rowId, ...rowData });
                 yOrder.push([row.rowId]);
+                // Populate row file attachments from _files_ key (written by form submission)
+                if (Array.isArray(rowData._files_) && rowData._files_.length > 0) {
+                  const yFiles = document.getArray(`row-${row.rowId}-files`);
+                  if (yFiles.length === 0) {
+                    yFiles.push(rowData._files_ as unknown[]);
+                  }
+                }
               }
             });
-
           } else {
+            // Document already has columns — merge in any new columns from DynamoDB
+            // (e.g. columns added via the UI or form field mappings after initial hydration)
+            // and any rows written directly to DynamoDB (e.g. form submissions).
+            const existingColIds = new Set(
+              (yColumns.toArray() as Array<{ id: string }>).map(c => c.id)
+            );
+            const newCols = columnsResult.data.filter(col => !existingColIds.has(col.columnId));
+            const missingRows = rowsResult.data.filter(row => !yRows.has(row.rowId));
+
+            if (newCols.length > 0 || missingRows.length > 0) {
+              document.transact(() => {
+                for (const col of newCols.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
+                  yColumns.push([{
+                    id: col.columnId,
+                    label: col.name,
+                    type: col.type ?? 'TEXT',
+                    width: col.width ?? 150,
+                    config: col.config ?? {},
+                  }]);
+                }
+                for (const row of missingRows) {
+                  const rowData = (row.data ?? {}) as Record<string, unknown>;
+                  yRows.set(row.rowId, { id: row.rowId, ...rowData });
+                  yOrder.push([row.rowId]);
+                  if (Array.isArray(rowData._files_) && rowData._files_.length > 0) {
+                    const yFiles = document.getArray(`row-${row.rowId}-files`);
+                    if (yFiles.length === 0) {
+                      yFiles.push(rowData._files_ as unknown[]);
+                    }
+                  }
+                }
+              });
+            }
           }
         } catch (err) {
           console.error(`[ws] Failed to hydrate document ${sheetId}:`, err);
@@ -109,6 +142,11 @@ const server = new Server({
               yRow.forEach((v: unknown, k: string) => {
                 if (k !== 'id') data[k] = v;
               });
+            } else if (yRow && typeof yRow === 'object') {
+              // Plain object (written by SheetProvider or hydrated from DynamoDB)
+              for (const [k, v] of Object.entries(yRow as Record<string, unknown>)) {
+                if (k !== 'id') data[k] = v;
+              }
             }
 
             try {

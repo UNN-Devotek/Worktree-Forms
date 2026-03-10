@@ -325,6 +325,10 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
 
       const url: string = json.data.url;
 
+      // Read current cell value to detect existing image(s)
+      const currentRow = data.find((r: any) => r.id === focusedCell.rowId);
+      const currentVal = String(currentRow?.[focusedCell.columnId] ?? '');
+
       // Detect natural dimensions then cap at 400px
       const img = new window.Image();
       img.onload = () => {
@@ -333,10 +337,54 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
         const h = img.naturalWidth
           ? Math.round(w * (img.naturalHeight / img.naturalWidth))
           : Math.round(w * 0.75);
-        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify({ url, width: w, height: h })}`);
+        const newImage = { url, width: w, height: h };
+
+        // If cell already has image(s), merge into a carousel
+        if (currentVal.startsWith('__carousel__')) {
+          try {
+            const existing = JSON.parse(currentVal.slice(12)) as Array<{ url: string; width: number; height: number }>;
+            if (Array.isArray(existing)) {
+              updateCell(focusedCell.rowId, focusedCell.columnId, `__carousel__${JSON.stringify([...existing, newImage])}`);
+              return;
+            }
+          } catch { /* fall through */ }
+        }
+        if (currentVal.startsWith('__img__')) {
+          try {
+            const existing = JSON.parse(currentVal.slice(7)) as { url: string; width: number; height: number };
+            if (existing?.url) {
+              updateCell(focusedCell.rowId, focusedCell.columnId, `__carousel__${JSON.stringify([existing, newImage])}`);
+              return;
+            }
+          } catch { /* fall through */ }
+        }
+
+        // No existing image — set as single image
+        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify(newImage)}`);
       };
       img.onerror = () => {
-        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify({ url, width: 200, height: 150 })}`);
+        const newImage = { url, width: 200, height: 150 };
+
+        if (currentVal.startsWith('__carousel__')) {
+          try {
+            const existing = JSON.parse(currentVal.slice(12)) as Array<{ url: string; width: number; height: number }>;
+            if (Array.isArray(existing)) {
+              updateCell(focusedCell.rowId, focusedCell.columnId, `__carousel__${JSON.stringify([...existing, newImage])}`);
+              return;
+            }
+          } catch { /* fall through */ }
+        }
+        if (currentVal.startsWith('__img__')) {
+          try {
+            const existing = JSON.parse(currentVal.slice(7)) as { url: string; width: number; height: number };
+            if (existing?.url) {
+              updateCell(focusedCell.rowId, focusedCell.columnId, `__carousel__${JSON.stringify([existing, newImage])}`);
+              return;
+            }
+          } catch { /* fall through */ }
+        }
+
+        updateCell(focusedCell.rowId, focusedCell.columnId, `__img__${JSON.stringify(newImage)}`);
       };
       img.src = url;
     } catch (err: any) {
@@ -344,7 +392,7 @@ export function SheetToolbar({ title, onTitleChange }: SheetToolbarProps) {
     } finally {
       setImageUploading(false);
     }
-  }, [focusedCell, updateCell]);
+  }, [focusedCell, updateCell, data]);
 
   // ---------------------------------------------------------------------------
   // Link insert

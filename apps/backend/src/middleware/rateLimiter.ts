@@ -1,4 +1,4 @@
-import rateLimit, { Options, RateLimitRequestHandler } from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator, Options, RateLimitRequestHandler } from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 
 /**
@@ -84,7 +84,7 @@ export const authenticatedRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? req.socket?.remoteAddress ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
 });
 
 /**
@@ -108,7 +108,7 @@ export const uploadRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many upload requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? req.socket?.remoteAddress ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
 });
 
 /**
@@ -120,7 +120,7 @@ export const apiRateLimiter = makeRateLimiter({
   message: { success: false, error: 'Too many API requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? req.ip ?? req.socket?.remoteAddress ?? 'unknown',
+  keyGenerator: (req: Request) => (req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req),
 });
 
 /**

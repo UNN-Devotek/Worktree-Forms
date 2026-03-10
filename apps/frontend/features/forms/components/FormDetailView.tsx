@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Table2, ExternalLink, FileText, TrendingUp, Clock, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Table2, ExternalLink, FileText, TrendingUp, Clock, RefreshCw, Save } from 'lucide-react'
 import { FormSubmitView } from '@/components/groups/forms/FormSubmitView'
 import { SubmissionsTable } from '@/components/groups/forms/SubmissionsTable'
 import { PublicShareModal } from '@/features/share/PublicShareModal'
@@ -13,9 +13,15 @@ import { FormSubmissionsChart } from './FormSubmissionsChart'
 import { FormStatusChart } from './FormStatusChart'
 import { Share } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { GroupForm } from '@/types/group-forms'
+import { GroupForm, FormSettings } from '@/types/group-forms'
 import { apiClient } from '@/lib/api'
 import { SheetEmbed } from '@/features/sheets/components/SheetEmbed'
+import { GeneralSettings } from './builder/settings/GeneralSettings'
+import { AppearanceSettings } from './builder/settings/AppearanceSettings'
+import { NotificationSettings } from './builder/settings/NotificationSettings'
+import { AdvancedSettings } from './builder/settings/AdvancedSettings'
+import { getSheets } from '@/features/sheets/server/sheet-actions'
+import { toast } from 'sonner'
 
 interface FormDetailViewProps {
   form: {
@@ -51,6 +57,14 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
   const [analytics, setAnalytics] = useState<FormAnalytics | null>(null)
   const [syncingColumns, setSyncingColumns] = useState(false)
 
+  // Settings tab state
+  const formSchema = form.form_schema ?? (form.schema as GroupForm['form_schema'])
+  const [localSettings, setLocalSettings] = useState<Record<string, any>>(formSchema?.settings ?? {})
+  const [localTheme, setLocalTheme] = useState<Record<string, any>>(formSchema?.theme ?? {})
+  const [settingsSubTab, setSettingsSubTab] = useState('general')
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [sheets, setSheets] = useState<any[]>([])
+
   useEffect(() => {
     // Pre-warm the backend access token from the NextAuth session before making API calls.
     // After a fresh NextAuth login, no `access_token` cookie exists yet — this ensures it's set.
@@ -70,6 +84,36 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
     }
     init()
   }, [form.id, projectId])
+
+  // Fetch sheets when settings tab becomes active (for the Output to Sheet selector)
+  useEffect(() => {
+    if (activeTab !== 'settings' || sheets.length > 0) return
+    getSheets(projectSlug).then(setSheets).catch(() => {})
+  }, [activeTab, projectSlug, sheets.length])
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true)
+    try {
+      const updatedSchema = { ...formSchema, settings: localSettings, theme: localTheme }
+      const res = await apiClient<{ success: boolean }>(
+        `/api/projects/${projectId}/forms/${form.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: localSettings.title ?? (form.title ?? form.name), schema: updatedSchema }),
+        }
+      )
+      if (res.success) {
+        toast.success('Settings saved')
+      } else {
+        toast.error('Failed to save settings')
+      }
+    } catch {
+      toast.error('Failed to save settings')
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
 
   const handleSyncColumns = async () => {
     if (!form.targetSheetId) return
@@ -339,8 +383,53 @@ export function FormDetailView({ form, projectSlug, projectId, sheetToken, user 
                 </Button>
               </div>
             )}
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-              Advanced settings coming soon…
+
+            <Tabs value={settingsSubTab} onValueChange={setSettingsSubTab}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="general" className="mt-5">
+                <GeneralSettings
+                  settings={localSettings}
+                  onChange={setLocalSettings}
+                  sheets={sheets}
+                />
+              </TabsContent>
+
+              <TabsContent value="appearance" className="mt-5">
+                <AppearanceSettings
+                  theme={localTheme}
+                  settings={localSettings as FormSettings}
+                  onThemeChange={setLocalTheme}
+                  onSettingsChange={setLocalSettings}
+                  projectId={projectId}
+                />
+              </TabsContent>
+
+              <TabsContent value="notifications" className="mt-5">
+                <NotificationSettings
+                  settings={localSettings}
+                  onChange={setLocalSettings}
+                />
+              </TabsContent>
+
+              <TabsContent value="advanced" className="mt-5">
+                <AdvancedSettings
+                  settings={localSettings}
+                  onChange={setLocalSettings}
+                />
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end pt-2 border-t">
+              <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="gap-2">
+                <Save className="h-4 w-4" />
+                {isSavingSettings ? 'Saving…' : 'Save Settings'}
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

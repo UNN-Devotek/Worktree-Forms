@@ -422,7 +422,10 @@ function RowFiles({ rowId, user }: { rowId: string; user: { name: string; color:
   useEffect(() => {
     if (!doc) return;
     const arr = doc.getArray(`row-${rowId}-files`) as Y.Array<AttachedFile>;
-    const update = () => setFiles(arr.toArray());
+    const update = () => {
+      const seen = new Set<string>();
+      setFiles(arr.toArray().filter(f => seen.has(f.id) ? false : !!seen.add(f.id)));
+    };
     arr.observe(update);
     update();
     return () => arr.unobserve(update);

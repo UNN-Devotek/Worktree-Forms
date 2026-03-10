@@ -9,15 +9,15 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHome,
-  faCog,
   faSignOutAlt,
   faBars,
   faChevronLeft,
   faBuilding,
-  faCubes,
+  faShieldAlt,
 } from "@fortawesome/free-solid-svg-icons";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useUIPreferencesStore } from "@/lib/stores/ui-preferences-store";
+import { UserChip } from "@/components/ui/user-chip";
 
 
 
@@ -35,11 +35,12 @@ export function Sidebar({ className }: SidebarProps) {
     setMounted(true);
   }, []);
 
+  const { data: session } = useSession();
+
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: faHome },
     { name: "Projects", href: "/projects", icon: faBuilding },
-    { name: "Component Library", href: "/component-library", icon: faCubes },
-    { name: "Settings", href: "/settings", icon: faCog },
+    { name: "Admin", href: "/admin", icon: faShieldAlt },
   ];
 
 
@@ -132,7 +133,16 @@ export function Sidebar({ className }: SidebarProps) {
         </nav>
 
         {/* Footer actions */}
-        <div className="mt-auto space-y-2 pb-4">
+        <div className="mt-auto space-y-1 pb-4">
+            {/* User chip — navigates to /settings */}
+            <UserChip
+                name={session?.user?.name}
+                email={session?.user?.email}
+                image={session?.user?.image}
+                collapsed={isCollapsed}
+                className={isCollapsed ? "mx-auto" : ""}
+            />
+
             <div className={cn("flex", isCollapsed ? "justify-center" : "justify-start")}>
                 <AnimatedThemeToggler className="border-0 shadow-none hover:bg-accent" />
             </div>

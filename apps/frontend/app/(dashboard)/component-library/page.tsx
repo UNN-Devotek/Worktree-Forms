@@ -1276,6 +1276,37 @@ const MOLECULES: ComponentEntry[] = [
 
 const ORGANISMS: ComponentEntry[] = [
     {
+        name: 'UserChip',
+        exports: ['UserChip'],
+        importPath: '@/components/ui/user-chip',
+        description: 'User identity chip showing avatar + name/email. Collapsed mode shows avatar only with tooltip. Clicking navigates to /settings.',
+        level: 'Organism',
+        preview: (
+            <div className="flex items-center gap-6 p-2">
+                <div className="flex items-center gap-2 rounded-md px-2 py-2 border w-48">
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold shrink-0">JD</div>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate">Jane Doe</span>
+                        <span className="text-xs text-muted-foreground truncate">jane@worktree.pro</span>
+                    </div>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold border">JD</div>
+            </div>
+        ),
+    },
+    {
+        name: 'ActivityTable',
+        exports: ['ActivityTable'],
+        importPath: '@/features/projects/components/SubmissionGrid',
+        description: 'Unified submission & activity feed table with clickable rows that open the submission. Replaces separate SubmissionGrid and ActivityFeed.',
+        level: 'Organism',
+        preview: (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md">
+                ActivityTable — live data, use in dashboard context
+            </div>
+        ),
+    },
+    {
         name: 'Table',
         exports: ['Table', 'TableHeader', 'TableBody', 'TableRow', 'TableHead', 'TableCell', 'TableFooter', 'TableCaption'],
         importPath: '@/components/ui/table',
@@ -2136,6 +2167,109 @@ const ORGANISMS: ComponentEntry[] = [
                         </div>
                     ))}
                 </div>
+            </div>
+        ),
+    },
+    {
+        name: 'ProjectTabs',
+        exports: ['ProjectTabs'],
+        importPath: '@/features/projects/components/project-tabs',
+        description: 'Responsive project navigation tabs. Shows all tabs when space allows; collapses overflow into a "..." dropdown. Switches to a full dropdown menu on mobile.',
+        level: 'Organism',
+        preview: (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md w-full">
+                ProjectTabs — responsive nav, requires router context
+            </div>
+        ),
+    },
+    // Dashboard Bento Grid
+    {
+        name: 'BentoDashboard',
+        exports: ['BentoDashboard'],
+        importPath: '@/features/dashboard/components/BentoDashboard',
+        description: 'Full bento grid dashboard with aggregated metrics, recent items, favorites, and news carousel.',
+        level: 'Organism',
+        group: 'Dashboard',
+        preview: (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md w-full">
+                BentoDashboard — live data, renders full dashboard layout
+            </div>
+        ),
+    },
+    {
+        name: 'AggregatedMetricsRow',
+        exports: ['AggregatedMetricsRow'],
+        importPath: '@/features/dashboard/components/AggregatedMetricsRow',
+        description: 'Six metric cards showing cross-project aggregated stats: projects, forms, submissions, tasks, sheets, routes.',
+        level: 'Organism',
+        group: 'Dashboard',
+        preview: (
+            <div className="grid gap-2 grid-cols-3 w-full">
+                {['Projects: 5', 'Forms: 12', 'Tasks: 8'].map((label) => (
+                    <Card key={label} className="p-2">
+                        <p className="text-xs font-medium text-muted-foreground">{label.split(':')[0]}</p>
+                        <p className="text-lg font-bold">{label.split(':')[1]}</p>
+                    </Card>
+                ))}
+            </div>
+        ),
+    },
+    {
+        name: 'RecentItemsCard',
+        exports: ['RecentItemsCard'],
+        importPath: '@/features/dashboard/components/RecentItemsCard',
+        description: 'Table of recently accessed items with type icons, relative time, and favorite toggle.',
+        level: 'Organism',
+        group: 'Dashboard',
+        preview: (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md w-full">
+                RecentItemsCard — live data, shows last 10 accessed items
+            </div>
+        ),
+    },
+    {
+        name: 'FavoritesCard',
+        exports: ['FavoritesCard'],
+        importPath: '@/features/dashboard/components/FavoritesCard',
+        description: 'Table of user-favorited items with type icons, project links, and unfavorite toggle.',
+        level: 'Organism',
+        group: 'Dashboard',
+        preview: (
+            <div className="text-sm text-muted-foreground p-4 border rounded-md w-full">
+                FavoritesCard — live data, shows starred items
+            </div>
+        ),
+    },
+    {
+        name: 'NewsCarousel',
+        exports: ['NewsCarousel'],
+        importPath: '@/features/dashboard/components/NewsCarousel',
+        description: 'Auto-rotating news carousel with dot indicators and prev/next navigation.',
+        level: 'Organism',
+        group: 'Dashboard',
+        preview: (
+            <Card className="w-full max-w-xs p-3">
+                <p className="text-xs font-semibold mb-1">Welcome to Worktree</p>
+                <p className="text-xs text-muted-foreground">Your all-in-one project management platform...</p>
+                <div className="flex gap-1 mt-2">
+                    <span className="h-1.5 w-4 rounded-full bg-primary" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                </div>
+            </Card>
+        ),
+    },
+    {
+        name: 'FavoriteButton',
+        exports: ['FavoriteButton'],
+        importPath: '@/features/dashboard/components/FavoriteButton',
+        description: 'Star toggle button for adding/removing items from favorites.',
+        level: 'Atom',
+        group: 'Dashboard',
+        preview: (
+            <div className="flex items-center gap-3">
+                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                <Star className="h-4 w-4 text-muted-foreground" />
             </div>
         ),
     },

@@ -9,9 +9,9 @@ interface FormSubmitViewProps {
 }
 
 export function FormSubmitView({ form }: FormSubmitViewProps) {
-  const [submissionId, setSubmissionId] = useState<number | null>(null)
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
 
-  const handleSuccess = (id: number) => {
+  const handleSuccess = (id: string) => {
     setSubmissionId(id)
   }
 
@@ -45,8 +45,8 @@ export function FormSubmitView({ form }: FormSubmitViewProps) {
       <div className="max-w-4xl mx-auto py-6">
          <FormRenderer
            formSchema={(form.form_schema ?? (form as any).schema)}
-           formId={Number(form.id)}
-           groupId={form.group_id ?? form.projectId ?? null}
+           formId={String(form.formId ?? form.id)}
+           groupId={String(form.projectId ?? form.group_id ?? '')}
            onSuccess={handleSuccess}
          />
       </div>

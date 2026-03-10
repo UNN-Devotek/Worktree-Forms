@@ -161,9 +161,14 @@ export async function apiRequest<T = any>(
         try {
           const tokenRes = await fetch('/api/auth/backend-token', { credentials: 'include' });
           if (tokenRes.ok) {
+            const tokenData = await tokenRes.json().catch(() => null);
+            const bearerToken: string | undefined = tokenData?.token;
+            const retryHeaders: HeadersInit = bearerToken
+              ? { ...headers, Authorization: `Bearer ${bearerToken}` }
+              : headers;
             const retryResponse = await fetch(url, {
               ...options,
-              headers,
+              headers: retryHeaders,
               credentials: 'include',
             });
             if (retryResponse.ok) {
