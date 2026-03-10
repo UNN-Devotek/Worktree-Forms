@@ -15,7 +15,6 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro/api}
         NEXT_PUBLIC_ENABLE_DEV_LOGIN: ${NEXT_PUBLIC_ENABLE_DEV_LOGIN:-true}
-    container_name: worktree-app
     restart: unless-stopped
     # PM2 runs both frontend + backend via ecosystem.config.js
     environment:
@@ -55,8 +54,7 @@ services:
     ports:
       - "${PORT:-3005}:${PORT:-3005}"
       - "${BACKEND_PORT:-5005}:${BACKEND_PORT:-5005}"
-    networks:
-      - worktree-network
+
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -85,7 +83,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: deps
-    container_name: worktree-ws
     restart: unless-stopped
     command: npm run start:ws -w apps/backend
     environment:
@@ -102,8 +99,7 @@ services:
       NODE_OPTIONS: "--max-old-space-size=256"
     ports:
       - "1234:1234"
-    networks:
-      - worktree-network
+
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -127,7 +123,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: deps
-    container_name: worktree-worker
     restart: unless-stopped
     command: npm run start:worker -w apps/backend
     environment:
@@ -143,8 +138,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-change-me-32-chars-minimum-secret}
       JWT_SECRET: ${JWT_SECRET:-worktree-jwt-dev-secret-change-in-prod}
       NODE_OPTIONS: "--max-old-space-size=512"
-    networks:
-      - worktree-network
+
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -169,7 +163,6 @@ services:
 
   seed:
     image: amazon/aws-cli:latest
-    container_name: worktree-seed
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -246,8 +239,7 @@ services:
       DYNAMODB_TABLE_NAME: ${DYNAMODB_TABLE_NAME:-worktree-local}
       DYNAMODB_AUTH_TABLE_NAME: ${DYNAMODB_AUTH_TABLE_NAME:-worktree-auth-local}
       S3_BUCKET: ${S3_BUCKET:-worktree-local}
-    networks:
-      - worktree-network
+
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -258,7 +250,6 @@ services:
 
   dynamodb-local:
     image: amazon/dynamodb-local:latest
-    container_name: worktree-dynamodb
     restart: unless-stopped
     user: root
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8100"
@@ -266,8 +257,7 @@ services:
       - dynamodb-data:/data
     ports:
       - "8100:8100"
-    networks:
-      - worktree-network
+
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8100)); s.close()\" 2>/dev/null || exit 1"]
       interval: 5s
@@ -280,15 +270,13 @@ services:
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin:latest
-    container_name: worktree-dynamodb-admin
     restart: unless-stopped
     environment:
       DYNAMO_ENDPOINT: http://dynamodb-local:8100
       PORT: 8101
     ports:
       - "8101:8101"
-    networks:
-      - worktree-network
+
     depends_on:
       dynamodb-local:
         condition: service_healthy
@@ -299,15 +287,13 @@ services:
 
   redis:
     image: redis:7
-    container_name: worktree-redis
     restart: unless-stopped
     command: "redis-server --maxmemory-policy noeviction"
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    networks:
-      - worktree-network
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -320,7 +306,6 @@ services:
 
   localstack:
     image: localstack/localstack:latest
-    container_name: worktree-localstack
     restart: unless-stopped
     environment:
       SERVICES: s3
@@ -331,8 +316,7 @@ services:
       - "4510:4510"
     volumes:
       - localstack-data:/var/lib/localstack
-    networks:
-      - worktree-network
+
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4510/_localstack/health || exit 1"]
       interval: 5s
@@ -348,6 +332,3 @@ volumes:
   redis-data:
   localstack-data:
 
-networks:
-  worktree-network:
-    driver: bridge
