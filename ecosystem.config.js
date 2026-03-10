@@ -1,12 +1,16 @@
+const isDev = process.env.NODE_ENV === 'development';
+
 module.exports = {
   apps: [
     {
       name: 'backend',
       cwd: './apps/backend',
-      script: 'npm',
-      args: process.env.NODE_ENV === 'development' ? 'run dev' : 'run start',
-      instances: process.env.NODE_ENV === 'production' ? 'max' : 1,
-      exec_mode: process.env.NODE_ENV === 'production' ? 'cluster' : 'fork',
+      // In production, run the compiled JS directly (required for cluster mode)
+      // In development, use npm to invoke tsx watch
+      script: isDev ? 'npm' : 'dist/index.js',
+      args: isDev ? 'run dev' : undefined,
+      instances: isDev ? 1 : 2,
+      exec_mode: isDev ? 'fork' : 'cluster',
       kill_timeout: 5000,
       listen_timeout: 10000,
       env: {
@@ -17,8 +21,8 @@ module.exports = {
     {
       name: 'frontend',
       cwd: './apps/frontend',
-      script: 'npm',
-      args: process.env.NODE_ENV === 'development' ? 'run dev' : 'run start',
+      script: isDev ? 'npm' : 'node_modules/.bin/next',
+      args: isDev ? 'run dev' : 'start',
       instances: 1,
       exec_mode: 'fork',
       kill_timeout: 5000,
