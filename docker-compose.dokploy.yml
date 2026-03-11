@@ -24,8 +24,9 @@ services:
       HOSTNAME: "0.0.0.0"
       ENABLE_DEV_LOGIN: ${ENABLE_DEV_LOGIN:-true}
       NEXT_PUBLIC_ENABLE_DEV_LOGIN: ${NEXT_PUBLIC_ENABLE_DEV_LOGIN:-true}
-      # CORS
+      # CORS & URLs
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://worktree.pro}
+      FRONTEND_URL: ${FRONTEND_URL:-https://worktree.pro}
       # Auth
       AUTH_SECRET: ${AUTH_SECRET:-change-me-32-chars-minimum-secret}
       JWT_SECRET: ${JWT_SECRET:-worktree-jwt-dev-secret-change-in-prod}
