@@ -20,7 +20,7 @@ export const GET = auth(async (req: any) => {
     {
       sub: req.auth.user.id,
       email: req.auth.user.email,
-      systemRole: req.auth.user.systemRole || 'MEMBER',
+      systemRole: req.auth.user.role || req.auth.user.systemRole || 'MEMBER',
     },
     secret,
     { algorithm: 'HS256', expiresIn: '15m' }

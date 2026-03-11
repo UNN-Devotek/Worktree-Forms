@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SyncProvider } from '@/features/sync/components/sync-provider';
+import { BackendTokenSync } from '@/components/auth/BackendTokenSync';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +20,7 @@ const queryClient = new QueryClient({
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
+      <BackendTokenSync />
       <QueryClientProvider client={queryClient}>
         <ThemeProvider
           attribute="class"

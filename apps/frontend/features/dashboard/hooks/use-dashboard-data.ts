@@ -27,6 +27,15 @@ export function useDashboardData(): DashboardData {
     useEffect(() => {
         let cancelled = false;
         async function load() {
+            // Ensure backend auth token cookie is set before making API calls.
+            // After login only the NextAuth session cookie exists; the Express
+            // backend needs its own JWT in the access_token cookie.
+            try {
+                await fetch('/api/auth/backend-token', { credentials: 'include' });
+            } catch {
+                // Non-fatal — apiRequest has its own 401 retry fallback
+            }
+
             const [m, r, f, n] = await Promise.all([
                 DashboardService.getAggregatedMetrics(),
                 DashboardService.getRecentItems(),
