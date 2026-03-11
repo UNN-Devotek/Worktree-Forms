@@ -8,6 +8,7 @@
 # ==========================================
 FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache wget
 WORKDIR /app
 
 # Copy package manifests + lockfile
@@ -29,9 +30,9 @@ FROM base AS deps
 # Source already copied in base — this stage is used as-is for local dev
 
 # ==========================================
-# Stage 3: Build for production
+# Stage 3: Production build + runtime (no separate runner — avoids slow COPY)
 # ==========================================
-FROM base AS builder
+FROM base AS runner
 
 # Skip TS type checking in Docker — runs in CI instead
 ENV DOCKER_BUILD=1
@@ -47,34 +48,9 @@ ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
     pnpm --filter worktree-frontend run build
 
-# ==========================================
-# Stage 4: Production runtime
-# ==========================================
-FROM node:20-alpine AS runner
-WORKDIR /app
-
-RUN apk add --no-cache wget
-
 # Non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs appuser
-
-# Copy node_modules (full — skip prune to save build time)
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/package.json ./apps/backend/
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=builder /app/apps/frontend/package.json ./apps/frontend/
-COPY --from=builder /app/apps/frontend/node_modules ./apps/frontend/node_modules
-
-# Backend compiled output
-COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-
-# Frontend build output + assets
-COPY --from=builder /app/apps/frontend/.next ./apps/frontend/.next
-COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
-COPY --from=builder /app/apps/frontend/next.config.js ./apps/frontend/next.config.js
-COPY --from=builder /app/apps/frontend/lib/cache-handler.js ./apps/frontend/lib/cache-handler.js
 
 # Startup script (strip Windows CRLF — git autocrlf can sneak them in)
 COPY start.sh .
