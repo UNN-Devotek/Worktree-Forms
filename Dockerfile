@@ -63,17 +63,17 @@ RUN apk add --no-cache wget
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs appuser
 
-# Backend: compiled dist + production node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/package.json ./apps/backend/
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+# Frontend: Next.js standalone output (preserves original paths so embedded
+# absolute requires like cacheHandler resolve correctly at runtime)
+COPY --from=builder /app/apps/frontend/.next/standalone ./
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
-# Frontend: Next.js standalone output (includes only traced dependencies)
-COPY --from=builder /app/apps/frontend/.next/standalone ./apps/frontend-standalone
-COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend-standalone/apps/frontend/.next/static
-COPY --from=builder /app/apps/frontend/public ./apps/frontend-standalone/apps/frontend/public
+# Backend: compiled dist + production node_modules (overlays standalone's traced deps)
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
 # Startup script
 COPY start.sh .
