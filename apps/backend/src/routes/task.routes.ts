@@ -4,7 +4,7 @@ import { AuthenticatedRequest } from '../middleware/authenticate.js';
 import { requireProjectAccess } from '../middleware/rbac.js';
 import { TaskService } from '../services/task.service.js';
 
-const TASK_STATUSES = ['OPEN', 'IN_PROGRESS', 'REVIEW', 'DONE', 'CANCELLED'] as const;
+const TASK_STATUSES = ['DRAFT', 'ACTIVE', 'IN_PROGRESS', 'COMPLETED'] as const;
 const TASK_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 
 const createTaskSchema = z.object({
@@ -13,20 +13,26 @@ const createTaskSchema = z.object({
   taskType: z.string().max(50).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-  assignees: z.array(z.string()).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  assignees: z.array(z.unknown()).optional(),
   attachments: z.array(z.unknown()).optional(),
-  mentions: z.array(z.string()).optional(),
+  mentions: z.array(z.unknown()).optional(),
   images: z.array(z.unknown()).optional(),
 });
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
-  description: z.string().max(5000).optional(),
+  question: z.string().max(5000).optional(),
+  taskType: z.string().max(50).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
-  dueDate: z.string().datetime().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  assignees: z.array(z.unknown()).optional(),
+  attachments: z.array(z.unknown()).optional(),
+  mentions: z.array(z.unknown()).optional(),
+  images: z.array(z.unknown()).optional(),
   assignedTo: z.string().optional(),
 });
 
