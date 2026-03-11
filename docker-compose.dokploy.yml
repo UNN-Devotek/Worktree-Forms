@@ -13,7 +13,7 @@ services:
       dockerfile: Dockerfile
       target: runner
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro}
         NEXT_PUBLIC_ENABLE_DEV_LOGIN: ${NEXT_PUBLIC_ENABLE_DEV_LOGIN:-true}
     image: worktree-runner:local
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-worktree-local}
       # Frontend
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro}
       NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://worktree.pro/ws}
     ports:
       - "${PORT:-3005}:${PORT:-3005}"
