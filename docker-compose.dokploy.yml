@@ -184,7 +184,7 @@ services:
         S3_EP="http://localstack:4510"
         S3_BUCKET="${S3_BUCKET:-worktree-local}"
         REGION="us-east-1"
-        PASS_HASH='$$2b$$10$$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu/1u'
+        PASS_HASH='$$2a$$10$$aGD4C9rCloTizYYXGzEn8uMrKhvSC8DV4vIqc2upf0gpgRInDGG9e'
         NOW="$$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         ADMIN_ID="user_admin_dev_00001"
         USER_ID="user_member_dev_00001"
@@ -229,9 +229,9 @@ services:
           --time-to-live-specification "Enabled=true,AttributeName=expires" \
           --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || true
 
-        echo "[4] Seeding dev users..."
-        aws dynamodb put-item --table-name "$$TABLE" --item "{\"PK\":{\"S\":\"USER#$$ADMIN_ID\"},\"SK\":{\"S\":\"USER\"},\"GSI1PK\":{\"S\":\"admin@worktree.pro\"},\"GSI1SK\":{\"S\":\"USER\"},\"userId\":{\"S\":\"$$ADMIN_ID\"},\"email\":{\"S\":\"admin@worktree.pro\"},\"name\":{\"S\":\"Admin User\"},\"passwordHash\":{\"S\":\"$$PASS_HASH\"},\"role\":{\"S\":\"ADMIN\"},\"theme\":{\"S\":\"system\"},\"locale\":{\"S\":\"en\"},\"createdAt\":{\"S\":\"$$NOW\"},\"updatedAt\":{\"S\":\"$$NOW\"}}" --condition-expression "attribute_not_exists(PK)" --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || echo "  Admin exists"
-        aws dynamodb put-item --table-name "$$TABLE" --item "{\"PK\":{\"S\":\"USER#$$USER_ID\"},\"SK\":{\"S\":\"USER\"},\"GSI1PK\":{\"S\":\"user@worktree.com\"},\"GSI1SK\":{\"S\":\"USER\"},\"userId\":{\"S\":\"$$USER_ID\"},\"email\":{\"S\":\"user@worktree.com\"},\"name\":{\"S\":\"Test User\"},\"passwordHash\":{\"S\":\"$$PASS_HASH\"},\"role\":{\"S\":\"USER\"},\"theme\":{\"S\":\"system\"},\"locale\":{\"S\":\"en\"},\"createdAt\":{\"S\":\"$$NOW\"},\"updatedAt\":{\"S\":\"$$NOW\"}}" --condition-expression "attribute_not_exists(PK)" --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || echo "  User exists"
+        echo "[4] Seeding dev users (upsert — always writes correct password hash)..."
+        aws dynamodb put-item --table-name "$$TABLE" --item "{\"PK\":{\"S\":\"USER#$$ADMIN_ID\"},\"SK\":{\"S\":\"USER\"},\"GSI1PK\":{\"S\":\"admin@worktree.pro\"},\"GSI1SK\":{\"S\":\"USER\"},\"userId\":{\"S\":\"$$ADMIN_ID\"},\"email\":{\"S\":\"admin@worktree.pro\"},\"name\":{\"S\":\"Admin User\"},\"passwordHash\":{\"S\":\"$$PASS_HASH\"},\"role\":{\"S\":\"ADMIN\"},\"theme\":{\"S\":\"system\"},\"locale\":{\"S\":\"en\"},\"createdAt\":{\"S\":\"$$NOW\"},\"updatedAt\":{\"S\":\"$$NOW\"}}" --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || echo "  Admin seed failed"
+        aws dynamodb put-item --table-name "$$TABLE" --item "{\"PK\":{\"S\":\"USER#$$USER_ID\"},\"SK\":{\"S\":\"USER\"},\"GSI1PK\":{\"S\":\"user@worktree.com\"},\"GSI1SK\":{\"S\":\"USER\"},\"userId\":{\"S\":\"$$USER_ID\"},\"email\":{\"S\":\"user@worktree.com\"},\"name\":{\"S\":\"Test User\"},\"passwordHash\":{\"S\":\"$$PASS_HASH\"},\"role\":{\"S\":\"USER\"},\"theme\":{\"S\":\"system\"},\"locale\":{\"S\":\"en\"},\"createdAt\":{\"S\":\"$$NOW\"},\"updatedAt\":{\"S\":\"$$NOW\"}}" --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || echo "  User seed failed"
 
         echo "[5] Seeding sample project..."
         aws dynamodb put-item --table-name "$$TABLE" --item "{\"PK\":{\"S\":\"PROJECT#$$PROJECT_ID\"},\"SK\":{\"S\":\"PROJECT\"},\"GSI1PK\":{\"S\":\"sample-project\"},\"GSI1SK\":{\"S\":\"PROJECT\"},\"projectId\":{\"S\":\"$$PROJECT_ID\"},\"slug\":{\"S\":\"sample-project\"},\"name\":{\"S\":\"Sample Project\"},\"description\":{\"S\":\"Development seed project\"},\"ownerId\":{\"S\":\"$$ADMIN_ID\"},\"storageUsedBytes\":{\"N\":\"0\"},\"storageQuotaBytes\":{\"N\":\"10737418240\"},\"createdAt\":{\"S\":\"$$NOW\"},\"updatedAt\":{\"S\":\"$$NOW\"}}" --condition-expression "attribute_not_exists(PK)" --endpoint-url "$$ENDPOINT" --region "$$REGION" 2>/dev/null || echo "  Project exists"
