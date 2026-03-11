@@ -221,7 +221,7 @@ importers:
   apps/frontend:
     dependencies:
       '@auth/core':
-        specifier: ^0.34.3
+        specifier: 0.34.3
         version: 0.34.3
       '@auth/dynamodb-adapter':
         specifier: ^2.11.1
