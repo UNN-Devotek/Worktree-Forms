@@ -25,9 +25,9 @@ const providers: Provider[] = [
       );
 
       const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME ?? "worktree-local";
+      console.log("[auth] authorize called for:", email, "table:", TABLE_NAME);
 
       // 1. Look up user by email via GSI1 (GSI1PK = email, GSI1SK = "USER")
-      // Use authDocClient which is already proven to work with DynamoDB local
       let item: Record<string, string> | undefined;
       try {
         const queryResult = await authDocClient.send(
@@ -43,6 +43,7 @@ const providers: Provider[] = [
           })
         );
         item = queryResult.Items?.[0] as Record<string, string> | undefined;
+        console.log("[auth] User lookup result:", item ? `found (userId: ${item.userId})` : "not found");
       } catch (err) {
         console.error("[auth] DynamoDB user lookup failed:", err);
         return null;
@@ -54,6 +55,7 @@ const providers: Provider[] = [
         process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === "true";
 
       if (!item && enableDevLogin) {
+        console.log("[auth] Dev auto-signup for:", email);
         try {
           const userId = crypto.randomUUID();
           const hashedPassword = await bcrypt.hash(password || "password", 10);
@@ -79,21 +81,35 @@ const providers: Provider[] = [
             })
           );
           item = { userId, email, name: email.split("@")[0], role: "USER", passwordHash: hashedPassword };
+          console.log("[auth] Dev auto-signup success:", userId);
         } catch (err) {
           console.error("[auth] Dev auto-signup failed:", err);
           return null;
         }
       }
 
-      if (!item) return null;
+      if (!item) {
+        console.log("[auth] No user found and dev signup disabled. NODE_ENV:", process.env.NODE_ENV, "DEV_LOGIN:", process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN);
+        return null;
+      }
 
       // 3. Verify password
-      if (!item.passwordHash) return null;
-      if (!password) return null;
+      if (!item.passwordHash) {
+        console.log("[auth] User has no passwordHash");
+        return null;
+      }
+      if (!password) {
+        console.log("[auth] No password provided");
+        return null;
+      }
 
       const isValid = await bcrypt.compare(password, item.passwordHash);
-      if (!isValid) return null;
+      if (!isValid) {
+        console.log("[auth] Password mismatch for:", email);
+        return null;
+      }
 
+      console.log("[auth] Login success for:", email, "role:", item.role);
       return {
         id: item.userId,
         email: item.email,
