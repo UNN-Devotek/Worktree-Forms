@@ -59,6 +59,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:3005',
   'http://localhost:3100',
   'http://localhost:3000',
+  'https://worktree.pro',
 ];
 if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS) {
   console.warn('[SECURITY] ALLOWED_ORIGINS not set in production — using localhost defaults. Set ALLOWED_ORIGINS env var.');
