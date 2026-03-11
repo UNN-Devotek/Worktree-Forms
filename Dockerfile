@@ -33,6 +33,9 @@ FROM base AS deps
 # ==========================================
 FROM base AS builder
 
+# Skip TS type checking in Docker — runs in CI instead
+ENV DOCKER_BUILD=1
+
 # Build backend TypeScript
 RUN pnpm --filter worktree-backend run build
 
