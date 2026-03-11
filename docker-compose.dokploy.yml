@@ -15,8 +15,8 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://worktree.pro/api}
         NEXT_PUBLIC_ENABLE_DEV_LOGIN: ${NEXT_PUBLIC_ENABLE_DEV_LOGIN:-true}
+    image: worktree-runner:local
     restart: unless-stopped
-    # PM2 runs both frontend + backend via ecosystem.config.js
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3005}
@@ -91,13 +91,9 @@ services:
           cpus: '1'
 
   ws-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deps
-    image: worktree-deps:local
+    image: worktree-runner:local
     restart: unless-stopped
-    command: npm run start:ws -w apps/backend
+    command: ["node", "/app/apps/backend/dist/ws-server.js"]
     environment:
       WS_PORT: 1234
       DYNAMODB_ENDPOINT: http://dynamodb-local:8100
@@ -132,9 +128,9 @@ services:
           cpus: '0.5'
 
   worker:
-    image: worktree-deps:local
+    image: worktree-runner:local
     restart: unless-stopped
-    command: npm run start:worker -w apps/backend
+    command: ["node", "/app/apps/backend/dist/worker.js"]
     environment:
       DYNAMODB_ENDPOINT: http://dynamodb-local:8100
       DYNAMODB_REGION: ${AWS_REGION:-us-east-1}

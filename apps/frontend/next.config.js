@@ -17,8 +17,14 @@ turbopackResolveAlias[path.resolve(__dirname, '../backend/src/lib/dynamo/client'
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  cacheMaxMemorySize: 0, // Disable in-memory ISR cache — use Redis for multi-instance ECS
-  cacheHandler: require.resolve("./lib/cache-handler.js"),
+  // Redis-backed ISR cache for multi-instance ECS. Skipped in standalone Docker
+  // builds where the require.resolve absolute path may not survive stage copies.
+  ...(process.env.DOCKER_BUILD
+    ? {}
+    : {
+        cacheMaxMemorySize: 0,
+        cacheHandler: require.resolve("./lib/cache-handler.js"),
+      }),
   // Prevent Node.js-only packages from being bundled for the browser
   serverExternalPackages: [
     'electrodb',

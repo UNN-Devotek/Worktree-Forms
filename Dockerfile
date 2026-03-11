@@ -75,9 +75,9 @@ COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
-# Startup script
+# Startup script (strip Windows CRLF — git autocrlf can sneak them in)
 COPY start.sh .
-RUN chmod +x start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 RUN chown -R appuser:nodejs /app
 USER appuser
