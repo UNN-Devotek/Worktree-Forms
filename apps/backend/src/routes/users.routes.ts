@@ -11,7 +11,7 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = (req as AuthenticatedRequest).user.id;
     const userResult = await UserEntity.get({ userId }).go();
     if (!userResult.data || userResult.data.role !== 'ADMIN') {
       return res.status(403).json({ success: false, error: 'Admin access required' });

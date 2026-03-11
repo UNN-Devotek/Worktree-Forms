@@ -37,7 +37,7 @@ export function useHelpSync() {
     setSyncError(null);
 
     try {
-      const response = await fetch('/api/help/sync');
+      const response = await fetch('/api/help/sync', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch articles');
       
       const data = await response.json();

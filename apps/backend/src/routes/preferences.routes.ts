@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { UserEntity } from '../lib/dynamo/index.js';
-import { authenticate } from '../middleware/authenticate.js';
+import { authenticate, AuthenticatedRequest } from '../middleware/authenticate.js';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ const updatePreferencesSchema = z
  * Returns all preferences for the authenticated user.
  */
 router.get('/me', authenticate, async (req: Request, res: Response) => {
-  const userId = (req as Request & { user?: { id: string } }).user?.id;
+  const userId = (req as AuthenticatedRequest).user.id;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
@@ -54,7 +54,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
  * Updates preferences for the authenticated user.
  */
 router.patch('/me', authenticate, async (req: Request, res: Response) => {
-  const userId = (req as Request & { user?: { id: string } }).user?.id;
+  const userId = (req as AuthenticatedRequest).user.id;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
@@ -95,7 +95,7 @@ router.patch('/me', authenticate, async (req: Request, res: Response) => {
  */
 router.get('/:key', authenticate, async (req: Request, res: Response) => {
   const { key } = req.params;
-  const userId = (req as Request & { user?: { id: string } }).user?.id;
+  const userId = (req as AuthenticatedRequest).user.id;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
@@ -127,7 +127,7 @@ router.get('/:key', authenticate, async (req: Request, res: Response) => {
  */
 router.post('/', authenticate, async (req: Request, res: Response) => {
   const { key, value } = req.body;
-  const userId = (req as Request & { user?: { id: string } }).user?.id;
+  const userId = (req as AuthenticatedRequest).user.id;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }

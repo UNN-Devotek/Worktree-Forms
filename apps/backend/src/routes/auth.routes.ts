@@ -29,7 +29,7 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: 'Invalid input: email and password are required' });
   }
-  const { email } = parsed.data;
+  const { email, password } = parsed.data;
 
   try {
     if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_LOGIN === 'true') {
@@ -37,6 +37,15 @@ router.post('/login', rateLimitTiers.auth, async (req: Request, res: Response) =
       const user = userResult.data[0];
 
       if (user) {
+        // Verify password even in dev mode
+        const bcrypt = await import('bcryptjs');
+        if (user.passwordHash) {
+          const isValid = await bcrypt.compare(password, user.passwordHash);
+          if (!isValid) {
+            return res.status(401).json({ success: false, error: 'Invalid credentials' });
+          }
+        }
+
         const accessToken = jwt.sign(
           { sub: user.userId, email: user.email, systemRole: user.role ?? 'MEMBER' },
           process.env.JWT_SECRET!,
