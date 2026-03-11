@@ -43,6 +43,8 @@ RUN pnpm --filter worktree-backend run build
 # Build Next.js frontend
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
 ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
