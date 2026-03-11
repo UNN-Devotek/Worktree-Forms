@@ -54,30 +54,35 @@ const providers: Provider[] = [
         process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === "true";
 
       if (!item && enableDevLogin) {
-        const userId = crypto.randomUUID();
-        const hashedPassword = await bcrypt.hash(password || "password", 10);
-        const now = new Date().toISOString();
-        await authDocClient.send(
-          new PutCommand({
-            TableName: TABLE_NAME,
-            Item: {
-              PK: `USER#${userId}`,
-              SK: "USER",
-              GSI1PK: email,
-              GSI1SK: "USER",
-              __edb_e__: "user",
-              __edb_v__: "1",
-              userId,
-              email,
-              name: email.split("@")[0],
-              role: "USER",
-              passwordHash: hashedPassword,
-              createdAt: now,
-              updatedAt: now,
-            },
-          })
-        );
-        item = { userId, email, name: email.split("@")[0], role: "USER", passwordHash: hashedPassword };
+        try {
+          const userId = crypto.randomUUID();
+          const hashedPassword = await bcrypt.hash(password || "password", 10);
+          const now = new Date().toISOString();
+          await authDocClient.send(
+            new PutCommand({
+              TableName: TABLE_NAME,
+              Item: {
+                PK: `USER#${userId}`,
+                SK: "USER",
+                GSI1PK: email,
+                GSI1SK: "USER",
+                __edb_e__: "user",
+                __edb_v__: "1",
+                userId,
+                email,
+                name: email.split("@")[0],
+                role: "USER",
+                passwordHash: hashedPassword,
+                createdAt: now,
+                updatedAt: now,
+              },
+            })
+          );
+          item = { userId, email, name: email.split("@")[0], role: "USER", passwordHash: hashedPassword };
+        } catch (err) {
+          console.error("[auth] Dev auto-signup failed:", err);
+          return null;
+        }
       }
 
       if (!item) return null;
@@ -117,12 +122,13 @@ if (
 const useSecureCookies = process.env.NODE_ENV === "production";
 
 const { handlers, auth: nextAuth, signIn, signOut } = NextAuth({
+  debug: true,
   adapter: DynamoDBAdapter(authDocClient, { tableName: AUTH_TABLE_NAME }),
   // JWT strategy is required because NextAuth v5 database sessions
   // do not support the Credentials provider (dev login flow).
   session: { strategy: "jwt" },
   trustHost: true,
-  secret: process.env.JWT_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET,
   providers,
   cookies: {
     sessionToken: {
