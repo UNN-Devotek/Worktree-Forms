@@ -18,7 +18,7 @@ services:
     image: worktree-runner:local
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3005}
       BACKEND_PORT: ${BACKEND_PORT:-5005}
       HOSTNAME: "0.0.0.0"
@@ -56,10 +56,13 @@ services:
       - "${BACKEND_PORT:-5005}:${BACKEND_PORT:-5005}"
     labels:
       - "traefik.enable=true"
+      # HTTPS router
       - "traefik.http.routers.worktree.rule=Host(`worktree.pro`)"
       - "traefik.http.routers.worktree.entrypoints=websecure"
       - "traefik.http.routers.worktree.tls=true"
+      - "traefik.http.routers.worktree.tls.certresolver=letsencrypt"
       - "traefik.http.services.worktree.loadbalancer.server.port=3005"
+      # HTTP → HTTPS redirect
       - "traefik.http.routers.worktree-http.rule=Host(`worktree.pro`)"
       - "traefik.http.routers.worktree-http.entrypoints=web"
       - "traefik.http.routers.worktree-http.middlewares=redirect-to-https"
