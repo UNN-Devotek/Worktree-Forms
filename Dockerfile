@@ -48,16 +48,9 @@ ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
     pnpm --filter worktree-frontend run build
 
-# Non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 --ingroup nodejs appuser
-
 # Startup script (strip Windows CRLF — git autocrlf can sneak them in)
 COPY start.sh .
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
-
-RUN chown -R appuser:nodejs /app
-USER appuser
 
 EXPOSE 3005 5005
 
