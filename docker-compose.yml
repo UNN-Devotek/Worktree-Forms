@@ -12,7 +12,7 @@ services:
         NEXT_PUBLIC_ENABLE_DEV_LOGIN: "true"
     container_name: worktree-app
     restart: unless-stopped
-    command: /bin/sh -c "npm run dev -w apps/backend & npm run dev -w apps/frontend"
+    command: /bin/sh -c "pnpm --filter worktree-backend run dev & pnpm --filter worktree-frontend run dev"
     environment:
       NODE_ENV: development
       ENABLE_DEV_LOGIN: "true"
@@ -75,6 +75,8 @@ services:
         - action: rebuild
           path: package.json
         - action: rebuild
+          path: pnpm-lock.yaml
+        - action: rebuild
           path: apps/frontend/package.json
         - action: rebuild
           path: apps/backend/package.json
@@ -99,7 +101,7 @@ services:
       target: deps
     container_name: worktree-ws
     restart: unless-stopped
-    command: npm run start:ws -w apps/backend
+    command: pnpm --filter worktree-backend run start:ws
     environment:
       WS_PORT: 1234
       DYNAMODB_ENDPOINT: http://dynamodb-local:8100
@@ -142,7 +144,7 @@ services:
       target: deps
     container_name: worktree-worker
     restart: unless-stopped
-    command: npm run start:worker -w apps/backend
+    command: pnpm --filter worktree-backend run start:worker
     environment:
       DYNAMODB_ENDPOINT: http://dynamodb-local:8100
       DYNAMODB_REGION: ${AWS_REGION:-us-east-1}

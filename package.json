@@ -3,26 +3,24 @@
   "version": "1.0.0",
   "description": "Production-ready form management system with visual builder and admin panel",
   "private": true,
-  "workspaces": [
-    "apps/frontend",
-    "apps/backend"
-  ],
   "scripts": {
-    "dev": "npx kill-port 3005 5005 1234 && npm run dev -w apps/frontend & npm run dev -w apps/backend & npm run ws",
+    "dev": "npx kill-port 3005 5005 1234 && pnpm --filter worktree-frontend run dev & pnpm --filter worktree-backend run dev & pnpm run ws",
     "ws": "tsx apps/backend/src/ws-server.ts",
-    "build": "npm run build -w apps/frontend && npm run build -w apps/backend",
-    "test": "npm run test -w apps/backend && npm run test -w apps/frontend",
-    "test:integration": "npm run test:integration -w apps/backend && npm run test:integration -w apps/frontend",
-    "test:coverage": "npm run test:coverage -w apps/backend && npm run test:coverage -w apps/frontend",
+    "build": "pnpm --filter worktree-frontend run build && pnpm --filter worktree-backend run build",
+    "test": "pnpm --filter worktree-backend run test && pnpm --filter worktree-frontend run test",
+    "test:integration": "pnpm --filter worktree-backend run test:integration && pnpm --filter worktree-frontend run test:integration",
+    "test:coverage": "pnpm --filter worktree-backend run test:coverage && pnpm --filter worktree-frontend run test:coverage",
     "test:e2e": "playwright test",
-    "lint": "npm run lint -w apps/frontend && npm run lint -w apps/backend",
-    "seed": "npm run seed -w apps/backend"
+    "lint": "pnpm --filter worktree-frontend run lint && pnpm --filter worktree-backend run lint",
+    "seed": "pnpm --filter worktree-backend run seed"
   },
-  "overrides": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4"
+    }
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",

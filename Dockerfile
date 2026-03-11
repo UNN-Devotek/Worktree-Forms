@@ -7,16 +7,17 @@
 # Stage 1: Base & Dependencies
 # ==========================================
 FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# Copy root package files
-COPY package.json package-lock.json ./
+# Copy package manifests + lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 
-# Install all deps with npm cache mount (persists across builds)
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+# Install deps — pnpm store cache persists across builds
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -26,7 +27,6 @@ COPY . .
 # ==========================================
 FROM base AS deps
 # Source already copied in base — this stage is used as-is for local dev
-# docker-compose overrides CMD with: npm run dev -w apps/frontend & npm run dev -w apps/backend
 
 # ==========================================
 # Stage 3: Build for production
@@ -34,16 +34,15 @@ FROM base AS deps
 FROM base AS builder
 
 # Build backend TypeScript
-RUN npm run build -w apps/backend
+RUN pnpm --filter worktree-backend run build
 
 # Build Next.js frontend
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ARG NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 ENV NEXT_PUBLIC_ENABLE_DEV_LOGIN=${NEXT_PUBLIC_ENABLE_DEV_LOGIN}
-# Cache .next/cache across builds for faster incremental compilation
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
-    npm run build -w apps/frontend
+    pnpm --filter worktree-frontend run build
 
 # ==========================================
 # Stage 4: Production runtime
