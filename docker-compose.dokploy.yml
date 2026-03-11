@@ -95,6 +95,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: deps
+    image: worktree-deps:local
     restart: unless-stopped
     command: npm run start:ws -w apps/backend
     environment:
@@ -131,10 +132,7 @@ services:
           cpus: '0.5'
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deps
+    image: worktree-deps:local
     restart: unless-stopped
     command: npm run start:worker -w apps/backend
     environment:
