@@ -136,7 +136,7 @@ const server = new Server({
           const yColumns = document.getArray('columns');
           const now = new Date().toISOString();
 
-          // ── Persist columns ──────────────────────────────────────────
+          // ── Persist columns (parallel via upsert) ─────────────────
           const cols = yColumns.toArray() as Array<{
             id: string;
             label?: string;
@@ -145,42 +145,55 @@ const server = new Server({
             config?: Record<string, unknown>;
           }>;
 
-          for (let i = 0; i < cols.length; i++) {
-            const col = cols[i];
-            if (!col?.id) continue;
-            try {
-              await SheetColumnEntity.patch({ sheetId, columnId: col.id })
-                .set({
-                  name: col.label ?? col.id,
-                  type: col.type ?? 'TEXT',
-                  width: col.width ?? 150,
-                  order: i,
-                  config: col.config ?? {},
-                  updatedAt: now,
-                })
-                .go();
-            } catch {
-              // Column may not exist yet — create it
-              try {
-                await SheetColumnEntity.create({
-                  columnId: col.id,
-                  sheetId,
-                  projectId: projectId ?? '',
-                  name: col.label ?? col.id,
-                  type: col.type ?? 'TEXT',
-                  width: col.width ?? 150,
-                  order: i,
-                  config: col.config ?? {},
-                  createdAt: now,
-                  updatedAt: now,
-                }).go();
-              } catch (createErr) {
-                console.error(`[ws] Failed to create column ${col.id}:`, createErr);
-              }
+          const activeColumnIds = new Set<string>();
+
+          const columnWrites = cols.map((col, i) => {
+            if (!col?.id) return Promise.resolve();
+            activeColumnIds.add(col.id);
+            return SheetColumnEntity.upsert({
+              columnId: col.id,
+              sheetId,
+              projectId: projectId ?? '',
+              name: col.label ?? col.id,
+              type: col.type ?? 'TEXT',
+              width: col.width ?? 150,
+              order: i,
+              config: col.config ?? {},
+              createdAt: now,
+              updatedAt: now,
+            }).go();
+          });
+
+          const columnResults = await Promise.allSettled(columnWrites);
+          for (let i = 0; i < columnResults.length; i++) {
+            const result = columnResults[i];
+            if (result.status === 'rejected') {
+              console.error(`[ws] Failed to upsert column ${cols[i]?.id}:`, result.reason);
             }
           }
 
-          // ── Persist rows ─────────────────────────────────────────────
+          // ── Delete orphan columns (removed in Yjs but still in DB) ──
+          try {
+            const dbColumns = await SheetColumnEntity.query.primary({ sheetId }).go();
+            const orphanDeletes = dbColumns.data
+              .filter(dbCol => !activeColumnIds.has(dbCol.columnId))
+              .map(dbCol =>
+                SheetColumnEntity.delete({ sheetId, columnId: dbCol.columnId }).go()
+              );
+            if (orphanDeletes.length > 0) {
+              const deleteResults = await Promise.allSettled(orphanDeletes);
+              for (const result of deleteResults) {
+                if (result.status === 'rejected') {
+                  console.error('[ws] Failed to delete orphan column:', result.reason);
+                }
+              }
+            }
+          } catch (queryErr) {
+            console.error(`[ws] Failed to query columns for orphan cleanup (sheet ${sheetId}):`, queryErr);
+          }
+
+          // ── Persist rows (parallel via upsert) ─────────────────────
+          const rowWrites: Promise<unknown>[] = [];
           for (const [rowId, yRow] of yRows.entries()) {
             const data: Record<string, unknown> = {};
             if (yRow instanceof Y.Map) {
@@ -194,24 +207,23 @@ const server = new Server({
               }
             }
 
-            try {
-              await SheetRowEntity.patch({ sheetId, rowId })
-                .set({ data, updatedAt: now })
-                .go();
-            } catch {
-              // Row may not exist yet in DynamoDB -- create it
-              try {
-                await SheetRowEntity.create({
-                  rowId,
-                  sheetId,
-                  projectId: projectId ?? '',
-                  data,
-                  createdAt: now,
-                  updatedAt: now,
-                }).go();
-              } catch (createErr) {
-                console.error(`[ws] Failed to create row ${rowId}:`, createErr);
-              }
+            rowWrites.push(
+              SheetRowEntity.upsert({
+                rowId,
+                sheetId,
+                projectId: projectId ?? '',
+                data,
+                createdAt: now,
+                updatedAt: now,
+              }).go()
+            );
+          }
+
+          const rowResults = await Promise.allSettled(rowWrites);
+          for (let i = 0; i < rowResults.length; i++) {
+            const result = rowResults[i];
+            if (result.status === 'rejected') {
+              console.error(`[ws] Failed to upsert row:`, result.reason);
             }
           }
           // Remove from map only after the write loop completes so concurrent

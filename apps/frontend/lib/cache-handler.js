@@ -38,9 +38,11 @@ module.exports = class CacheHandler {
       const raw = await getRedis().get(`${CACHE_PREFIX}${key}`);
       if (!raw) return null;
       const entry = JSON.parse(raw);
-      // Validate the entry has the expected shape
-      if (!entry || typeof entry !== "object" || !("value" in entry)) {
-        return null;
+      if (!entry || typeof entry !== "object") return null;
+      // Legacy entries stored before the { value, lastModified } wrapper — wrap on read
+      // to avoid a thundering herd of cache misses on first deploy
+      if (!("value" in entry)) {
+        return { value: entry, lastModified: Date.now() };
       }
       return entry;
     } catch {

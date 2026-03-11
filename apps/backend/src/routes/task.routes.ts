@@ -7,18 +7,47 @@ import { TaskService } from '../services/task.service.js';
 const TASK_STATUSES = ['DRAFT', 'ACTIVE', 'IN_PROGRESS', 'COMPLETED'] as const;
 const TASK_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 
+// Accepts both date-only (2024-01-15) and full ISO datetime (2024-01-15T00:00:00.000Z)
+const isoDateString = z.string().regex(
+  /^\d{4}-\d{2}-\d{2}/,
+  'Must be an ISO date string (YYYY-MM-DD or full ISO 8601)'
+);
+
+const assigneeSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+});
+
+const attachmentSchema = z.object({
+  url: z.string(),
+  name: z.string(),
+  type: z.string(),
+  objectKey: z.string(),
+});
+
+const mentionSchema = z.object({
+  type: z.enum(['sheet', 'spec']),
+  id: z.string(),
+  label: z.string(),
+});
+
+const imageSchema = z.object({
+  url: z.string(),
+  objectKey: z.string(),
+});
+
 const createTaskSchema = z.object({
   title: z.string().min(1).max(500),
   question: z.string().max(5000).optional(),
   taskType: z.string().max(50).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  assignees: z.array(z.unknown()).optional(),
-  attachments: z.array(z.unknown()).optional(),
-  mentions: z.array(z.unknown()).optional(),
-  images: z.array(z.unknown()).optional(),
+  startDate: isoDateString.optional(),
+  endDate: isoDateString.optional(),
+  assignees: z.array(assigneeSchema).optional(),
+  attachments: z.array(attachmentSchema).optional(),
+  mentions: z.array(mentionSchema).optional(),
+  images: z.array(imageSchema).optional(),
 });
 
 const updateTaskSchema = z.object({
@@ -27,12 +56,12 @@ const updateTaskSchema = z.object({
   taskType: z.string().max(50).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
-  startDate: z.string().nullable().optional(),
-  endDate: z.string().nullable().optional(),
-  assignees: z.array(z.unknown()).optional(),
-  attachments: z.array(z.unknown()).optional(),
-  mentions: z.array(z.unknown()).optional(),
-  images: z.array(z.unknown()).optional(),
+  startDate: isoDateString.nullable().optional(),
+  endDate: isoDateString.nullable().optional(),
+  assignees: z.array(assigneeSchema).optional(),
+  attachments: z.array(attachmentSchema).optional(),
+  mentions: z.array(mentionSchema).optional(),
+  images: z.array(imageSchema).optional(),
   assignedTo: z.string().optional(),
 });
 

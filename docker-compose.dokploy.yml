@@ -113,6 +113,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-change-me-32-chars-minimum-secret}
       JWT_SECRET: ${JWT_SECRET:-worktree-jwt-dev-secret-change-in-prod}
       NODE_OPTIONS: "--max-old-space-size=256"
+    ports:
+      - "1234:1234"
     labels:
       - "traefik.enable=true"
       # WebSocket router — matches /ws path prefix on worktree.pro
@@ -122,9 +124,9 @@ services:
       - "traefik.http.routers.worktree-ws.tls.certresolver=letsencrypt"
       - "traefik.http.routers.worktree-ws.priority=20"
       - "traefik.http.services.worktree-ws.loadbalancer.server.port=1234"
-      # Strip /ws prefix so Hocuspocus receives requests at /
-      - "traefik.http.routers.worktree-ws.middlewares=ws-stripprefix"
-      - "traefik.http.middlewares.ws-stripprefix.stripprefix.prefixes=/ws"
+      # Namespaced middleware to avoid collisions with other Dokploy services
+      - "traefik.http.routers.worktree-ws.middlewares=worktree-ws-stripprefix"
+      - "traefik.http.middlewares.worktree-ws-stripprefix.stripprefix.prefixes=/ws"
     networks:
       - dokploy-network
       - default

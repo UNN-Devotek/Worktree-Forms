@@ -18,13 +18,12 @@ interface YjsState {
 const getWebSocketUrl = () => {
   if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:1234';
   if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const isSecure = window.location.protocol === 'https:';
+  const protocol = isSecure ? 'wss:' : 'ws:';
   const host = window.location.hostname;
-  // In production (HTTPS), route through reverse proxy at /ws path.
-  // In local dev (HTTP), connect directly to WS port.
-  if (window.location.protocol === 'https:') {
-    return `${protocol}//${host}/ws`;
-  }
+  // Production (HTTPS): route through reverse proxy at /ws path.
+  // Local dev (HTTP): connect directly to WS port.
+  if (isSecure) return `${protocol}//${host}/ws`;
   const port = process.env.NEXT_PUBLIC_WS_PORT || '1234';
   return `${protocol}//${host}:${port}`;
 };
