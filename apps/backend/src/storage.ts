@@ -31,7 +31,7 @@ export const S3_BUCKET = process.env.S3_BUCKET ?? "worktree-local";
  * Only applies in local dev (when S3_ENDPOINT contains "localstack").
  * Production presigned URLs are returned unchanged.
  */
-function rewriteForBrowser(url: string): string {
+export function rewriteForBrowser(url: string): string {
   const endpoint = process.env.S3_ENDPOINT ?? "";
   if (endpoint.includes("localstack")) {
     return url.replace("http://localstack:4510", "http://localhost:4510");

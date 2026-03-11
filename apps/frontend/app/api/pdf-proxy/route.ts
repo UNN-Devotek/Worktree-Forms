@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-
-const S3_BUCKET = process.env.S3_BUCKET ?? "worktree-local";
-
-// Initialize S3 Client (Server-Side)
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION ?? "us-east-1",
-  ...(process.env.S3_ENDPOINT && {
-    endpoint: process.env.S3_ENDPOINT,
-    forcePathStyle: true,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "local",
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "local",
-    },
-  }),
-});
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3, S3_BUCKET } from '@/lib/storage';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -40,7 +26,7 @@ export async function GET(req: NextRequest) {
       Key: objectKey,
     });
 
-    const s3Response = await s3Client.send(command);
+    const s3Response = await s3.send(command);
 
     if (!s3Response.Body) {
       return new NextResponse("Empty response body", { status: 404 });

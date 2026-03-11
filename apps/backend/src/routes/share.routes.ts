@@ -62,7 +62,15 @@ router.post('/generate', authenticate, requireProjectAccess('EDITOR'), async (re
 
     const token = await ShareService.createPublicLink(userId, projectId, resourceType, resourceId, expiresInDays);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
+    let frontendUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || '';
+    if (!frontendUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('share.routes: NEXT_PUBLIC_APP_URL and FRONTEND_URL are both unset in production — using relative URL');
+        frontendUrl = '';
+      } else {
+        frontendUrl = 'http://localhost:3005';
+      }
+    }
     const link = `${frontendUrl}/public/${resourceType.toLowerCase()}/${token.token}`;
 
     res.json({ success: true, data: { ...token, link } });

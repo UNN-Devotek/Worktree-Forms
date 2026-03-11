@@ -55,7 +55,7 @@ export async function getSheetToken(sheetId: string, projectId: string) {
 
   return jwt.sign(
     {
-      userId: session.user.id,
+      sub: session.user.id,
       name: session.user.name,
       sheetId,
     },

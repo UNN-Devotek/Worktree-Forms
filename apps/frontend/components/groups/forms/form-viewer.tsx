@@ -68,13 +68,6 @@ export function FormViewer({ formSchema, responseData }: FormViewerProps) {
                   if (field.type === 'image_element') {
                      // Get URL logic similar to ImageElement component
                      let imageUrl = field.imageObjectKey ? `${API_BASE}/api/images/${field.imageObjectKey}` : field.imageUrl;
-                     
-                     if (field.imageUrl && field.imageUrl.includes('localhost:5001') && !API_BASE.includes('localhost')) {
-                        const match = field.imageUrl.match(/\/api\/images\/(.+)$/)
-                         if (match) {
-                           imageUrl = `${API_BASE}/api/images/${match[1]}`
-                         }
-                     }
 
                      if (!imageUrl) return null;
 

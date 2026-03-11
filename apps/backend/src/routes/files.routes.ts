@@ -7,7 +7,7 @@ import { requireProjectAccess } from '../middleware/rbac.js';
 import multer from 'multer';
 import { UploadService } from '../services/upload.service.js';
 import { FileUploadEntity } from '../lib/dynamo/index.js';
-import { s3, S3_BUCKET } from '../storage.js';
+import { s3, S3_BUCKET, rewriteForBrowser } from '../storage.js';
 
 const router = Router();
 const upload = multer({
@@ -35,7 +35,8 @@ router.get('/presigned', authenticate, requireProjectAccess('VIEWER'), async (re
       Key: key,
       ContentType: contentType,
     });
-    const url = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 minutes
+    const rawUrl = await getSignedUrl(s3, command, { expiresIn: 900 }); // 15 minutes
+    const url = rewriteForBrowser(rawUrl);
     res.json({ success: true, data: { url, key, contentType } });
   } catch (error) {
     console.error('Presigned URL error:', error);

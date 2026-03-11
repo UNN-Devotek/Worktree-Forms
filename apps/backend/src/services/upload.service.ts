@@ -143,7 +143,15 @@ export class UploadService {
    * Get file URL from object key
    */
   static getFileUrl(objectKey: string): string {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3005';
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || '';
+    if (!baseUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('UploadService.getFileUrl: NEXT_PUBLIC_APP_URL and FRONTEND_URL are both unset in production — using relative URL');
+        baseUrl = '';
+      } else {
+        baseUrl = 'http://localhost:3005';
+      }
+    }
     return `${baseUrl}/api/images/${objectKey}`;
   }
 

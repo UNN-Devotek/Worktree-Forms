@@ -18,7 +18,9 @@ export function BackendTokenSync() {
     useEffect(() => {
         if (status === 'authenticated' && !synced.current) {
             synced.current = true;
-            fetch('/api/auth/backend-token', { credentials: 'include' }).catch(() => {});
+            fetch('/api/auth/backend-token', { credentials: 'include' }).catch((err) => {
+                console.warn('[BackendTokenSync] Failed to sync backend token:', err);
+            });
         }
         if (status === 'unauthenticated') {
             synced.current = false;

@@ -15,7 +15,11 @@ export const GET = auth(async (req: any) => {
     return NextResponse.json({ error: 'Server Config Error' }, { status: 500 });
   }
 
-  // Sign a backend-compatible JWT (same payload shape the backend authenticate middleware expects)
+  // Sign a backend-compatible JWT (same payload shape the backend authenticate middleware expects).
+  // NextAuth stores the user's role as `role` (see auth.ts callbacks); the Express backend
+  // authenticate.ts middleware expects `systemRole` in the JWT payload. This mapping bridges
+  // the two naming conventions. The fallback chain handles edge cases where the field may
+  // appear under either name (e.g. token refresh race) and defaults to 'MEMBER'.
   const token = jwt.sign(
     {
       sub: req.auth.user.id,

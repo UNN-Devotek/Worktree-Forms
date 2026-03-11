@@ -44,6 +44,23 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
+// Track which deprecated /groups/ endpoints have already emitted a warning
+const deprecatedGroupEndpointsWarned = new Set<string>();
+
+/**
+ * Emit a console.warn on first hit for deprecated /groups/:groupId/... routes.
+ * Frontend still calls these — migrate to /projects/:projectId/forms equivalents.
+ */
+function warnDeprecatedGroupRoute(req: Request): void {
+  const route = `${req.method} ${req.route?.path}`;
+  if (!deprecatedGroupEndpointsWarned.has(route)) {
+    deprecatedGroupEndpointsWarned.add(route);
+    console.warn(
+      `[DEPRECATED] ${route} is deprecated. Migrate frontend callers to the /projects/:projectId/forms equivalent.`
+    );
+  }
+}
+
 // ==========================================
 // FORM ENDPOINTS
 // ==========================================
@@ -98,6 +115,7 @@ router.get('/forms', async (req: Request, res: Response) => {
 // @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Get all forms for a group (legacy endpoint, maps to project)
 router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const projectId = req.params.groupId;
   try {
     const result = await FormEntity.query.byProject({ projectId }).go();
@@ -110,6 +128,7 @@ router.get('/groups/:groupId/forms', async (req: Request, res: Response) => {
 // @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Get specific form
 router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const projectId = req.params.groupId;
   const formId = req.params.formId;
 
@@ -149,6 +168,7 @@ router.get('/groups/:groupId/forms/:formId', async (req: Request, res: Response)
 // @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Create new form
 router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const projectId = req.params.groupId;
 
   const parsed = createFormSchema.safeParse(req.body);
@@ -197,6 +217,7 @@ router.post('/groups/:groupId/forms', auditMiddleware('form.create'), async (req
 // @deprecated Use /api/projects/:projectId/forms instead. Kept for backward compatibility.
 // Update form
 router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const projectId = req.params.groupId;
   const formId = req.params.formId;
   const updates = req.body;
@@ -289,8 +310,10 @@ router.put('/groups/:groupId/forms/:formId', authenticate, async (req: Request, 
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms/:formId/versions instead.
 // Get Form Versions
 router.get('/groups/:groupId/forms/:formId/versions', async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const formId = req.params.formId;
   try {
     const result = await FormVersionEntity.query.byForm({ formId }).go();
@@ -301,8 +324,10 @@ router.get('/groups/:groupId/forms/:formId/versions', async (req: Request, res: 
   }
 });
 
+// @deprecated Use /api/projects/:projectId/forms/:formId/versions/:versionNumber/restore instead.
 // Restore Version
 router.post('/groups/:groupId/forms/:formId/versions/:versionNumber/restore', authenticate, async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const { groupId: projectId, formId, versionNumber } = req.params;
   const userId = (req as AuthenticatedRequest).user.id;
   const targetVersionNum = parseInt(versionNumber);
@@ -344,8 +369,10 @@ router.post('/groups/:groupId/forms/:formId/versions/:versionNumber/restore', au
   }
 });
 
+// @deprecated Use /api/files/presigned instead.
 // Generate Presigned Upload URL
 router.post('/groups/:groupId/forms/:formId/upload/presign', async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const { filename, contentType } = req.body;
   const key = `uploads/${Date.now()}-${filename}`;
 
@@ -359,12 +386,14 @@ router.post('/groups/:groupId/forms/:formId/upload/presign', async (req: Request
   }
 });
 
+// @deprecated Use /api/files/upload instead.
 // Upload File (Direct)
 router.post(
   '/groups/:groupId/forms/:formId/upload',
   rateLimitTiers.upload,
   upload.single('file'),
   async (req: Request, res: Response) => {
+    warnDeprecatedGroupRoute(req);
     const projectId = req.params.groupId;
 
     if (!req.file) {
@@ -472,8 +501,10 @@ function encodeFormValueForSheet(
   return { cellValue, attachedFiles };
 }
 
+// @deprecated Use POST /:formId/submissions with projectId in body instead.
 // Create Submission
 router.post('/groups/:groupId/forms/:formId/submit', async (req: Request, res: Response) => {
+  warnDeprecatedGroupRoute(req);
   const projectId = req.params.groupId;
   const formId = req.params.formId;
   const data = req.body;
