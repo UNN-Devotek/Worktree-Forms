@@ -13,8 +13,13 @@ export const SheetColumnEntity = new Entity(
       type: { type: "string", default: "TEXT" },
       order: { type: "number", default: 0 },
       width: { type: "number", default: 150 },
+      projectId: { type: "string" },
       config: { type: "any", default: () => ({}) },
       createdAt: {
+        type: "string",
+        default: () => new Date().toISOString(),
+      },
+      updatedAt: {
         type: "string",
         default: () => new Date().toISOString(),
       },

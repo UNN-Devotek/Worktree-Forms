@@ -121,7 +121,7 @@ const server = new Server({
       },
 
       /**
-       * Persist Yjs document state back to DynamoDB rows.
+       * Persist Yjs document state back to DynamoDB (rows + columns).
        * Debounced to avoid excessive writes during rapid editing.
        */
       store: async ({ documentName, document }) => {
@@ -133,9 +133,54 @@ const server = new Server({
 
         const timer = setTimeout(async () => {
           const yRows = document.getMap('rows');
+          const yColumns = document.getArray('columns');
           const now = new Date().toISOString();
 
+          // ── Persist columns ──────────────────────────────────────────
+          const cols = yColumns.toArray() as Array<{
+            id: string;
+            label?: string;
+            type?: string;
+            width?: number;
+            config?: Record<string, unknown>;
+          }>;
 
+          for (let i = 0; i < cols.length; i++) {
+            const col = cols[i];
+            if (!col?.id) continue;
+            try {
+              await SheetColumnEntity.patch({ sheetId, columnId: col.id })
+                .set({
+                  name: col.label ?? col.id,
+                  type: col.type ?? 'TEXT',
+                  width: col.width ?? 150,
+                  order: i,
+                  config: col.config ?? {},
+                  updatedAt: now,
+                })
+                .go();
+            } catch {
+              // Column may not exist yet — create it
+              try {
+                await SheetColumnEntity.create({
+                  columnId: col.id,
+                  sheetId,
+                  projectId: projectId ?? '',
+                  name: col.label ?? col.id,
+                  type: col.type ?? 'TEXT',
+                  width: col.width ?? 150,
+                  order: i,
+                  config: col.config ?? {},
+                  createdAt: now,
+                  updatedAt: now,
+                }).go();
+              } catch (createErr) {
+                console.error(`[ws] Failed to create column ${col.id}:`, createErr);
+              }
+            }
+          }
+
+          // ── Persist rows ─────────────────────────────────────────────
           for (const [rowId, yRow] of yRows.entries()) {
             const data: Record<string, unknown> = {};
             if (yRow instanceof Y.Map) {

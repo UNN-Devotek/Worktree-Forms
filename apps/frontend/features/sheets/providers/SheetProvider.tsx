@@ -590,10 +590,13 @@ export function SheetProvider({
   }, [doc, columnLabelMap, user.name]);
 
   // Finding #6 (R5): useCallback for stable identity
+  // Wrap in doc.transact() so peers see atomic column addition.
   const addColumn = useCallback((column: any) => {
     if (!doc) return;
-    const yColumns = doc.getArray('columns');
-    yColumns.push([column]);
+    doc.transact(() => {
+      const yColumns = doc.getArray('columns');
+      yColumns.push([column]);
+    });
   }, [doc]);
 
   // Finding #13 (R3): addRow wrapped in doc.transact() — atomic mutation.
