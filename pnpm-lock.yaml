@@ -150,6 +150,9 @@ importers:
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
+      ws:
+        specifier: ^8.19.0
+        version: 8.19.0
       y-protocols:
         specifier: ^1.0.7
         version: 1.0.7(yjs@13.6.29)
