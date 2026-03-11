@@ -15,8 +15,6 @@ function getRedis() {
     const url = process.env.REDIS_URL ?? "redis://localhost:6380";
     redis = new Redis(url, {
       maxRetriesPerRequest: null,
-      lazyConnect: true,
-      enableOfflineQueue: false,
       connectTimeout: 5000,
       commandTimeout: 3000,
     });
@@ -28,37 +26,41 @@ function getRedis() {
   return redis;
 }
 
-/**
- * @typedef {{ kind: string; data: unknown; lastModified: number; tags?: string[] }} CacheEntry
- */
-
 module.exports = class CacheHandler {
   constructor() {}
 
   /**
+   * Next.js expects: { value: IncrementalCacheValue, lastModified: number } | null
    * @param {string} key
-   * @returns {Promise<CacheEntry | null>}
    */
   async get(key) {
     try {
       const raw = await getRedis().get(`${CACHE_PREFIX}${key}`);
       if (!raw) return null;
-      return JSON.parse(raw);
+      const entry = JSON.parse(raw);
+      // Validate the entry has the expected shape
+      if (!entry || typeof entry !== "object" || !("value" in entry)) {
+        return null;
+      }
+      return entry;
     } catch {
       return null;
     }
   }
 
   /**
+   * Next.js passes IncrementalCacheValue as `data`. We wrap it with lastModified.
    * @param {string} key
-   * @param {CacheEntry} data
+   * @param {unknown} data
    * @param {{ revalidate?: number | false; tags?: string[] }} ctx
    */
   async set(key, data, ctx) {
     const ttl =
       typeof ctx?.revalidate === "number" ? ctx.revalidate : DEFAULT_TTL;
     try {
-      const serialized = JSON.stringify(data);
+      // Wrap in { value, lastModified } so get() returns the shape Next.js expects
+      const entry = { value: data, lastModified: Date.now() };
+      const serialized = JSON.stringify(entry);
       if (ttl > 0) {
         await getRedis().setex(`${CACHE_PREFIX}${key}`, ttl, serialized);
       } else {
@@ -79,18 +81,21 @@ module.exports = class CacheHandler {
   }
 
   /**
-   * @param {string} tag
+   * @param {string | string[]} tag
    */
   async revalidateTag(tag) {
+    const tags = Array.isArray(tag) ? tag : [tag];
     try {
-      const keys = await getRedis().smembers(`${CACHE_PREFIX}tag:${tag}`);
-      if (keys.length > 0) {
-        const pipeline = getRedis().pipeline();
-        for (const key of keys) {
-          pipeline.del(`${CACHE_PREFIX}${key}`);
+      for (const t of tags) {
+        const keys = await getRedis().smembers(`${CACHE_PREFIX}tag:${t}`);
+        if (keys.length > 0) {
+          const pipeline = getRedis().pipeline();
+          for (const key of keys) {
+            pipeline.del(`${CACHE_PREFIX}${key}`);
+          }
+          pipeline.del(`${CACHE_PREFIX}tag:${t}`);
+          await pipeline.exec();
         }
-        pipeline.del(`${CACHE_PREFIX}tag:${tag}`);
-        await pipeline.exec();
       }
     } catch {
       // Fail silently
