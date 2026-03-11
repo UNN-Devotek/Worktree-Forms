@@ -39,10 +39,11 @@ module.exports = class CacheHandler {
       if (!raw) return null;
       const entry = JSON.parse(raw);
       if (!entry || typeof entry !== "object") return null;
-      // Legacy entries stored before the { value, lastModified } wrapper — wrap on read
-      // to avoid a thundering herd of cache misses on first deploy
+      // Legacy entries stored before the { value, lastModified } wrapper — wrap on read.
+      // Use epoch 0 so Next.js treats these as stale and revalidates them naturally,
+      // rather than Date.now() which would make them appear fresh and defeat TTL.
       if (!("value" in entry)) {
-        return { value: entry, lastModified: Date.now() };
+        return { value: entry, lastModified: 0 };
       }
       return entry;
     } catch {

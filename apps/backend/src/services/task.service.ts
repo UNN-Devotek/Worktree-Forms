@@ -147,13 +147,15 @@ export class TaskService {
       createdBy: createdById,
     }).go();
 
+    const task = result.data;
+    if (!task) throw new Error('Failed to create task');
     const userMap = await buildUserMap([createdById]);
-    return mapTaskResponse(result.data as TaskItem, userMap);
+    return mapTaskResponse(task, userMap);
   }
 
   static async getProjectTasks(projectId: string) {
     const result = await TaskEntity.query.byProject({ projectId }).go();
-    const tasks = result.data as TaskItem[];
+    const tasks = result.data;
 
     // Collect all unique user IDs across every task, then batch-fetch once
     const allUserIds: string[] = [];
@@ -169,7 +171,7 @@ export class TaskService {
   static async getTask(projectId: string, taskId: string) {
     const result = await TaskEntity.get({ projectId, taskId }).go();
     if (!result.data) return null;
-    const task = result.data as TaskItem;
+    const task = result.data;
 
     const userIds = [task.createdBy, task.assignedTo].filter(Boolean) as string[];
     const userMap = await buildUserMap(userIds);
@@ -207,7 +209,7 @@ export class TaskService {
     await TaskEntity.patch({ projectId, taskId }).set(setData).go();
     const result = await TaskEntity.get({ projectId, taskId }).go();
     if (!result.data) return null;
-    const task = result.data as TaskItem;
+    const task = result.data;
 
     const userIds = [task.createdBy, task.assignedTo].filter(Boolean) as string[];
     const userMap = await buildUserMap(userIds);

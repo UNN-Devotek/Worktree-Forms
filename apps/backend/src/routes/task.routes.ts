@@ -9,31 +9,31 @@ const TASK_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
 
 // Accepts both date-only (2024-01-15) and full ISO datetime (2024-01-15T00:00:00.000Z)
 const isoDateString = z.string().regex(
-  /^\d{4}-\d{2}-\d{2}/,
+  /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?Z?)?$/,
   'Must be an ISO date string (YYYY-MM-DD or full ISO 8601)'
 );
 
 const assigneeSchema = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
+  id: z.string().max(100),
+  name: z.string().max(255).nullable(),
 });
 
 const attachmentSchema = z.object({
-  url: z.string(),
-  name: z.string(),
-  type: z.string(),
-  objectKey: z.string(),
+  url: z.string().url(),
+  name: z.string().max(255),
+  type: z.string().max(100),
+  objectKey: z.string().max(500),
 });
 
 const mentionSchema = z.object({
   type: z.enum(['sheet', 'spec']),
-  id: z.string(),
-  label: z.string(),
+  id: z.string().max(100),
+  label: z.string().max(255),
 });
 
 const imageSchema = z.object({
-  url: z.string(),
-  objectKey: z.string(),
+  url: z.string().url(),
+  objectKey: z.string().max(500),
 });
 
 const createTaskSchema = z.object({
@@ -44,10 +44,10 @@ const createTaskSchema = z.object({
   priority: z.enum(TASK_PRIORITIES).optional(),
   startDate: isoDateString.optional(),
   endDate: isoDateString.optional(),
-  assignees: z.array(assigneeSchema).optional(),
-  attachments: z.array(attachmentSchema).optional(),
-  mentions: z.array(mentionSchema).optional(),
-  images: z.array(imageSchema).optional(),
+  assignees: z.array(assigneeSchema).max(50).optional(),
+  attachments: z.array(attachmentSchema).max(20).optional(),
+  mentions: z.array(mentionSchema).max(50).optional(),
+  images: z.array(imageSchema).max(20).optional(),
 });
 
 const updateTaskSchema = z.object({
@@ -58,10 +58,10 @@ const updateTaskSchema = z.object({
   priority: z.enum(TASK_PRIORITIES).optional(),
   startDate: isoDateString.nullable().optional(),
   endDate: isoDateString.nullable().optional(),
-  assignees: z.array(assigneeSchema).optional(),
-  attachments: z.array(attachmentSchema).optional(),
-  mentions: z.array(mentionSchema).optional(),
-  images: z.array(imageSchema).optional(),
+  assignees: z.array(assigneeSchema).max(50).optional(),
+  attachments: z.array(attachmentSchema).max(20).optional(),
+  mentions: z.array(mentionSchema).max(50).optional(),
+  images: z.array(imageSchema).max(20).optional(),
   assignedTo: z.string().optional(),
 });
 

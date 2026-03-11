@@ -159,7 +159,6 @@ const server = new Server({
               width: col.width ?? 150,
               order: i,
               config: col.config ?? {},
-              createdAt: now,
               updatedAt: now,
             }).go();
           });
@@ -173,23 +172,27 @@ const server = new Server({
           }
 
           // ── Delete orphan columns (removed in Yjs but still in DB) ──
-          try {
-            const dbColumns = await SheetColumnEntity.query.primary({ sheetId }).go();
-            const orphanDeletes = dbColumns.data
-              .filter(dbCol => !activeColumnIds.has(dbCol.columnId))
-              .map(dbCol =>
-                SheetColumnEntity.delete({ sheetId, columnId: dbCol.columnId }).go()
-              );
-            if (orphanDeletes.length > 0) {
-              const deleteResults = await Promise.allSettled(orphanDeletes);
-              for (const result of deleteResults) {
-                if (result.status === 'rejected') {
-                  console.error('[ws] Failed to delete orphan column:', result.reason);
+          // Guard: if Yjs has zero columns, skip orphan deletion to prevent
+          // catastrophic data loss when a doc hasn't fully hydrated yet.
+          if (activeColumnIds.size > 0) {
+            try {
+              const dbColumns = await SheetColumnEntity.query.primary({ sheetId }).go();
+              const orphanDeletes = dbColumns.data
+                .filter(dbCol => !activeColumnIds.has(dbCol.columnId))
+                .map(dbCol =>
+                  SheetColumnEntity.delete({ sheetId, columnId: dbCol.columnId }).go()
+                );
+              if (orphanDeletes.length > 0) {
+                const deleteResults = await Promise.allSettled(orphanDeletes);
+                for (const result of deleteResults) {
+                  if (result.status === 'rejected') {
+                    console.error('[ws] Failed to delete orphan column:', result.reason);
+                  }
                 }
               }
+            } catch (queryErr) {
+              console.error(`[ws] Failed to query columns for orphan cleanup (sheet ${sheetId}):`, queryErr);
             }
-          } catch (queryErr) {
-            console.error(`[ws] Failed to query columns for orphan cleanup (sheet ${sheetId}):`, queryErr);
           }
 
           // ── Persist rows (parallel via upsert) ─────────────────────
@@ -213,7 +216,6 @@ const server = new Server({
                 sheetId,
                 projectId: projectId ?? '',
                 data,
-                createdAt: now,
                 updatedAt: now,
               }).go()
             );

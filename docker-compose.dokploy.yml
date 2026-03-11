@@ -113,8 +113,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-change-me-32-chars-minimum-secret}
       JWT_SECRET: ${JWT_SECRET:-worktree-jwt-dev-secret-change-in-prod}
       NODE_OPTIONS: "--max-old-space-size=256"
-    ports:
-      - "1234:1234"
+    # No host port exposure — all WS traffic routes through Traefik TLS
     labels:
       - "traefik.enable=true"
       # WebSocket router — matches /ws path prefix on worktree.pro
@@ -137,6 +136,11 @@ services:
         condition: service_healthy
       seed:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const http=require('http');const r=http.request({hostname:'localhost',port:1234,timeout:2000},res=>{process.exit(res.statusCode<500?0:1)});r.on('error',()=>process.exit(1));r.end()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     logging:
       driver: "json-file"
       options:
