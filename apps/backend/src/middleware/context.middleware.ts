@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { runWithContext } from '../lib/async-context';
+import { runWithContext } from '../lib/async-context.js';
 
 /**
  * Context middleware — propagates the current userId into Node.js AsyncLocalStorage
